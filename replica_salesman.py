@@ -1,8 +1,8 @@
-nbeta=200
-niter=500000
-dbeta=0.5e0
-ncity=100
-ninit=2      # 0 -> read "100_cities.txt"; 1 -> continue; 2 -> random config.
+nbeta=32
+niter=3000
+dbeta=5e0
+ncity=30
+ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
 import sys
 import numpy as np
@@ -79,28 +79,27 @@ for iter in range(1, niter+1):
             ordering[ibeta], ordering[ibeta+1] = ordering[ibeta+1].copy(), ordering[ibeta].copy()
             distance[ibeta], distance[ibeta+1] = distance[ibeta+1],        distance[ibeta]
     # data output #
-    if iter % 500 == 0:
-        distance_200 = distance[199]
-        if distance_200 < minimum_distance:
-            minimum_distance = distance_200
+    if iter % 50 == 0:
+        distance_32 = distance[31]
+        if distance_32 < minimum_distance:
+            minimum_distance = distance_32
             minimum_ordering = ordering[nbeta-1].copy()
         distance_list = np.append(distance_list, minimum_distance)
-        print(iter, distance_200, minimum_distance)
+        print(iter, distance_32, minimum_distance)
 
-    # save point #
-    if iter % 50000 == 0 or iter == niter:
-        with open("salesman.pickle", "wb") as f:
-            pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list), f)
+# save point #
+with open("salesman.pickle", "wb") as f:
+    pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list), f)
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        orderd = x[minimum_ordering].T
-        plt.plot(orderd[0], orderd[1], marker='+')
-        plt.axis([0, 1, 0, 1])
-        ax.set_aspect('equal', adjustable='box')
-        plt.savefig("salesman.png")
-        plt.clf()
+fig = plt.figure()
+ax = fig.add_subplot(111)
+orderd = x[minimum_ordering].T
+plt.plot(orderd[0], orderd[1], marker='+')
+plt.axis([0, 1, 0, 1])
+ax.set_aspect('equal', adjustable='box')
+plt.savefig("salesman.png")
+plt.clf()
 
-        plt.plot(distance_list, marker='+')
-        plt.savefig("distance.png")
-        plt.clf()
+plt.plot(distance_list[::2], marker='+')
+plt.savefig("distance.png")
+plt.clf()
