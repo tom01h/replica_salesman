@@ -102,7 +102,22 @@ end
 replica_data    [replica_num-1:0]  folw_data;
 replica_data    [replica_num:0]    out_data;
 replica_command                    command;
-replica_data                       in_data_d;
+replica_data                       in_data_d1;
+replica_data                       in_data_d2;
+
+always_ff @(posedge clk) begin
+    if (reset) begin
+        command     <= NOP;
+        in_data_d1  <= 'x;
+        in_data_d2  <= 'x;
+    end else begin
+        command     <= in_command;
+        in_data_d1  <= in_data;
+        in_data_d2  <= in_data_d1;
+    end        
+end
+
+assign out_data[0] = in_data_d2;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica_ram replica_ram
@@ -114,17 +129,6 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .folw_data   ( folw_data[g]  ),
         .out_data    ( out_data[g+1] )
     );
-    always_ff @(posedge clk) begin
-        if (reset) begin
-            command     <= NOP;
-            in_data_d   <= 'x;
-            out_data[0] <= 'x;
-        end else begin
-            command  <= in_command;
-            in_data_d   <= in_data;
-            out_data[0] <= in_data_d;
-        end        
-    end
 end
 
 // for waveform
