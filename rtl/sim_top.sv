@@ -15,7 +15,7 @@ typedef enum logic [2:0] {
 sim_state_t sim_state;
 logic shift_start;
 logic shift_run;
-integer fin_count;
+integer count;
 
 always_ff @(posedge clk) begin
     if (reset) begin
@@ -26,21 +26,27 @@ always_ff @(posedge clk) begin
             RST: begin
                 sim_state   <= SFTI;
                 shift_start <= '1;
+                count   <= 0;
             end
             SFTI: if (~shift_run & ~shift_start) begin
-                sim_state   <= SFTO;
-                shift_start <= '1;
+                if (count < 10) begin
+                    count <= count + 1;
+                end else begin
+                    sim_state   <= SFTO;
+                    shift_start <= '1;
+                count   <= 0;
+                end
             end else begin
                 shift_start <= '0;
             end    
             SFTO: if (~shift_run & ~shift_start) begin
                 sim_state   <= FIN;
-                fin_count   <= 0;
+                count   <= 0;
             end else begin
                 shift_start <= '0;
             end    
-            FIN: if (fin_count < 10) begin
-                fin_count <= fin_count + 1;
+            FIN: if (count < 10) begin
+                count <= count + 1;
             end else begin
                 $finish();
             end    
@@ -95,26 +101,28 @@ end
 
 replica_data    [replica_num-1:0]  folw_data;
 replica_data    [replica_num:0]    out_data;
-replica_command [replica_num:0]    command;
+replica_command                    command;
+replica_data                       in_data_d;
 
-assign out_data[0] = in_data;
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica_ram replica_ram
     (
         .clk         ( clk           ),
         .reset       ( reset         ),
-        .command     ( command[g]    ),
-        .prev_data   ( out_data[g]  ),
+        .command     ( command       ),
+        .prev_data   ( out_data[g]   ),
         .folw_data   ( folw_data[g]  ),
         .out_data    ( out_data[g+1] )
     );
     always_ff @(posedge clk) begin
         if (reset) begin
-            command[0]   <= NOP;
-            command[g+1] <= NOP;
+            command     <= NOP;
+            in_data_d   <= 'x;
+            out_data[0] <= 'x;
         end else begin
-            command[0]   <= in_command;
-            command[g+1] <= command[g];
+            command  <= in_command;
+            in_data_d   <= in_data;
+            out_data[0] <= in_data_d;
         end        
     end
 end
@@ -123,14 +131,12 @@ end
 
 logic [6:0]     w_in_data [7:0];
 logic [6:0]     w_out_data [7:0];
-replica_command out_command;
 
 always_comb begin
     for (int i = 0; i < 8; i += 1) begin
         w_in_data[i]  = in_data[i];
         w_out_data[i] = out_data[4][i];
     end
-    out_command = command[replica_num];
 end
 
 endmodule
