@@ -1,0 +1,5 @@
+rtl/sim
+rtl/work
+rtl/*.vcd
+rtl/*.wlf
+rtl/transcript
