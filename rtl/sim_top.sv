@@ -64,9 +64,6 @@ end
 integer cycle_count;
 integer replica_count;
 
-replica_data          in_data;
-replica_command [1:0] in_command;
-
 always_ff @(posedge clk) begin
     if (reset) begin
         cycle_count   <= 0;
@@ -91,12 +88,18 @@ always_ff @(posedge clk) begin
     end
 end
         
+logic                 in_valid;
+replica_data          in_data;
+replica_command [1:0] in_command;
+
 always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
+        in_valid <= '1;
         for (int i = 0; i < 8; i += 1) begin
             in_data[i] <= ((replica_count + cycle_count) % city_num) * 8 + i;
         end
     end else begin
+        in_valid <= '0;
         in_data <= 'x;
     end    
 end
@@ -110,19 +113,28 @@ end
 replica_data    [replica_num-1:0]  folw_data;
 replica_data    [replica_num+1:0]  out_data;
 replica_command [1:0]              command;
+logic                              in_valid_d1;
+logic                              in_valid_d2;
 replica_data                       in_data_d1;
 replica_data                       in_data_d2;
+logic                              wbank;
 
 always_ff @(posedge clk) begin
     if (reset) begin
         command     <= NOP;
+        in_valid_d1 <= '0;
+        in_valid_d2 <= '0;
         in_data_d1  <= 'x;
         in_data_d2  <= 'x;
+        wbank       <= '0;
     end else begin
         command     <= in_command;
+        in_valid_d1 <= in_valid;
+        in_valid_d2 <= in_valid_d1;
         in_data_d1  <= in_data;
         in_data_d2  <= in_data_d1;
-    end        
+        if (in_command != NOP) wbank <= ~wbank;
+    end
 end
 
 assign out_data[0] = in_data_d2;
@@ -133,6 +145,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .clk         ( clk           ),
         .reset       ( reset         ),
         .command     ( command[g%2]  ),
+        .wbank       ( wbank         ),
         .prev_data   ( out_data[g]   ),
         .folw_data   ( out_data[g+2] ),
         .out_data    ( out_data[g+1] )
@@ -146,7 +159,7 @@ logic [6:0]     w_out_data [7:0];
 
 always_comb begin
     for (int i = 0; i < 8; i += 1) begin
-        w_in_data[i]  = in_data[i];
+        w_in_data[i]  = in_data_d2[i];
         w_out_data[i] = out_data[4][i];
     end
 end
