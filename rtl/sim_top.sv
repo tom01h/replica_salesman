@@ -8,8 +8,9 @@ module sim_top
 typedef enum logic [2:0] {
     RST  = 0,
     SFTI = 1,
-    SFTO = 2,
-    FIN  = 3
+    SWAP = 2,
+    SFTO = 3,
+    FIN  = 4
 } sim_state_t;
 
 sim_state_t sim_state;
@@ -32,13 +33,19 @@ always_ff @(posedge clk) begin
                 if (count < 10) begin
                     count <= count + 1;
                 end else begin
-                    sim_state   <= SFTO;
-                    shift_start <= '1;
-                count   <= 0;
+                    sim_state   <= SWAP;
+                    count   <= 0;
                 end
             end else begin
                 shift_start <= '0;
             end    
+            SWAP: if (count < 10) begin
+                count <= count + 1;
+            end else begin
+                sim_state   <= SFTO;
+                shift_start <= '1;
+                count   <= 0;
+            end
             SFTO: if (~shift_run & ~shift_start) begin
                 sim_state   <= FIN;
                 count   <= 0;
@@ -57,8 +64,8 @@ end
 integer cycle_count;
 integer replica_count;
 
-replica_data    in_data;
-replica_command in_command;
+replica_data          in_data;
+replica_command [1:0] in_command;
 
 always_ff @(posedge clk) begin
     if (reset) begin
@@ -95,13 +102,14 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-    if (cycle_count == 0 && shift_run) in_command = PREV;
-    else                               in_command = NOP;
+    if (cycle_count == 0 && shift_run)        in_command = {PREV, PREV};
+    else if (sim_state == SWAP && count == 0) in_command = {PREV, FOLW};
+    else                                      in_command = {NOP,  NOP};
 end        
 
 replica_data    [replica_num-1:0]  folw_data;
-replica_data    [replica_num:0]    out_data;
-replica_command                    command;
+replica_data    [replica_num+1:0]  out_data;
+replica_command [1:0]              command;
 replica_data                       in_data_d1;
 replica_data                       in_data_d2;
 
@@ -124,9 +132,9 @@ for (genvar g = 0; g < replica_num; g += 1) begin
     (
         .clk         ( clk           ),
         .reset       ( reset         ),
-        .command     ( command       ),
+        .command     ( command[g%2]  ),
         .prev_data   ( out_data[g]   ),
-        .folw_data   ( folw_data[g]  ),
+        .folw_data   ( out_data[g+2] ),
         .out_data    ( out_data[g+1] )
     );
 end

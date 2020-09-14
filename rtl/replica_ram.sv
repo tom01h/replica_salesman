@@ -11,11 +11,13 @@ module replica_ram
 
 replica_data [city_num-1:0]  ram;
 logic        [city_num-1:0]  count;
-logic        [city_num-1:0]  count_d1;
-logic        [city_num-1:0]  count_d2;
-logic                        write_d1;
-logic                        write_d2;
+logic        [city_num-1:0]  count_d1, count_d2;
+logic                        write_d1, write_d2;
+logic                        sel_d1,   sel_d2;
 replica_data                 out_data_r;
+
+replica_data                 write_data;
+assign write_data = (sel_d2) ? prev_data : folw_data;
 
 always_ff @(posedge clk) begin
     out_data <= out_data_r;
@@ -24,12 +26,16 @@ end
 always_ff @(posedge clk) begin
     count_d1 <= count;
     write_d1 <= (command != NOP || count != 0);
+    if (command != NOP)
+        sel_d1   <= (command == PREV);
     count_d2 <= count_d1;
     write_d2 <= write_d1;
+    sel_d2   <= sel_d1;
 end
+
 always_ff @(posedge clk) begin
     if (write_d2) begin
-        ram[count_d2] <= prev_data;
+        ram[count_d2] <= write_data;
     end
     out_data_r <= ram[count];
 end
