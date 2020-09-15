@@ -9,6 +9,7 @@ DESIGN_SRCS = \
 replica_pkg.sv \
 sim_top.sv \
 replica_ram.sv \
+opt_route.sv \
 
 VERILATOR_CPP_TB = tb.cpp
 

@@ -91,6 +91,7 @@ end
 logic                   in_valid;
 replica_data_t          in_data;
 replica_command_t [1:0] in_command;
+opt_t [replica_num-1:0] opt;
 
 always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
@@ -112,14 +113,30 @@ always_comb begin
     else                                      in_command = {NOP,  NOP};
 end        
 
+always_comb begin
+    if(sim_state == SWAP)begin
+        for (int i = 0; i < replica_num; i += 1) begin
+            opt[i].command = OR0;
+        end
+        opt[0].K = 0; opt[0].L = 10;
+        opt[1].K = 9; opt[1].L = 10;
+        opt[2].K = 9; opt[2].L = 24;
+        opt[3].K = 9; opt[3].L = 31;
+    end else begin
+        for (int i = 0; i < replica_num; i += 1) begin
+            opt[i].command = THR;
+        end    
+    end        
+end
 replica_data_t    [replica_num-1:0]  folw_data;
+logic             [replica_num+1:0]  out_valid;
 replica_data_t    [replica_num+1:0]  out_data;
 replica_command_t [1:0]              command;
 logic                                in_valid_d1;
 logic                                in_valid_d2;
 replica_data_t                       in_data_d1;
 replica_data_t                       in_data_d2;
-logic                                wbank;
+logic                                rbank;
 
 always_ff @(posedge clk) begin
     if (reset) begin
@@ -128,29 +145,34 @@ always_ff @(posedge clk) begin
         in_valid_d2 <= '0;
         in_data_d1  <= 'x;
         in_data_d2  <= 'x;
-        wbank       <= '0;
+        rbank       <= '0;
     end else begin
         command     <= in_command;
         in_valid_d1 <= in_valid;
         in_valid_d2 <= in_valid_d1;
         in_data_d1  <= in_data;
         in_data_d2  <= in_data_d1;
-        if (in_command != NOP) wbank <= ~wbank;
+        if (in_command != NOP) rbank <= ~rbank;
     end
 end
 
-assign out_data[0] = in_data_d2;
+assign out_valid[0] = in_valid_d2;
+assign out_data[0]  = in_data_d2;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica_ram replica_ram
     (
-        .clk         ( clk           ),
-        .reset       ( reset         ),
-        .command     ( command[g%2]  ),
-        .wbank       ( wbank         ),
-        .prev_data   ( out_data[g]   ),
-        .folw_data   ( out_data[g+2] ),
-        .out_data    ( out_data[g+1] )
+        .clk         ( clk            ),
+        .reset       ( reset          ),
+        .command     ( command[g%2]   ),
+        .opt         ( opt[g]         ),
+        .rbank       ( rbank          ),
+        .prev_valid  ( out_valid[g]   ),
+        .prev_data   ( out_data[g]    ),
+        .folw_valid  ( out_valid[g+2] ),
+        .folw_data   ( out_data[g+2]  ),
+        .out_valid   ( out_valid[g+1] ),
+        .out_data    ( out_data[g+1]  )
     );
 end
 
