@@ -88,15 +88,16 @@ always_ff @(posedge clk) begin
     end
 end
         
-logic                 in_valid;
-replica_data          in_data;
-replica_command [1:0] in_command;
+logic                   in_valid;
+replica_data_t          in_data;
+replica_command_t [1:0] in_command;
 
 always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
         in_valid <= '1;
         for (int i = 0; i < 8; i += 1) begin
-            in_data[i] <= ((replica_count + cycle_count) % city_num) * 8 + i;
+            //in_data[i] <= ((replica_count + cycle_count) % city_num) * 8 + i;
+            in_data[i] <= ((cycle_count) % city_num) * 8 + i;
         end
     end else begin
         in_valid <= '0;
@@ -106,18 +107,19 @@ end
 
 always_comb begin
     if (cycle_count == 0 && shift_run)        in_command = {PREV, PREV};
-    else if (sim_state == SWAP && count == 0) in_command = {PREV, FOLW};
+    else if (sim_state == SWAP && count == 0) in_command = {SELF, SELF};
+    //else if (sim_state == SWAP && count == 0) in_command = {PREV, FOLW};
     else                                      in_command = {NOP,  NOP};
 end        
 
-replica_data    [replica_num-1:0]  folw_data;
-replica_data    [replica_num+1:0]  out_data;
-replica_command [1:0]              command;
-logic                              in_valid_d1;
-logic                              in_valid_d2;
-replica_data                       in_data_d1;
-replica_data                       in_data_d2;
-logic                              wbank;
+replica_data_t    [replica_num-1:0]  folw_data;
+replica_data_t    [replica_num+1:0]  out_data;
+replica_command_t [1:0]              command;
+logic                                in_valid_d1;
+logic                                in_valid_d2;
+replica_data_t                       in_data_d1;
+replica_data_t                       in_data_d2;
+logic                                wbank;
 
 always_ff @(posedge clk) begin
     if (reset) begin
