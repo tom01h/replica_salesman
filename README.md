@@ -7,3 +7,61 @@
 その辺の経過は [こちらのリポジトリ](https://github.com/tom01h/TIL/tree/master/MCMC-Sample-Codes) にあります。
 
 ここでは RTL 化を管理します。相変わらず管理がへたくそ…
+
+### ブロック図
+
+目指しているのはこんなの。50個並べる予定。
+
+![ブロック図](ブロック図.svg)
+
+### アルゴリズムを簡単に説明
+
+#### 簡易 or-opt 法
+
+ルート中の k 番目の都市を l 番目の都市の後ろに移動する。
+
+```
+p = ordering[k]
+ordering_fin = np.hstack((ordering[0:k], ordering[k+1:]))
+ordering_fin = np.hstack((ordering_fin[0:l],   p, ordering_fin[l:]))
+```
+
+
+
+![or-opt](or-opt.svg)
+
+#### 2-opt 法
+
+k-1 番目と k 番目の都市の接続と l-1 番目と l 番目の都市の接続を入れ替える (ただし k<l) 。
+
+```
+ordering_fin = np.hstack((ordering[0:k], ordering[k:l][::-1], ordering[l:]))
+```
+
+
+
+![2-opt](2-opt.svg)
+
+#### メトロポリス法
+
+上記の交換で提案された新しいルートと、そのもとになったルートの距離の差を Δr としたときに、
+
+```
+min(1, exp(-Δr/T))
+```
+
+の確率で新ルートを採用する。
+
+距離が短くなる時は 100% 受理、長くなるにつれて棄却率が高くなる。
+
+温度 T によっても確率が変わる (温度が高いと受理する確率が上がる) 。
+
+![metropolis](metropolis.svg)
+
+#### レプリカ交換法
+
+複数の温度でメトロポリス法を実行。隣り合う温度のルートを交換する。温度が高いほうが距離が短ければ 100% 受理、長くなるにつれて棄却率が高くなる。
+
+作成中
+
+![replica](replica.svg)
