@@ -114,6 +114,7 @@ always_comb begin
 end        
 
 always_comb begin
+    //if(0)begin
     if(sim_state == SWAP)begin
         for (int i = 0; i < replica_num; i += 1) begin
             opt[i].command = OR0;
@@ -134,8 +135,10 @@ replica_data_t    [replica_num+1:0]  out_data;
 replica_command_t [1:0]              command;
 logic                                in_valid_d1;
 logic                                in_valid_d2;
+logic                                in_valid_d3;
 replica_data_t                       in_data_d1;
 replica_data_t                       in_data_d2;
+replica_data_t                       in_data_d3;
 logic                                rbank;
 
 always_ff @(posedge clk) begin
@@ -143,21 +146,25 @@ always_ff @(posedge clk) begin
         command     <= NOP;
         in_valid_d1 <= '0;
         in_valid_d2 <= '0;
+        in_valid_d3 <= '0;
         in_data_d1  <= 'x;
         in_data_d2  <= 'x;
+        in_data_d3  <= 'x;
         rbank       <= '0;
     end else begin
         command     <= in_command;
         in_valid_d1 <= in_valid;
         in_valid_d2 <= in_valid_d1;
+        in_valid_d3 <= in_valid_d2;
         in_data_d1  <= in_data;
         in_data_d2  <= in_data_d1;
+        in_data_d3  <= in_data_d2;
         if (in_command != NOP) rbank <= ~rbank;
     end
 end
 
-assign out_valid[0] = in_valid_d2;
-assign out_data[0]  = in_data_d2;
+assign out_valid[0] = in_valid_d3;
+assign out_data[0]  = in_data_d3;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica_ram replica_ram

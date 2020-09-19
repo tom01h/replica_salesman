@@ -4,6 +4,7 @@ module opt_route
     input  logic                clk,
     input  logic                reset,
     input  replica_command_t    command,
+    input  logic                command_nop_d,
     input  opt_t                opt,
     output logic [city_num-1:0] rcount,
     input  replica_data_t       out_data_i,
@@ -16,6 +17,7 @@ assign K = opt.K;
 assign L = opt.L;
 
 logic                out_valid_r;
+logic [city_num-1:0] dcount;
 
 assign out_valid_o = out_valid_r;
 //assign out_data_o  = out_data_i;
@@ -28,16 +30,16 @@ logic [7:0]          hold;
 always_ff @(posedge clk) begin
     set_p <= '0;
     use_p <= '0;
-    if (command == NOP && rcount == 0) begin
+    if (command_nop_d && dcount == 0) begin
         for(int i = 0; i < 8; i += 1)                begin sel[i] <= i;      hold[i] <= '0; end
     end else if (opt.command == THR) begin
         for(int i = 0; i < 8; i += 1)                begin sel[i] <= i;      hold[i] <= '0; end
     end else if (opt.command == OR0) begin
-        if (rcount < K/8) begin
+        if (dcount < K/8) begin
             for(int i = 0; i < 8; i += 1)            begin sel[i] <= i;      hold[i] <= '0; end
-        end else if (rcount == K/8) begin
+        end else if (dcount == K/8) begin
             set_p <= '1;
-            if (rcount == L/8) begin
+            if (dcount == L/8) begin
                 use_p <= '1;
                 for(int i = 0;     i < K%8; i += 1)  begin sel[i] <= i;      hold[i] <= '1; end
                 for(int i = K%8;   i < L%8; i += 1)  begin sel[i] <= i+1;    hold[i] <= '1; end
@@ -47,9 +49,9 @@ always_ff @(posedge clk) begin
                 for(int i = 0;     i < K%8; i += 1)  begin sel[i] <= i;      hold[i] <= '1; end
                 for(int i = K%8;   i < 8;   i += 1)  begin sel[i] <= i+1;    hold[i] <= (i != 7); end
             end    
-        end else if (rcount < L/8) begin
+        end else if (dcount < L/8) begin
             for(int i = 0; i < 8; i += 1)            begin sel[i] <= i+1;    hold[i] <= (i != 7); end
-        end else if (rcount == L/8) begin
+        end else if (dcount == L/8) begin
             use_p <= '1;
             for(int i = 0;     i < L%8; i += 1)      begin sel[i] <= i+1;    hold[i] <= '1; end
                                                      begin sel[L%8] <= 0;    hold[L%8] <= '1; end
@@ -84,10 +86,10 @@ end
 always_ff @(posedge clk) begin
     if (reset) begin
         out_valid_r <= '0;
-    end else if (command != NOP) begin
-        out_valid_r <= ~((opt.command != THR) && (rcount == K/8));
-    end else if (rcount != '0 || hold != 0) begin
-        out_valid_r <= ~((opt.command != THR) && (rcount == K/8));
+    end else if (~command_nop_d) begin
+        out_valid_r <= ~((opt.command != THR) && (dcount == K/8));
+    end else if (dcount != '0 || hold != 0) begin
+        out_valid_r <= ~((opt.command != THR) && (dcount == K/8));
     end else begin
         out_valid_r <= '0;
     end
@@ -99,6 +101,8 @@ always_ff @(posedge clk) begin
     else if (rcount != '0)
         if (rcount + 1 != city_num)   rcount <= rcount + 1;
         else                          rcount <= '0;
+    if (reset)                        dcount <= '0;
+    else                              dcount <= rcount;
 end    
 
 endmodule
