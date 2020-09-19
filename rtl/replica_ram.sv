@@ -17,7 +17,7 @@ module replica_ram
 logic               [city_num-1:0]  rcount,     wcount;
 replica_command_t                   command_d1, command_d2, command_d3;
 logic                               wbank_d1,   wbank_d2,   wbank_d3;
-opt_t                               opt_d1,     opt_d2;
+opt_t                               opt_d1;
 
 logic                               out_valid_x;
 replica_data_t                      out_data_r;
@@ -57,7 +57,6 @@ always_ff @(posedge clk) begin
     wbank_d2   <= wbank_d1;
     wbank_d3   <= wbank_d2;
     opt_d1     <= opt;
-    opt_d2     <= opt_d1;
 end
 
 always_ff @(posedge clk) begin
@@ -73,7 +72,8 @@ opt_route opt_route
     .reset         ( reset         ),
     .command       ( command       ),
     .command_nop_d ( command_nop_d ),
-    .opt           ( opt_d2        ),
+    .opt           ( opt           ),
+    .opt_d         ( opt_d1        ),
     .rcount        ( rcount        ),
     .out_data_i    ( out_data_d    ),
     .out_valid_o   ( out_valid_x   ),

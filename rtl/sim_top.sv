@@ -91,7 +91,7 @@ end
 logic                   in_valid;
 replica_data_t          in_data;
 replica_command_t [1:0] in_command;
-opt_t [replica_num-1:0] opt;
+opt_t [replica_num-1:0] in_opt;
 
 always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
@@ -117,15 +117,20 @@ always_comb begin
     //if(0)begin
     if(sim_state == SWAP)begin
         for (int i = 0; i < replica_num; i += 1) begin
-            opt[i].command = OR0;
+            //in_opt[i].command = OR0;
+            in_opt[i].command = OR1;
         end
-        opt[0].K = 0; opt[0].L = 10;
-        opt[1].K = 9; opt[1].L = 10;
-        opt[2].K = 9; opt[2].L = 24;
-        opt[3].K = 9; opt[3].L = 31;
+        /*in_opt[0].K = 0; in_opt[0].L = 10;
+        in_opt[1].K = 9; in_opt[1].L = 10;
+        in_opt[2].K = 9; in_opt[2].L = 24;
+        in_opt[3].K = 9; in_opt[3].L = 31;/**/
+        in_opt[0].K = 25; in_opt[0].L = 6;
+        in_opt[1].K = 25; in_opt[1].L = 9;
+        in_opt[2].K = 10; in_opt[2].L = 9;
+        in_opt[3].K = 31; in_opt[3].L = 0;/**/
     end else begin
         for (int i = 0; i < replica_num; i += 1) begin
-            opt[i].command = THR;
+            in_opt[i].command = THR;
         end    
     end        
 end
@@ -133,6 +138,7 @@ replica_data_t    [replica_num-1:0]  folw_data;
 logic             [replica_num+1:0]  out_valid;
 replica_data_t    [replica_num+1:0]  out_data;
 replica_command_t [1:0]              command;
+opt_t [replica_num-1:0]              opt;
 logic                                in_valid_d1;
 logic                                in_valid_d2;
 logic                                in_valid_d3;
@@ -142,6 +148,7 @@ replica_data_t                       in_data_d3;
 logic                                rbank;
 
 always_ff @(posedge clk) begin
+    opt <= in_opt;
     if (reset) begin
         command     <= NOP;
         in_valid_d1 <= '0;
