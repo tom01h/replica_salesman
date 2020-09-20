@@ -2,7 +2,7 @@ nbeta=32
 niter=3000
 dbeta=5e0
 ncity=30
-ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
+ninit=0      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
 import sys
 import numpy as np
@@ -11,19 +11,28 @@ import math
 import matplotlib.pyplot as plt
 import pickle
 
-def calc_distance(x, ordering):
-    orderd = x[ordering]
-    r = orderd[1:] - orderd[:-1]
-    r = r * r
-    r = np.sum(r, axis=1)
-    r = np.sqrt(r)
-    return np.sum(r)
+def calc_distance_i(ordering):
+    distance = 0
+    for icity in range(0, ncity):
+        distance += distance_2[ordering[icity]][ordering[icity+1]]
+    return distance
+
+def delta_distance_i(ordering, k, l, iter):
+    if iter % 2 == 0:  # 2-opt
+        delta  = distance_2[ordering[k-1]][ordering[l-1]] + distance_2[ordering[k]][ordering[l]]
+        delta -= distance_2[ordering[k-1]][ordering[k]]   + distance_2[ordering[l-1]][ordering[l]]
+    else:              # or-opt (simple)
+        delta  = distance_2[ordering[k]][ordering[l+1]] + distance_2[ordering[k]][ordering[l]]   + distance_2[ordering[k-1]][ordering[k+1]]
+        delta -= distance_2[ordering[k-1]][ordering[k]] + distance_2[ordering[k]][ordering[k+1]] + distance_2[ordering[l]][ordering[l+1]]
+    return delta
 
 minimum_distance = 100e0
 ordering = np.arange(0, ncity+1, 1)
 ordering = np.tile(ordering, (nbeta, 1))
 beta = np.arange(1, nbeta+1, 1, dtype = np.float32) * dbeta
 distance_list = []
+distance_i = np.zeros(nbeta, dtype = np.int32)
+distance_2 = np.zeros((ncity+1, ncity+1), dtype = np.int32)
 
 if ninit == 0:
     with open("salesman.pickle", "rb") as f:
@@ -32,13 +41,19 @@ elif ninit == 1:
     with open("salesman.pickle", "rb") as f:
         x, ordering, minimum_ordering, minimum_distance, distance_list = pickle.load(f)
 elif ninit == 2:
-    x = np.random.rand(100, 2)
+    x = np.random.rand(ncity, 2)
     x = x.astype(np.float32)
     x = np.insert(x, ncity, x[0], axis=0)
 
-distance = np.zeros(nbeta, dtype = np.float32)
+for icity in range(0, ncity+1):
+    r = x[icity] - x
+    r = r * r
+    r = np.sum(r, axis=1)
+    r = np.sqrt(r)
+    distance_2[icity] = r*(2**17)
+
 for ibeta in range(0, nbeta):
-    distance[ibeta] = calc_distance(x, ordering[ibeta])
+    distance_i[ibeta] = calc_distance_i(ordering[ibeta])
 
 # Main loop #
 for iter in range(1, niter+1):
@@ -47,10 +62,14 @@ for iter in range(1, niter+1):
         while info_kl == 1:
             k = random.randrange(1, ncity)
             l = random.randrange(1, ncity)
-            if k != l:
-                if k > l and iter % 2 == 0:
-                    k, l = l, k
-                info_kl = 0
+            if iter % 2 == 0:  # 2-opt
+                if k != l:
+                    if k > l: 
+                        k, l = l, k
+                    info_kl = 0
+            else:              # or-opt (simple)
+                if k != l and k != l + 1:
+                    info_kl = 0
         # Metropolis for each replica #
         if iter % 2 == 0:  # 2-opt
             ordering_fin = np.hstack((ordering[ibeta][0:k], ordering[ibeta][k:l][::-1], ordering[ibeta][l:]))
@@ -61,26 +80,23 @@ for iter in range(1, niter+1):
                 ordering_fin = np.hstack((ordering_fin[0:l],   p, ordering_fin[l:]))
             else:
                 ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
-        distance_fin = calc_distance(x, ordering_fin)
-        action_fin = distance_fin * beta[ibeta]
-        action_init = distance[ibeta] * beta[ibeta]
+        delta_distance = delta_distance_i(ordering[ibeta], k, l, iter)
         # Metropolis test #
         metropolis = random.random()
-        if math.exp(action_init - action_fin) > metropolis:
-            distance[ibeta] = distance_fin
+        if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
+            distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
     # Exchange replicas #
     for ibeta in range(iter % 2, nbeta-1, 2):
-        action_init  = distance[ibeta] * beta[ibeta]   + distance[ibeta+1] * beta[ibeta+1]
-        action_fin   = distance[ibeta] * beta[ibeta+1] + distance[ibeta+1] * beta[ibeta]
+        action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
         # Metropolis test #
         metropolis = random.random()
-        if math.exp(action_init - action_fin) > metropolis:
-            ordering[ibeta], ordering[ibeta+1] = ordering[ibeta+1].copy(), ordering[ibeta].copy()
-            distance[ibeta], distance[ibeta+1] = distance[ibeta+1],        distance[ibeta]
+        if math.exp(action/(2**17)) > metropolis:
+            ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
+            distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
     # data output #
     if iter % 50 == 0:
-        distance_32 = distance[31]
+        distance_32 = distance_i[31]/(2**17)
         if distance_32 < minimum_distance:
             minimum_distance = distance_32
             minimum_ordering = ordering[nbeta-1].copy()
