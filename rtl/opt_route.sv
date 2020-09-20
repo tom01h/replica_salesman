@@ -75,9 +75,9 @@ always_ff @(posedge clk) begin
                 for(int i = K%8+1; i < 8;     i += 1)begin sel[i] <= i;      hold[i] <= '0; end
             end else begin
                                                      begin sel[0] <= 0;      hold[0] <= '1; end
-                for(int i = 1;     i < L%8; i += 1)  begin sel[i] <= i;      hold[i] <= '0; end
-                if(L%8 != 0)                         begin sel[L%8] <= 0;    hold[L%8] <= '0; end
-                for(int i = L%8+1; i < 8;   i += 1)  begin sel[i] <= i-1;    hold[i] <= '0; end
+                for(int i = 1;     i < L%8+1; i += 1)begin sel[i] <= i;      hold[i] <= '0; end
+                if(L%8+1 != 0)                       begin sel[L%8+1] <= 0;  hold[L%8+1] <= '0; end
+                for(int i = L%8+2; i < 8;     i += 1)begin sel[i] <= i-1;    hold[i] <= '0; end
             end
         end else if (dcount < K/8) begin
                                                      begin sel[0] <= 7;      hold[0] <= '1; end
@@ -106,7 +106,7 @@ end
 always_ff @(posedge clk) begin
     if(set_p) p <= out_data_i[K%8];
     hold_d1 <= hold;
-    if((dcount == L/8) && (opt_d.command == OR1)) hold_d1[L%8] <= '1;
+    if((dcount == L/8) && (opt_d.command == OR1)) hold_d1[L%8+1] <= '1;
     for(int i = 0; i < 8; i += 1) begin
         if (opt_d.command == OR0)
             if(~set_p & use_p & i == L%8) out_data_hold[i] <= p;
