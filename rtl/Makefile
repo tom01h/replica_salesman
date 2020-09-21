@@ -27,7 +27,7 @@ VERILATOR_OPTS = \
 	--Mdir $(SIM_DIR) \
 	--trace
 
-VERILATOR_MAKE_OPTS = OPT="-O3 -I ../../../"
+VERILATOR_MAKE_OPTS = OPT="-O3"
 
 default: $(SIM_DIR)/$(PREFIX)
 
