@@ -4,6 +4,7 @@ module top
     input  logic             clk,
     input  logic             reset,
     input  replica_command_t command,
+    input  logic             set_opt,
     input  opt_command       opt_com,
     input  logic [6:0]       K,
     input  logic [6:0]       L,
@@ -37,10 +38,29 @@ always_ff @(posedge clk)begin
     end
 end
 
-opt_t opt;
-assign opt.command = opt_com;
-assign opt.K = K;
-assign opt.L = L;
+opt_t  [31:0] opt;
+integer opt_count;
+logic opt_run;
+always_ff @(posedge clk)begin
+    if(set_opt)begin
+        opt[opt_count].command <= opt_com;
+        opt[opt_count].K       <= K;
+        opt[opt_count].L       <= L;
+        opt_count              <= opt_count + 1;
+        opt_run                <= 1;
+    end else if(command!=0)begin
+        opt_count              <= 0;
+    end else if(opt_run)begin
+        opt_count              <= opt_count + 1;
+        if(opt_count == 5)begin
+            opt_run            <= '0;
+            opt_count          <= 0;
+            for(int i=0; i<32; i++)begin
+                opt[i].command <= 0;
+            end
+        end
+    end
+end
 
 logic             [33:0]  ordering_valid;
 replica_data_t    [33:0]  ordering_data;
@@ -57,7 +77,7 @@ for (genvar g = 0; g < 32; g += 1) begin
         .clk         ( clk                 ),
         .reset       ( reset               ),
         .command     ( command_d1          ),
-        .opt         ( opt                 ),
+        .opt         ( opt[g]              ),
         .rbank       ( rbank               ),
         .prev_valid  ( ordering_valid[g]   ),
         .prev_data   ( ordering_data[g]    ),

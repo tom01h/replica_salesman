@@ -70,6 +70,7 @@ set_ordering (PyObject *self, PyObject *args){
   eval();
   verilator_top->ordering_in_valid = 0;
 
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -111,11 +112,53 @@ get_ordering (PyObject *self, PyObject *args) {
 }
 
 static PyObject *
+set_opt (PyObject *self, PyObject *args) {
+  int command, K, L;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "iii", &command, &K, &L))
+    return NULL;
+
+  verilator_top->set_opt = 1;
+  verilator_top->opt_com = command;
+  verilator_top->K = K;
+  verilator_top->L = L;
+  eval();
+  verilator_top->set_opt = 0;
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject *
+run_opt (PyObject *self, PyObject *args) {
+  int command;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &command))
+    return NULL;
+
+  eval();
+  verilator_top->command = command;
+  eval();
+  verilator_top->command = 0;
+  eval();
+  eval();
+  eval();
+  eval();
+  eval();
+  eval();
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject *
 fin (PyObject *self, PyObject *args) {
 
   eval();eval();eval();eval();eval();
   delete verilator_top;
   tfp->close();
+  
+  Py_INCREF(Py_None);
   return Py_None;
 }
 
@@ -123,7 +166,9 @@ fin (PyObject *self, PyObject *args) {
 static PyMethodDef TopMethods[] = {
   {"set_ordering", (PyCFunction)set_ordering, METH_VARARGS, "top1: set_ordering"},
   {"get_ordering", (PyCFunction)get_ordering, METH_VARARGS, "top2: get_ordering"},
-  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top3: fin"},
+  {"set_opt",      (PyCFunction)set_opt,      METH_VARARGS, "top3: set_opt"},
+  {"run_opt",      (PyCFunction)run_opt,      METH_VARARGS, "top4: run_opt"},
+  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top5: fin"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

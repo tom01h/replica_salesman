@@ -1,8 +1,8 @@
 nbeta=32
-niter=0
+niter=3000
 dbeta=5e0
 ncity=30
-ninit=1      # 0 -> read cities; 1 -> continue; 2 -> random config.
+ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
 import sys
 import numpy as np
@@ -90,14 +90,26 @@ for iter in range(1, niter+1):
         if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
+            if 0:  # 2-opt
+                opt_com = 1
+            else:              # or-opt (simple)
+                if k < l:
+                    opt_com = 2
+                else:
+                    opt_com = 3
+        else:
+            opt_com = 0
+        top.set_opt(opt_com, k, l)
     # Exchange replicas #
     for ibeta in range(iter % 2, nbeta-1, 2):
         action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
         # Metropolis test #
         metropolis = random.random()
-        if math.exp(action/(2**17)) > metropolis:
+        #if math.exp(action/(2**17)) > metropolis:
+        if 0:
             ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
             distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
+    top.run_opt(1)
     # data output #
     if iter % 50 == 0 or iter == niter:
         distance_32 = distance_i[31]/(2**17)
@@ -111,12 +123,15 @@ rtl_ordering = np.zeros_like(ordering)
 for ibeta in reversed(range(0, nbeta)):
     rtl_ordering[ibeta] = top.get_ordering(ncity+1)
 
+np.set_printoptions(linewidth = 100)
 if(np.array_equal(ordering, rtl_ordering)):
     print("OK")
 else:
     for ibeta in range(0, nbeta):
-        print(ordering[ibeta])
-        print(rtl_ordering[ibeta])
+        if(not np.array_equal(ordering[ibeta], rtl_ordering[ibeta])):
+            print("NG", ibeta)
+            print(ordering[ibeta])
+            print(rtl_ordering[ibeta])
 
 # save point #
 top.fin()

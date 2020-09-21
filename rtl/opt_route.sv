@@ -13,9 +13,12 @@ module opt_route
     output replica_data_t       out_data_o
 );
 
-logic [6:0]   K, L;
+logic [6:0]   K, L, K8, L8;
 assign K = opt_d.K;
 assign L = opt_d.L;
+assign K8 = K % 8;
+assign L8 = (opt_d.command == OR0)? L % 8 :
+            (opt_d.command == OR1)? (L+1) % 8 : L % 8 ;
 
 logic                out_valid_r;
 logic [city_num-1:0] dcount;
@@ -43,50 +46,50 @@ always_ff @(posedge clk) begin
             set_p <= '1;
             if (dcount == L/8) begin
                 use_p <= '1;
-                for(int i = 0;     i < K%8; i += 1)  begin sel[i] <= i;      hold[i] <= '1; end
-                for(int i = K%8;   i < L%8; i += 1)  begin sel[i] <= i+1;    hold[i] <= '1; end
-                                                     begin sel[L%8] <= K%8;  hold[L%8] <= '1; end
-                for(int i = L%8+1; i < 8;   i += 1)  begin sel[i] <= i;      hold[i] <= '1; end
+                for(int i = 0;    i < K8; i += 1)  begin sel[i] <= i;    hold[i] <= '1; end
+                for(int i = K8;   i < L8; i += 1)  begin sel[i] <= i+1;  hold[i] <= '1; end
+                                                   begin sel[L8] <= K8;  hold[L8] <= '1; end
+                for(int i = L8+1; i < 8;  i += 1)  begin sel[i] <= i;    hold[i] <= '1; end
             end else begin
-                for(int i = 0;     i < K%8; i += 1)  begin sel[i] <= i;      hold[i] <= '1; end
-                for(int i = K%8;   i < 8;   i += 1)  begin sel[i] <= i+1;    hold[i] <= (i != 7); end
+                for(int i = 0;    i < K8; i += 1)  begin sel[i] <= i;    hold[i] <= '1; end
+                for(int i = K8;   i < 8;  i += 1)  begin sel[i] <= i+1;  hold[i] <= (i != 7); end
             end    
         end else if (dcount < L/8) begin
-            for(int i = 0; i < 8; i += 1)            begin sel[i] <= i+1;    hold[i] <= (i != 7); end
+            for(int i = 0; i < 8; i += 1)          begin sel[i] <= i+1;  hold[i] <= (i != 7); end
         end else if (dcount == L/8) begin
             use_p <= '1;
-            for(int i = 0;     i < L%8; i += 1)      begin sel[i] <= i+1;    hold[i] <= '1; end
-                                                     begin sel[L%8] <= 0;    hold[L%8] <= '1; end
-            for(int i = L%8+1; i < 8;   i += 1)      begin sel[i] <= i;      hold[i] <= '1; end
+            for(int i = 0;    i < L8; i += 1)      begin sel[i] <= i+1;  hold[i] <= '1; end
+                                                   begin sel[L8] <= 0;   hold[L8] <= '1; end
+            for(int i = L8+1; i < 8;  i += 1)      begin sel[i] <= i;    hold[i] <= '1; end
         end else begin
-            for(int i = 0; i < 8; i += 1)            begin sel[i] <= i;      hold[i] <= '1; end
+            for(int i = 0; i < 8; i += 1)          begin sel[i] <= i;    hold[i] <= '1; end
         end
     end else if (opt_d.command == OR1) begin
         if (~command_nop_d) begin
         end else if (or1_ini) begin
             set_p <= '1;
-        end else if (dcount < L/8) begin
-            for(int i = 0; i < 8; i += 1)            begin sel[i] <= i;      hold[i] <= '0; end
-        end else if (dcount == L/8) begin
+        end else if (dcount < (L+1)/8) begin
+            for(int i = 0; i < 8; i += 1)          begin sel[i] <= i;      hold[i] <= '0; end
+        end else if (dcount == (L+1)/8) begin
             use_p <= '1;
             if (dcount == K/8) begin
-                for(int i = 0;     i < L%8+1; i += 1)begin sel[i] <= i;      hold[i] <= '0; end
-                for(int i = L%8+1; i < K%8+1; i += 1)begin sel[i] <= i-1;    hold[i] <= '0; end
-                for(int i = K%8+1; i < 8;     i += 1)begin sel[i] <= i;      hold[i] <= '0; end
+                for(int i = 0;    i < L8;  i += 1) begin sel[i] <= i;      hold[i] <= '0; end
+                for(int i = L8;   i < K8+1;i += 1) begin sel[i] <= i-1;    hold[i] <= '0; end
+                for(int i = K8+1; i < 8;   i += 1) begin sel[i] <= i;      hold[i] <= '0; end
             end else begin
-                                                     begin sel[0] <= 0;      hold[0] <= '1; end
-                for(int i = 1;     i < L%8+1; i += 1)begin sel[i] <= i;      hold[i] <= '0; end
-                if(L%8+1 != 0)                       begin sel[L%8+1] <= 0;  hold[L%8+1] <= '0; end
-                for(int i = L%8+2; i < 8;     i += 1)begin sel[i] <= i-1;    hold[i] <= '0; end
+                                                   begin sel[0] <= 0;      hold[0] <= '1; end
+                for(int i = 1;    i < L8;  i += 1) begin sel[i] <= i;      hold[i] <= '0; end
+                if(L8 != 0)                        begin sel[L8] <= 0;     hold[L8] <= '0; end
+                for(int i = L8+1; i < 8;   i += 1) begin sel[i] <= i-1;    hold[i] <= '0; end
             end
         end else if (dcount < K/8) begin
-                                                     begin sel[0] <= 7;      hold[0] <= '1; end
-            for(int i = 1; i < 8; i += 1)            begin sel[i] <= i-1;    hold[i] <= '0; end
+                                                   begin sel[0] <= 7;      hold[0] <= '1; end
+            for(int i = 1; i < 8; i += 1)          begin sel[i] <= i-1;    hold[i] <= '0; end
         end else if (dcount == K/8) begin
-            for(int i = 0;     i < K%8+1; i += 1)    begin sel[i] <= i-1;    hold[i] <= '0; end
-            for(int i = K%8+1; i < 8;     i += 1)    begin sel[i] <= i;      hold[i] <= '0; end
+            for(int i = 0;    i < K8+1; i += 1)    begin sel[i] <= i-1;    hold[i] <= '0; end
+            for(int i = K8+1; i < 8;    i += 1)    begin sel[i] <= i;      hold[i] <= '0; end
         end else begin
-            for(int i = 0; i < 8; i += 1)            begin sel[i] <= i;      hold[i] <= '0; end
+            for(int i = 0; i < 8; i += 1)          begin sel[i] <= i;      hold[i] <= '0; end
         end
     end
 end    
@@ -104,15 +107,15 @@ always_comb begin
 end
 
 always_ff @(posedge clk) begin
-    if(set_p) p <= out_data_i[K%8];
-    hold_d1 <= hold;
-    if((dcount == L/8) && (opt_d.command == OR1)) hold_d1[L%8+1] <= '1;
+    if(set_p) p <= out_data_i[K8];
+    hold_d1 <= hold[7:0];
+    if((dcount == (L+1)/8) && (opt_d.command == OR1)) hold_d1[L8] <= '1;
     for(int i = 0; i < 8; i += 1) begin
         if (opt_d.command == OR0)
-            if(~set_p & use_p & i == L%8) out_data_hold[i] <= p;
+            if(~set_p & use_p & i == L8)  out_data_hold[i] <= p;
             else                          out_data_hold[i] <= out_data_i[sel[i]];
         else if (opt_d.command == OR1)
-            if(set_p)                     out_data_hold[i] <= out_data_i[K%8];
+            if(set_p)                     out_data_hold[i] <= out_data_i[K8];
             else if(hold[0])              out_data_hold[i] <= out_data_i[7];
     end
 end
@@ -122,7 +125,9 @@ always_ff @(posedge clk) begin
         out_valid_r <= '0;
     end else if (~command_nop_d) begin
         out_valid_r <= ~((opt_d.command == OR0) && (dcount == K/8) || or1_ini);
-    end else if (dcount != '0 || hold != 0 || set_p) begin
+    end else if (hold != 0) begin
+        out_valid_r <= '1;
+    end else if (dcount != '0 || set_p) begin
         out_valid_r <= ~((opt_d.command == OR0) && (dcount == K/8) || or1_ini);
     end else begin
         out_valid_r <= '0;
@@ -134,8 +139,8 @@ always_ff @(posedge clk) begin
     else if (command != NOP)
         if(opt.command == OR1) begin  rcount <= opt.K/8;      or1_ini <= '1; end
         else                          rcount <= rcount + 1;
-    else if (or1_ini && rcount != 0)  rcount <= '0;
-    else if (or1_ini)         begin   rcount <= rcount + 1;   or1_ini <= '0; end
+    else if (or1_ini && ~command_nop_d)  rcount <= '0;
+    else if (or1_ini)          begin  rcount <= rcount + 1;   or1_ini <= '0; end
     else if (rcount != '0)
         if (rcount + 1 != city_num)   rcount <= rcount + 1;
         else                          rcount <= '0;
