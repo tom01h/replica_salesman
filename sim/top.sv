@@ -13,39 +13,43 @@ module top
     output logic [7:0][7:0]  ordering_out_data
 
 );
-    logic             rbank;
-    replica_command_t command_d1;
-    logic             in_valid_d1,   in_valid_d2,   in_valid_d3;
-    replica_data_t    in_data_d1,    in_data_d2,    in_data_d3;
 
-    always_ff @(posedge clk)begin
-        if(reset)begin
-            rbank <= '0;
-            command_d1 <= '0;
-        end else begin    
-            if(command != 0)begin
-                rbank <= ~rbank;
-            end
-            command_d1 <= command;
-            in_valid_d1 <= ordering_in_valid;
-            for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_in_data[7-i][6:0];
-            in_valid_d2 <= in_valid_d1;
-            in_data_d2 <= in_data_d1;
-            in_valid_d3 <= in_valid_d2;
-            in_data_d3 <= in_data_d2;
+logic             rbank;
+replica_command_t command_d1;
+logic             in_valid_d1,   in_valid_d2,   in_valid_d3;
+replica_data_t    in_data_d1,    in_data_d2,    in_data_d3;
+
+always_ff @(posedge clk)begin
+    if(reset)begin
+        rbank <= '0;
+        command_d1 <= '0;
+    end else begin    
+        if(command != 0)begin
+            rbank <= ~rbank;
         end
+        command_d1 <= command;
+        in_valid_d1 <= ordering_in_valid;
+        for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_in_data[7-i][6:0];
+        in_valid_d2 <= in_valid_d1;
+        in_data_d2 <= in_data_d1;
+        in_valid_d3 <= in_valid_d2;
+        in_data_d3 <= in_data_d2;
     end
-    
-    opt_t opt;
-    assign opt.command = opt_com;
-    assign opt.K = K;
-    assign opt.L = L;
+end
+
+opt_t opt;
+assign opt.command = opt_com;
+assign opt.K = K;
+assign opt.L = L;
 
 logic             [33:0]  ordering_valid;
 replica_data_t    [33:0]  ordering_data;
 
- assign ordering_valid[0] = in_valid_d3;
- assign ordering_data[0]  = in_data_d3;
+assign ordering_valid[0] = in_valid_d3;
+assign ordering_data[0]  = in_data_d3;
+
+always_comb
+    for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[32][7-i][6:0];
 
 for (genvar g = 0; g < 32; g += 1) begin
     replica_ram replica_ram

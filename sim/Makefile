@@ -19,7 +19,7 @@ VERILATOR_OPTS = \
 	--prefix $(PREFIX) \
 	--trace \
 
-VERILATOR_MAKE_OPTS = OPT_FAST="-O3"
+VERILATOR_MAKE_OPTS = OPT_FAST="-O2"
 
 DESIGN_SRCS = \
 ../rtl/replica_pkg.sv \

@@ -42,6 +42,7 @@ set_ordering (PyObject *self, PyObject *args){
     return NULL;
   // リストのサイズ取得
   size = PyList_Size(p_list);
+
   verilator_top->command = 2;
   eval();
   verilator_top->command = 0;
@@ -55,7 +56,6 @@ set_ordering (PyObject *self, PyObject *args){
     }
     verilator_top->ordering_in_data = val;
     eval();
-    printf("%016lx\n", val);
   }
   val = 0;
   for(int j = 0; j < size%8; j++){
@@ -69,10 +69,45 @@ set_ordering (PyObject *self, PyObject *args){
   verilator_top->ordering_in_data = val;
   eval();
   verilator_top->ordering_in_valid = 0;
-  printf("%016lx\n", val);
-  printf("\n");
 
   return Py_None;
+}
+
+static PyObject *
+get_ordering (PyObject *self, PyObject *args) {
+  int size;
+  long val, inthert_val;
+  PyObject *list;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &size))
+    return NULL;
+
+  verilator_top->command = 2;
+  eval();
+  verilator_top->command = 0;
+  eval();
+  eval();
+  list = PyList_New(0);
+  for(int i = 0; i < size/8; i++){
+    eval();
+    val = verilator_top->ordering_out_data;
+    for(int j = 0; j < 8; j++){
+      inthert_val = val / 0x100000000000000L;
+      val %= 0x100000000000000L;
+      val *= 0x100;
+      PyList_Append(list, Py_BuildValue("i", inthert_val));
+    }
+  }
+  eval();
+  val = verilator_top->ordering_out_data;
+  for(int j = 0; j < size%8; j++){
+    inthert_val = val / 0x100000000000000L;
+    val %= 0x100000000000000L;
+    val *= 0x100;
+    PyList_Append(list, Py_BuildValue("i", inthert_val));
+  }
+
+  return list;
 }
 
 static PyObject *
@@ -87,7 +122,8 @@ fin (PyObject *self, PyObject *args) {
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
   {"set_ordering", (PyCFunction)set_ordering, METH_VARARGS, "top1: set_ordering"},
-  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top2: fin"},
+  {"get_ordering", (PyCFunction)get_ordering, METH_VARARGS, "top2: get_ordering"},
+  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top3: fin"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

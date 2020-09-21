@@ -1,8 +1,8 @@
 nbeta=32
-niter=3
+niter=0
 dbeta=5e0
 ncity=30
-ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
+ninit=1      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
 import sys
 import numpy as np
@@ -46,7 +46,7 @@ elif ninit == 2:
     x = x.astype(np.float32)
     x = np.insert(x, ncity, x[0], axis=0)
 
-for ibeta in range(0, nbeta):
+for ibeta in reversed(range(0, nbeta)):
     top.set_ordering(ordering[ibeta].tolist())
 
 for icity in range(0, ncity+1):
@@ -106,6 +106,17 @@ for iter in range(1, niter+1):
             minimum_ordering = ordering[nbeta-1].copy()
         distance_list = np.append(distance_list, minimum_distance)
         print(iter, distance_32, minimum_distance)
+
+rtl_ordering = np.zeros_like(ordering)
+for ibeta in reversed(range(0, nbeta)):
+    rtl_ordering[ibeta] = top.get_ordering(ncity+1)
+
+if(np.array_equal(ordering, rtl_ordering)):
+    print("OK")
+else:
+    for ibeta in range(0, nbeta):
+        print(ordering[ibeta])
+        print(rtl_ordering[ibeta])
 
 # save point #
 top.fin()
