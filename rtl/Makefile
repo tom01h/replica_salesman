@@ -25,7 +25,10 @@ VERILATOR_OPTS = \
 	--top-module $(TOP) \
 	--prefix $(PREFIX) \
 	--Mdir $(SIM_DIR) \
-	--trace
+	--trace \
+	--trace-params \
+	--trace-structs \
+	--trace-underscore \
 
 VERILATOR_MAKE_OPTS = OPT="-O3"
 

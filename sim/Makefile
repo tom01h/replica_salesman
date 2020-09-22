@@ -18,6 +18,9 @@ VERILATOR_OPTS = \
 	--top-module $(TOP) \
 	--prefix $(PREFIX) \
 	--trace \
+	--trace-params \
+	--trace-structs \
+	--trace-underscore \
 
 VERILATOR_MAKE_OPTS = OPT_FAST="-O2"
 
