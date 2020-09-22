@@ -3,6 +3,8 @@ module top
 (
     input  logic             clk,
     input  logic             reset,
+    input  logic             run_command,
+    input  logic             set_command,
     input  replica_command_t command,
     input  logic             set_opt,
     input  opt_command       opt_com,
@@ -15,20 +17,34 @@ module top
 
 );
 
-logic             rbank;
-replica_command_t command_d1;
-logic             in_valid_d1,   in_valid_d2,   in_valid_d3;
-replica_data_t    in_data_d1,    in_data_d2,    in_data_d3;
+logic                    rbank;
+replica_command_t [31:0] command_l, command_d1;
+logic                    in_valid_d1,   in_valid_d2,   in_valid_d3;
+replica_data_t           in_data_d1,    in_data_d2,    in_data_d3;
+integer com_count;
 
 always_ff @(posedge clk)begin
     if(reset)begin
         rbank <= '0;
         command_d1 <= '0;
-    end else begin    
-        if(command != 0)begin
+        com_count  <= '0;
+    end else if(set_command)begin
+        command_l[com_count] <= command;
+        com_count  <= com_count + 1;
+    end else begin
+        if(run_command)begin
             rbank <= ~rbank;
-        end
-        command_d1 <= command;
+            if(command != 0)begin
+                for(int i = 0; i < 32; i++)begin
+                    command_d1[i] <= command;
+                end
+            end else begin
+                com_count  <= '0;
+                command_d1 <= command_l;
+            end    
+        end else begin
+            command_d1 <= '0;
+        end    
         in_valid_d1 <= ordering_in_valid;
         for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_in_data[7-i][6:0];
         in_valid_d2 <= in_valid_d1;
@@ -48,7 +64,7 @@ always_ff @(posedge clk)begin
         opt[opt_count].L       <= L;
         opt_count              <= opt_count + 1;
         opt_run                <= 1;
-    end else if(command!=0)begin
+    end else if(run_command)begin
         opt_count              <= 0;
     end else if(opt_run)begin
         opt_count              <= opt_count + 1;
@@ -76,7 +92,7 @@ for (genvar g = 0; g < 32; g += 1) begin
     (
         .clk         ( clk                 ),
         .reset       ( reset               ),
-        .command     ( command_d1          ),
+        .command     ( command_d1[g]       ),
         .opt         ( opt[g]              ),
         .rbank       ( rbank               ),
         .prev_valid  ( ordering_valid[g]   ),

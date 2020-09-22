@@ -101,15 +101,23 @@ for iter in range(1, niter+1):
             opt_com = 0
         top.set_opt(opt_com, k, l)
     # Exchange replicas #
+    if(iter%2):
+        top.set_command(1)
     for ibeta in range(iter % 2, nbeta-1, 2):
         action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
         # Metropolis test #
         metropolis = random.random()
-        #if math.exp(action/(2**17)) > metropolis:
-        if 0:
+        if math.exp(action/(2**17)) > metropolis:
             ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
             distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
-    top.run_opt(1)
+            top.set_command(3)
+            top.set_command(2)
+        else:
+            top.set_command(1)
+            top.set_command(1)
+    if(iter%2):
+        top.set_command(1)
+    top.run_opt(0)
     # data output #
     if iter % 50 == 0 or iter == niter:
         distance_32 = distance_i[31]/(2**17)

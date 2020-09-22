@@ -43,9 +43,10 @@ set_ordering (PyObject *self, PyObject *args){
   // リストのサイズ取得
   size = PyList_Size(p_list);
 
+  verilator_top->run_command = 1;
   verilator_top->command = 2;
   eval();
-  verilator_top->command = 0;
+  verilator_top->run_command = 0;
   verilator_top->ordering_in_valid = 1;
   for(int i = 0; i < size/8; i++){
     val = 0;
@@ -83,9 +84,10 @@ get_ordering (PyObject *self, PyObject *args) {
   if(!PyArg_ParseTuple(args, "i", &size))
     return NULL;
 
+  verilator_top->run_command = 1;
   verilator_top->command = 2;
   eval();
-  verilator_top->command = 0;
+  verilator_top->run_command = 0;
   eval();
   eval();
   list = PyList_New(0);
@@ -130,6 +132,22 @@ set_opt (PyObject *self, PyObject *args) {
 }
 
 static PyObject *
+set_command (PyObject *self, PyObject *args) {
+  int command;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &command))
+    return NULL;
+
+  verilator_top->set_command = 1;
+  verilator_top->command = command;
+  eval();
+  verilator_top->set_command = 0;
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject *
 run_opt (PyObject *self, PyObject *args) {
   int command;
   // 送られてきた値をパース
@@ -137,9 +155,10 @@ run_opt (PyObject *self, PyObject *args) {
     return NULL;
 
   eval();
+  verilator_top->run_command = 1;
   verilator_top->command = command;
   eval();
-  verilator_top->command = 0;
+  verilator_top->run_command = 0;
   eval();
   eval();
   eval();
@@ -167,8 +186,9 @@ static PyMethodDef TopMethods[] = {
   {"set_ordering", (PyCFunction)set_ordering, METH_VARARGS, "top1: set_ordering"},
   {"get_ordering", (PyCFunction)get_ordering, METH_VARARGS, "top2: get_ordering"},
   {"set_opt",      (PyCFunction)set_opt,      METH_VARARGS, "top3: set_opt"},
-  {"run_opt",      (PyCFunction)run_opt,      METH_VARARGS, "top4: run_opt"},
-  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top5: fin"},
+  {"set_command",  (PyCFunction)set_command,  METH_VARARGS, "top4: set_command"},
+  {"run_opt",      (PyCFunction)run_opt,      METH_VARARGS, "top5: run_opt"},
+  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top6: fin"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };
