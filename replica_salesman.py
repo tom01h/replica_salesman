@@ -2,7 +2,7 @@ nbeta=32
 niter=3000
 dbeta=5e0
 ncity=30
-ninit=0      # 0 -> read cities; 1 -> continue; 2 -> random config.
+ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
 import sys
 import numpy as np
@@ -60,14 +60,16 @@ for iter in range(1, niter+1):
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
-            k = random.randrange(1, ncity)
-            l = random.randrange(1, ncity)
             if iter % 2 == 0:  # 2-opt
+                k = random.randrange(1, ncity+1)
+                l = random.randrange(1, ncity+1)
                 if k != l:
-                    if k > l: 
+                    if k > l:
                         k, l = l, k
                     info_kl = 0
             else:              # or-opt (simple)
+                k = random.randrange(1, ncity)
+                l = random.randrange(0, ncity)
                 if k != l and k != l + 1:
                     info_kl = 0
         # Metropolis for each replica #
