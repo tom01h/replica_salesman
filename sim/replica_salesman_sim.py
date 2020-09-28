@@ -19,7 +19,7 @@ def calc_distance_i(ordering):
     return distance
 
 def delta_distance_i(ordering, k, l, iter):
-    if 0:  # 2-opt
+    if iter % 2 == 0:  # 2-opt
         delta  = distance_2[ordering[k-1]][ordering[l-1]] + distance_2[ordering[k]][ordering[l]]
         delta -= distance_2[ordering[k-1]][ordering[k]]   + distance_2[ordering[l-1]][ordering[l]]
     else:              # or-opt (simple)
@@ -64,7 +64,7 @@ for iter in range(1, niter+1):
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
-            if 0:  # 2-opt
+            if iter % 2 == 0:  # 2-opt
                 k = random.randrange(1, ncity+1)
                 l = random.randrange(1, ncity+1)
                 if k != l:
@@ -77,7 +77,7 @@ for iter in range(1, niter+1):
                 if k != l and k != l + 1:
                     info_kl = 0
         # Metropolis for each replica #
-        if 0:  # 2-opt
+        if iter % 2 == 0:  # 2-opt
             ordering_fin = np.hstack((ordering[ibeta][0:k], ordering[ibeta][k:l][::-1], ordering[ibeta][l:]))
         else:              # or-opt (simple)
             p = ordering[ibeta][k]
@@ -92,7 +92,7 @@ for iter in range(1, niter+1):
         if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
-            if 0:  # 2-opt
+            if iter % 2 == 0:  # 2-opt
                 opt_com = 1
             else:              # or-opt (simple)
                 if k < l:

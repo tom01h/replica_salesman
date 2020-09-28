@@ -9,9 +9,9 @@ typedef enum logic [1:0] {
 
 typedef enum logic [1:0] { // K, L の対象関係は以下のみサポート
     THR = 2'b00,
-    // TWO = 2'b01,           // 2-opt  K < L
+    TWO = 2'b01,           // 2-opt  K < L
     OR0 = 2'b10,           // or-opt K < L
-    OR1 = 2'b11            // or-opt K > L
+    OR1 = 2'b11            // or-opt K > L + 1
 } opt_command;
 
 typedef struct packed {
@@ -23,8 +23,9 @@ typedef struct packed {
 typedef logic [7:0][6:0] replica_data_t;
 
 //parameter city_num = 13;     // 100 <= 8*13
-//parameter replica_num = 32;
+//parameter replica_num = 200;
 parameter city_num = 4;     // 30 <= 8*4
+//parameter replica_num = 32;
 parameter replica_num = 4;
 
 endpackage : replica_pkg

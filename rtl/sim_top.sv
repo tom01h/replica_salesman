@@ -118,16 +118,21 @@ always_comb begin
     if(sim_state == SWAP)begin
         for (int i = 0; i < replica_num; i += 1) begin
             //in_opt[i].command = OR0;
-            in_opt[i].command = OR1;
+            //in_opt[i].command = OR1;
+            in_opt[i].command = TWO;
         end
         /*in_opt[0].K = 0; in_opt[0].L = 10;
         in_opt[1].K = 9; in_opt[1].L = 10;
         in_opt[2].K = 9; in_opt[2].L = 24;
         in_opt[3].K = 9; in_opt[3].L = 31;/**/
-        in_opt[0].K = 25; in_opt[0].L = 6;
+        /*in_opt[0].K = 25; in_opt[0].L = 6;
         in_opt[1].K = 25; in_opt[1].L = 9;
         in_opt[2].K = 11; in_opt[2].L = 9;
         in_opt[3].K = 31; in_opt[3].L = 0;/**/
+        in_opt[0].K = 8; in_opt[0].L = 27;
+        in_opt[1].K = 9; in_opt[1].L = 20;
+        in_opt[2].K = 2; in_opt[2].L = 19;
+        in_opt[3].K = 9; in_opt[3].L = 14;/**/
     end else begin
         for (int i = 0; i < replica_num; i += 1) begin
             in_opt[i].command = THR;

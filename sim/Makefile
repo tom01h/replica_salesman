@@ -17,7 +17,7 @@ VERILATOR_OPTS = \
 	--Mdir $(SIM_DIR) \
 	--top-module $(TOP) \
 	--prefix $(PREFIX) \
-	--trace \
+	#--trace \
 	--trace-params \
 	--trace-structs \
 	--trace-underscore \
@@ -41,6 +41,7 @@ $(SIM_DIR)/Vtop: $(DESIGN_SRCS) $(VERILATOR_CPP_TB)
 	cp /usr/local/share/verilator/include/verilated.cpp .
 	cp /usr/local/share/verilator/include/verilated_vcd_c.cpp .
 	python3 setup.py build_ext -I/usr/local/share/verilator/include -i
+	#python3 setup_trace.py build_ext -I/usr/local/share/verilator/include -i
 
 clean:
 	rm -rf build/ sim/ tmp.vcd *.so cp verilated.cpp verilated_vcd_c.cpp
