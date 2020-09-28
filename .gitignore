@@ -3,3 +3,9 @@ rtl/work
 rtl/*.vcd
 rtl/*.wlf
 rtl/transcript
+sim/sim
+sim/build
+sim/*.vcd
+sim/*.wlf
+sim/transcript
+sim/verilated*

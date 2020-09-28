@@ -1,4 +1,4 @@
-or-opt とレプリカ交換のできる ordering メモリが Verilog で動きました。
+or-opt と 2-opt とレプリカ交換のできる ordering メモリが Verilog で動きました。
 
 ## RTL シミュレーションを実行する
 
