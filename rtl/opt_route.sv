@@ -1,16 +1,16 @@
 module opt_route
     import replica_pkg::*;
 (
-    input  logic                clk,
-    input  logic                reset,
-    input  replica_command_t    command,
-    input  logic                command_nop_d,
-    input  opt_t                opt,
-    input  opt_t                opt_d,
-    output logic [city_num-1:0] rcount,
-    input  replica_data_t       out_data_i,
-    output logic                out_valid_o,
-    output replica_data_t       out_data_o
+    input  logic                    clk,
+    input  logic                    reset,
+    input  exchange_command_t       command,
+    input  logic                    command_nop_d,
+    input  opt_t                    opt,
+    input  opt_t                    opt_d,
+    output logic [city_num_div-1:0] rcount,
+    input  replica_data_t           out_data_i,
+    output logic                    out_valid_o,
+    output replica_data_t           out_data_o
 );
 
 logic [6:0]   K, L, K8, L8;
@@ -21,8 +21,8 @@ assign L8 = (opt_d.command == OR0)? L % 8 :
             (opt_d.command == OR1)? (L+1) % 8 :
             (opt_d.command == TWO)? (L-1) % 8 : L % 8 ;
 
-logic                out_valid_r;
-logic [city_num-1:0] dcount;
+logic                    out_valid_r;
+logic [city_num_div-1:0] dcount;
 
 assign out_valid_o = out_valid_r;
 //assign out_data_o  = out_data_i;
@@ -195,22 +195,22 @@ end
 
 always_ff @(posedge clk) begin
     rev_d <= rev;
-    if (reset)                       begin  rcount <= '0;           or1_ini <= '0; rev <= '0; end
+    if (reset)                       begin   rcount <= '0;           or1_ini <= '0; rev <= '0; end
     else if (command != NOP)
         if (opt.command == TWO && rcount == opt.K/8  && rcount != (opt.L-1)/8 && ~rev) begin
-                                            rcount <= (opt.L-1)/8;                 rev <= '1; end
-        else if(opt.command == OR1)  begin  rcount <= opt.K/8;      or1_ini <= '1; end
-        else                                rcount <= rcount + 1;
-    else if (or1_ini && ~command_nop_d)     rcount <= '0;
-    else if (or1_ini)                begin  rcount <= rcount + 1;   or1_ini <= '0; end
+                                             rcount <= (opt.L-1)/8;                 rev <= '1; end
+        else if(opt.command == OR1)  begin   rcount <= opt.K/8;      or1_ini <= '1; end
+        else                                 rcount <= rcount + 1;
+    else if (or1_ini && ~command_nop_d)      rcount <= '0;
+    else if (or1_ini)                begin   rcount <= rcount + 1;   or1_ini <= '0; end
     else if (rcount != '0 || rev)
         if (opt.command == TWO && rcount == opt.K/8  && rcount != (opt.L-1)/8 && ~rev) begin
-                                            rcount <= (opt.L-1)/8;                 rev <= '1; end
-        else if (opt.command == TWO && rcount == opt.K/8 && rev) begin
-                                            rcount <= (opt.L-1)/8;                 rev <= '0; end
-        else if (rev)                       rcount <= rcount - 1;
-        else if (rcount + 1 != city_num)    rcount <= rcount + 1;
-        else                                rcount <= '0;
+                                             rcount <= (opt.L-1)/8;                 rev <= '1; end
+        else if (opt.command == TWO && rcount == opt.K/8 && rev)
+                                     begin   rcount <= (opt.L-1)/8;                 rev <= '0; end
+        else if (rev)                        rcount <= rcount - 1;
+        else if (rcount + 1 != city_num_div) rcount <= rcount + 1;
+        else                                 rcount <= '0;
 
     if (reset) dcount <= '0;
     else       dcount <= rcount;

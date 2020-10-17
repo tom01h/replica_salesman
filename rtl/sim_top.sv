@@ -5,12 +5,15 @@ module sim_top
     input  logic           reset
 );
 
+parameter replica_num = 4;
+
 typedef enum logic [2:0] {
     RST  = 0,
     SFTI = 1,
-    SWAP = 2,
-    SFTO = 3,
-    FIN  = 4
+    DIST = 2,
+    SWAP = 3,
+    SFTO = 4,
+    FIN  = 5
 } sim_state_t;
 
 sim_state_t sim_state;
@@ -24,39 +27,51 @@ always_ff @(posedge clk) begin
         shift_start <= '0;
     end else begin
         case(sim_state)
-            RST: begin
-                sim_state   <= SFTI;
-                shift_start <= '1;
-                count   <= 0;
-            end
-            SFTI: if (~shift_run & ~shift_start) begin
-                if (count < 10) begin
+            RST:
+                begin
+                    sim_state   <= SFTI;
+                    shift_start <= '1;
+                    count   <= 0;
+                end
+            SFTI:
+                if (shift_start) begin
+                    shift_start <= '0;
+                end else if(~shift_run) begin
+                    if (count < 10) begin
+                        count <= count + 1;
+                    end else begin
+                        sim_state   <= DIST;
+                        count   <= 0;
+                    end
+                end    
+            DIST:
+                if (count < 20) begin
                     count <= count + 1;
                 end else begin
                     sim_state   <= SWAP;
                     count   <= 0;
                 end
-            end else begin
-                shift_start <= '0;
-            end    
-            SWAP: if (count < 10) begin
-                count <= count + 1;
-            end else begin
-                sim_state   <= SFTO;
-                shift_start <= '1;
-                count   <= 0;
-            end
-            SFTO: if (~shift_run & ~shift_start) begin
-                sim_state   <= FIN;
-                count   <= 0;
-            end else begin
-                shift_start <= '0;
-            end    
-            FIN: if (count < 10) begin
-                count <= count + 1;
-            end else begin
-                $finish();
-            end    
+            SWAP:
+                if (count < 10) begin
+                    count <= count + 1;
+                end else begin
+                    sim_state   <= SFTO;
+                    shift_start <= '1;
+                    count   <= 0;
+                end
+            SFTO:
+                if (shift_start) begin
+                    shift_start <= '0;
+                end else if (~shift_run) begin
+                    sim_state   <= FIN;
+                    count   <= 0;
+                end    
+            FIN:
+                if (count < 10) begin
+                    count <= count + 1;
+                end else begin
+                    $finish();
+                end    
         endcase
     end
 end    
@@ -74,7 +89,7 @@ always_ff @(posedge clk) begin
         replica_count <= 0;
         shift_run     <= '1;
     end else if (shift_run) begin
-        if ((cycle_count + 1) % city_num == 0) begin
+        if ((cycle_count + 1) % city_num_div == 0) begin
             cycle_count   <= 0;
             if ((replica_count + 1) < replica_num) begin
                 replica_count <= replica_count + 1;
@@ -87,18 +102,19 @@ always_ff @(posedge clk) begin
         end
     end
 end
-        
-logic                   in_valid;
-replica_data_t          in_data;
-replica_command_t [1:0] in_command;
-opt_t [replica_num-1:0] in_opt;
+
+logic                    in_valid;
+replica_data_t           in_data;
+exchange_command_t [1:0] in_exchange;
+distance_command_t       in_distance;
+opt_t [replica_num-1:0]  in_opt;
 
 always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
         in_valid <= '1;
         for (int i = 0; i < 8; i += 1) begin
-            //in_data[i] <= ((replica_count + cycle_count) % city_num) * 8 + i;
-            in_data[i] <= ((cycle_count) % city_num) * 8 + i;
+            //in_data[i] <= ((replica_count + cycle_count) % city_num_div) * 8 + i;
+            in_data[i] <= ((cycle_count) % city_num_div) * 8 + i;
         end
     end else begin
         in_valid <= '0;
@@ -107,15 +123,36 @@ always_ff @(posedge clk) begin
 end
 
 always_comb begin
-    if (cycle_count == 0 && shift_run)        in_command = {PREV, PREV};
-    else if (sim_state == SWAP && count == 0) in_command = {SELF, SELF};
-    //else if (sim_state == SWAP && count == 0) in_command = {PREV, FOLW};
-    else                                      in_command = {NOP,  NOP};
+    if (cycle_count == 0 && shift_run)        in_exchange = {PREV, PREV};
+    else if (sim_state == SWAP && count == 0) in_exchange = {SELF, SELF};
+    //else if (sim_state == SWAP && count == 0) in_exchange = {PREV, FOLW};
+    else                                      in_exchange = {NOP,  NOP};
+    if (sim_state == DIST && (in_opt[0].command == OR0 || in_opt[0].command == OR1))
+        case(count)
+            0:                                in_distance = {K  , ZERO};
+            1:                                in_distance = {KM , MNS};
+            2:                                in_distance = {KP , PLS};
+            3:                                in_distance = {K  , MNS};
+            4:                                in_distance = {L  , PLS};
+            5:                                in_distance = {LP , MNS};
+            6:                                in_distance = {K  , PLS};
+            default:                          in_distance = {K  , DNOP};
+        endcase
+    else if (sim_state == DIST && in_opt[0].command == TWO)
+        case(count) 
+            0:                                in_distance = {K  , ZERO};
+            1:                                in_distance = {KM , MNS};
+            2:                                in_distance = {LM , PLS};
+            3:                                in_distance = {L  , MNS};
+            4:                                in_distance = {K  , PLS};
+            default:                          in_distance = {K  , DNOP};
+        endcase
+    else                                      in_distance = {K  , DNOP};
 end        
 
 always_comb begin
     //if(0)begin
-    if(sim_state == SWAP)begin
+    if(sim_state == DIST || sim_state == SWAP)begin
         for (int i = 0; i < replica_num; i += 1) begin
             //in_opt[i].command = OR0;
             //in_opt[i].command = OR1;
@@ -139,10 +176,12 @@ always_comb begin
         end    
     end        
 end
+
 replica_data_t    [replica_num-1:0]  folw_data;
 logic             [replica_num+1:0]  out_valid;
 replica_data_t    [replica_num+1:0]  out_data;
-replica_command_t [1:0]              command;
+exchange_command_t [1:0]             c_exchange;
+distance_command_t                   c_distance;
 opt_t [replica_num-1:0]              opt;
 logic                                in_valid_d1;
 logic                                in_valid_d2;
@@ -155,7 +194,8 @@ logic                                rbank;
 always_ff @(posedge clk) begin
     opt <= in_opt;
     if (reset) begin
-        command     <= NOP;
+        c_exchange  <= NOP;
+        c_distance  <= '0;
         in_valid_d1 <= '0;
         in_valid_d2 <= '0;
         in_valid_d3 <= '0;
@@ -164,14 +204,15 @@ always_ff @(posedge clk) begin
         in_data_d3  <= 'x;
         rbank       <= '0;
     end else begin
-        command     <= in_command;
+        c_exchange  <= in_exchange;
+        c_distance  <= in_distance;
         in_valid_d1 <= in_valid;
         in_valid_d2 <= in_valid_d1;
         in_valid_d3 <= in_valid_d2;
         in_data_d1  <= in_data;
         in_data_d2  <= in_data_d1;
         in_data_d3  <= in_data_d2;
-        if (in_command != NOP) rbank <= ~rbank;
+        if (in_exchange != NOP) rbank <= ~rbank;
     end
 end
 
@@ -179,19 +220,20 @@ assign out_valid[0] = in_valid_d3;
 assign out_data[0]  = in_data_d3;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
-    replica_ram replica_ram
+    replica replica
     (
-        .clk         ( clk            ),
-        .reset       ( reset          ),
-        .command     ( command[g%2]   ),
-        .opt         ( opt[g]         ),
-        .rbank       ( rbank          ),
-        .prev_valid  ( out_valid[g]   ),
-        .prev_data   ( out_data[g]    ),
-        .folw_valid  ( out_valid[g+2] ),
-        .folw_data   ( out_data[g+2]  ),
-        .out_valid   ( out_valid[g+1] ),
-        .out_data    ( out_data[g+1]  )
+        .clk         ( clk             ),
+        .reset       ( reset           ),
+        .c_exchange  ( c_exchange[g%2] ),
+        .c_distance  ( c_distance      ),
+        .opt         ( opt[g]          ),
+        .rbank       ( rbank           ),
+        .prev_valid  ( out_valid[g]    ),
+        .prev_data   ( out_data[g]     ),
+        .folw_valid  ( out_valid[g+2]  ),
+        .folw_data   ( out_data[g+2]   ),
+        .out_valid   ( out_valid[g+1]  ),
+        .out_data    ( out_data[g+1]   )
     );
 end
 

@@ -1,11 +1,38 @@
 package replica_pkg;
 
+//parameter city_num = 100;
+
+parameter city_num = 30;
+parameter city_num_log = $clog2(city_num);
+parameter city_num_div = (city_num + 7) / 8;
+
 typedef enum logic [1:0] {
     NOP  = 2'b00,
     SELF = 2'b01,          // レプリカ交換なし
     PREV = 2'b10,          // 逆温度が小さいレプリカと交換
     FOLW = 2'b11           // 逆温度が大きいレプリカと交換
-} replica_command_t;
+} exchange_command_t;
+
+typedef enum logic [2:0] {
+    K  = 3'b000,
+    KP = 3'b001,
+    KM = 3'b010,
+    L  = 3'b100,
+    LP = 3'b101,
+    LM = 3'b110
+} distance_select_t;
+
+typedef enum logic [1:0] {
+    DNOP = 2'b00,
+    ZERO = 2'b01,
+    PLS  = 2'b10,
+    MNS  = 2'b11
+} distance_op_t;
+
+typedef struct packed {
+    distance_select_t select;
+    distance_op_t     op;
+} distance_command_t;
 
 typedef enum logic [1:0] { // K, L の対象関係は以下のみサポート
     THR = 2'b00,
@@ -21,11 +48,5 @@ typedef struct packed {
 } opt_t;
 
 typedef logic [7:0][6:0] replica_data_t;
-
-//parameter city_num = 13;     // 100 <= 8*13
-//parameter replica_num = 200;
-parameter city_num = 4;     // 30 <= 8*4
-//parameter replica_num = 32;
-parameter replica_num = 4;
 
 endpackage : replica_pkg
