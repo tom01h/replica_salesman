@@ -1,4 +1,4 @@
-module replica_ram
+module exchange
     import replica_pkg::*;
 (
     input  logic              clk,

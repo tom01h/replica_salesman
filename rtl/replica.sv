@@ -23,7 +23,7 @@ distance distance
     .opt        ( opt        )
 );    
 
-replica_ram replica_ram
+exchange exchange
 (
     .clk        ( clk        ),
     .reset      ( reset      ),
