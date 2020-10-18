@@ -7,7 +7,7 @@ module opt_route
     input  logic                    command_nop_d,
     input  opt_t                    opt,
     input  opt_t                    opt_d,
-    output logic [city_num_div-1:0] rcount,
+    output logic [city_div_log-1:0] rcount,
     input  replica_data_t           out_data_i,
     output logic                    out_valid_o,
     output replica_data_t           out_data_o
@@ -22,7 +22,7 @@ assign L8 = (opt_d.command == OR0)? L % 8 :
             (opt_d.command == TWO)? (L-1) % 8 : L % 8 ;
 
 logic                    out_valid_r;
-logic [city_num_div-1:0] dcount;
+logic [city_div_log-1:0] dcount;
 
 assign out_valid_o = out_valid_r;
 //assign out_data_o  = out_data_i;
@@ -209,7 +209,7 @@ always_ff @(posedge clk) begin
         else if (opt.command == TWO && rcount == opt.K/8 && rev)
                                      begin   rcount <= (opt.L-1)/8;                 rev <= '0; end
         else if (rev)                        rcount <= rcount - 1;
-        else if (rcount + 1 != city_num_div) rcount <= rcount + 1;
+        else if (rcount + 1 != city_div)     rcount <= rcount + 1;
         else                                 rcount <= '0;
 
     if (reset) dcount <= '0;

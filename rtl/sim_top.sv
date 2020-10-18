@@ -25,10 +25,13 @@ always_ff @(posedge clk) begin
     if (reset) begin
         sim_state <= RST;
         shift_start <= '0;
+        count   <= 0;
     end else begin
         case(sim_state)
             RST:
-                begin
+                if (count < (city_num+1)*city_num/2) begin
+                    count <= count + 1;
+                end else begin
                     sim_state   <= SFTI;
                     shift_start <= '1;
                     count   <= 0;
@@ -76,6 +79,20 @@ always_ff @(posedge clk) begin
     end
 end    
 
+logic                      distance_write;
+logic [city_num_log*2-1:0] distance_w_addr;
+distance_data_t            distance_w_data;
+
+always_ff @(posedge clk) begin
+    if(sim_state == RST && ~reset)begin
+        distance_write <= '1;
+        distance_w_addr <= count;
+        distance_w_data <= count;
+    end else begin
+        distance_write <= '0;
+    end    
+end
+    
 integer cycle_count;
 integer replica_count;
 
@@ -89,7 +106,7 @@ always_ff @(posedge clk) begin
         replica_count <= 0;
         shift_run     <= '1;
     end else if (shift_run) begin
-        if ((cycle_count + 1) % city_num_div == 0) begin
+        if ((cycle_count + 1) % city_div == 0) begin
             cycle_count   <= 0;
             if ((replica_count + 1) < replica_num) begin
                 replica_count <= replica_count + 1;
@@ -113,8 +130,8 @@ always_ff @(posedge clk) begin
     if (sim_state == SFTI && shift_run) begin
         in_valid <= '1;
         for (int i = 0; i < 8; i += 1) begin
-            //in_data[i] <= ((replica_count + cycle_count) % city_num_div) * 8 + i;
-            in_data[i] <= ((cycle_count) % city_num_div) * 8 + i;
+            //in_data[i] <= ((replica_count + cycle_count) % city_div) * 8 + i;
+            in_data[i] <= ((cycle_count) % city_div) * 8 + i;
         end
     end else begin
         in_valid <= '0;
@@ -222,18 +239,21 @@ assign out_data[0]  = in_data_d3;
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica replica
     (
-        .clk         ( clk             ),
-        .reset       ( reset           ),
-        .c_exchange  ( c_exchange[g%2] ),
-        .c_distance  ( c_distance      ),
-        .opt         ( opt[g]          ),
-        .rbank       ( rbank           ),
-        .prev_valid  ( out_valid[g]    ),
-        .prev_data   ( out_data[g]     ),
-        .folw_valid  ( out_valid[g+2]  ),
-        .folw_data   ( out_data[g+2]   ),
-        .out_valid   ( out_valid[g+1]  ),
-        .out_data    ( out_data[g+1]   )
+        .clk             ( clk             ),
+        .reset           ( reset           ),
+        .c_exchange      ( c_exchange[g%2] ),
+        .c_distance      ( c_distance      ),
+        .opt             ( opt[g]          ),
+        .rbank           ( rbank           ),
+        .distance_write  ( distance_write  ),
+        .distance_w_addr ( distance_w_addr ),
+        .distance_w_data ( distance_w_data ),
+        .prev_valid      ( out_valid[g]    ),
+        .prev_data       ( out_data[g]     ),
+        .folw_valid      ( out_valid[g+2]  ),
+        .folw_data       ( out_data[g+2]   ),
+        .out_valid       ( out_valid[g+1]  ),
+        .out_data        ( out_data[g+1]   )
     );
 end
 

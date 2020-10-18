@@ -4,7 +4,8 @@ package replica_pkg;
 
 parameter city_num = 30;
 parameter city_num_log = $clog2(city_num);
-parameter city_num_div = (city_num + 7) / 8;
+parameter city_div = (city_num + 7) / 8;
+parameter city_div_log = $clog2(city_div);
 
 typedef enum logic [1:0] {
     NOP  = 2'b00,
@@ -48,5 +49,6 @@ typedef struct packed {
 } opt_t;
 
 typedef logic [7:0][6:0] replica_data_t;
+typedef logic [17:0] distance_data_t;
 
 endpackage : replica_pkg

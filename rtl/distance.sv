@@ -1,14 +1,17 @@
 module distance
     import replica_pkg::*;
 (
-    input  logic                    clk,
-    input  logic                    reset,
-    input  distance_command_t       command,
-    input  opt_t                    opt,
-    output logic                    ordering_read,
-    output logic [city_num_log-1:0] ordering_addr,
-    // input  logic [city_num_log-1:0] ordering_data
-    output logic signed [20:0]      delta_distance
+    input  logic                      clk,
+    input  logic                      reset,
+    input  distance_command_t         command,
+    input  opt_t                      opt,
+    input  logic                      distance_write,
+    input  logic [city_num_log*2-1:0] distance_w_addr,
+    input  distance_data_t            distance_w_data,
+    output logic                      ordering_read,
+    output logic [city_num_log-1:0]   ordering_addr,
+    input  logic [city_num_log-1:0]   ordering_data,
+    output logic signed [20:0]        delta_distance
 );
 
 distance_op_t            command_op_i;
@@ -26,10 +29,8 @@ always_ff @(posedge clk) begin
     endcase
 end
 
-logic [city_num_log-1:0] ordering_data; // dummy
 distance_op_t            command_op;
 always_ff @(posedge clk) begin
-    ordering_data <= ordering_addr; // dummy
     command_op <= command_op_i;
 end
 
@@ -65,22 +66,21 @@ always_ff @(posedge clk) begin
     command_op_d2 <= command_op_d;
 end
 
-logic [city_num_log*2-1:0] distance_addr;
+logic [city_num_log*2-1:0] distance_r_addr;
 logic                      distance_read;
 assign distance_read = (command_op_d2 != DNOP) && (command_op_d2 != ZERO);
 always_ff @(posedge clk) begin
-    if(is_gt_d) distance_addr <= ordering_data2_d/2 + offset;
-    else        distance_addr <= ordering_data2_l/2 + offset;
+    if(is_gt_d) distance_r_addr <= ordering_data2_d/2 + offset;
+    else        distance_r_addr <= ordering_data2_l/2 + offset;
 end
 
-logic [17:0]        distance_data;
+distance_data_t     distance_data;
 distance_op_t       command_op_d3;
 always_ff @(posedge clk) begin
-    distance_data <= distance_addr;  // dummy
     command_op_d3 <= command_op_d2;
 end
 
-logic [17:0]        distance_data_l;
+distance_data_t     distance_data_l;
 distance_op_t       command_op_d4;
 always_ff @(posedge clk) begin
     distance_data_l <= distance_data;
@@ -95,6 +95,15 @@ always_ff @(posedge clk) begin
     endcase
 end
 
-// logic [(city_num-1)*city_num/2][17:0] ram;
+distance_data_t [(city_num+1)*city_num/2-1:0] ram;
+logic [city_num_log*2-1:0] distance_addr;
+assign distance_addr = (distance_write) ? distance_w_addr : distance_r_addr;
+
+always_ff @(posedge clk) begin
+    if(distance_write)
+        ram[distance_addr] <= distance_w_data;
+    else
+        distance_data <= ram[distance_addr];
+end
 
 endmodule
