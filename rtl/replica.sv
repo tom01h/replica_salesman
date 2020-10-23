@@ -15,7 +15,8 @@ module replica
     input  logic                      folw_valid,
     input  replica_data_t             folw_data,
     output logic                      out_valid,
-    output replica_data_t             out_data
+    output replica_data_t             out_data,
+    output logic signed [20:0]        delta_distance
 );
 
 logic                    ordering_read;
@@ -33,7 +34,8 @@ distance distance
     .distance_w_data ( distance_w_data ),
     .ordering_read   ( ordering_read   ),
     .ordering_addr   ( ordering_addr   ),
-    .ordering_data   ( ordering_data   )
+    .ordering_data   ( ordering_data   ),
+    .delta_distance  ( delta_distance  )
 );    
 
 exchange exchange

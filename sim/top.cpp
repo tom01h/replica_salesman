@@ -49,7 +49,7 @@ set_ordering (PyObject *self, PyObject *args){
   size = PyList_Size(p_list);
 
   verilator_top->run_command = 1;
-  verilator_top->command = 2;
+  verilator_top->c_exchange = 2;
   eval();
   verilator_top->run_command = 0;
   verilator_top->ordering_in_valid = 1;
@@ -90,7 +90,7 @@ get_ordering (PyObject *self, PyObject *args) {
     return NULL;
 
   verilator_top->run_command = 1;
-  verilator_top->command = 2;
+  verilator_top->c_exchange = 2;
   eval();
   verilator_top->run_command = 0;
   eval();
@@ -116,6 +116,52 @@ get_ordering (PyObject *self, PyObject *args) {
   }
 
   return list;
+}
+
+static PyObject*
+set_distance (PyObject *self, PyObject *args){
+  PyObject *p_list, *p_value;
+  int size;
+  long val;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "iO!", &size, &PyList_Type, &p_list))
+    return NULL;
+
+  verilator_top->distance_w_addr = 0;
+  verilator_top->distance_write = 1;
+  for(int i=1; i<size; i++){
+    for(int j=0; j<i; j++){
+      p_value = PyList_GetItem(p_list, i*size + j);
+      val = PyLong_AsLong(p_value);
+      //printf("%d\n", val);
+      verilator_top->distance_w_data = val;
+      eval();
+      verilator_top->distance_w_addr += 1;
+    }
+  }
+  verilator_top->distance_write = 0;
+  
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject *
+delta_distance (PyObject *self, PyObject *args) {
+  int command, K, L;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "iii", &command, &K, &L))
+    return NULL;
+
+  verilator_top->run_distance = 1;
+  verilator_top->opt_com = command;
+  verilator_top->K = K;
+  verilator_top->L = L;
+  eval();
+  verilator_top->run_distance = 0;
+  for(int c = 0; c < 20; c++){eval();}
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 static PyObject *
@@ -144,7 +190,7 @@ set_command (PyObject *self, PyObject *args) {
     return NULL;
 
   verilator_top->set_command = 1;
-  verilator_top->command = command;
+  verilator_top->c_exchange = command;
   eval();
   verilator_top->set_command = 0;
 
@@ -161,7 +207,7 @@ run_opt (PyObject *self, PyObject *args) {
 
   eval();
   verilator_top->run_command = 1;
-  verilator_top->command = command;
+  verilator_top->c_exchange = command;
   eval();
   verilator_top->run_command = 0;
   eval();
@@ -189,12 +235,14 @@ fin (PyObject *self, PyObject *args) {
 
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
-  {"set_ordering", (PyCFunction)set_ordering, METH_VARARGS, "top1: set_ordering"},
-  {"get_ordering", (PyCFunction)get_ordering, METH_VARARGS, "top2: get_ordering"},
-  {"set_opt",      (PyCFunction)set_opt,      METH_VARARGS, "top3: set_opt"},
-  {"set_command",  (PyCFunction)set_command,  METH_VARARGS, "top4: set_command"},
-  {"run_opt",      (PyCFunction)run_opt,      METH_VARARGS, "top5: run_opt"},
-  {"fin",          (PyCFunction)fin,          METH_NOARGS,  "top6: fin"},
+  {"set_ordering",    (PyCFunction)set_ordering,    METH_VARARGS, "top1: set_ordering"},
+  {"get_ordering",    (PyCFunction)get_ordering,    METH_VARARGS, "top2: get_ordering"},
+  {"set_distance",    (PyCFunction)set_distance,    METH_VARARGS, "top3: set_distance"},
+  {"delta_distance",  (PyCFunction)delta_distance,  METH_VARARGS, "top4: delta_distance"},
+  {"set_opt",         (PyCFunction)set_opt,         METH_VARARGS, "top5: set_opt"},
+  {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top6: set_command"},
+  {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top7: run_opt"},
+  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top8: fin"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

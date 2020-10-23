@@ -19,10 +19,10 @@ always_ff @(posedge clk) begin
     ordering_read <= (command.op != DNOP);
     command_op_i <= command.op;
     case(command.select)
-        K  : ordering_addr <= opt.K;
+        KN : ordering_addr <= opt.K;
         KP : ordering_addr <= opt.K + 1;
         KM : ordering_addr <= opt.K - 1;
-        L  : ordering_addr <= opt.L;
+        LN : ordering_addr <= opt.L;
         LP : ordering_addr <= opt.L + 1;
         LM : ordering_addr <= opt.L - 1;
         default : ordering_addr <= opt.K;

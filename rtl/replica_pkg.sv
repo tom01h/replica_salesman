@@ -15,10 +15,10 @@ typedef enum logic [1:0] {
 } exchange_command_t;
 
 typedef enum logic [2:0] {
-    K  = 3'b000,
+    KN = 3'b000,
     KP = 3'b001,
     KM = 3'b010,
-    L  = 3'b100,
+    LN = 3'b100,
     LP = 3'b101,
     LM = 3'b110
 } distance_select_t;

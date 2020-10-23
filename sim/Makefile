@@ -17,17 +17,21 @@ VERILATOR_OPTS = \
 	--Mdir $(SIM_DIR) \
 	--top-module $(TOP) \
 	--prefix $(PREFIX) \
-	#--trace \
+	--trace \
 	--trace-params \
 	--trace-structs \
 	--trace-underscore \
+    --trace-depth 2 \
+
 
 VERILATOR_MAKE_OPTS = OPT_FAST="-O2"
 
 DESIGN_SRCS = \
 ../rtl/replica_pkg.sv \
 top.sv \
-../rtl/replica_ram.sv \
+../rtl/replica.sv \
+../rtl/distance.sv \
+../rtl/exchange.sv \
 ../rtl/opt_route.sv \
 
 VERILATOR_CPP_TB = tb.cpp
@@ -40,8 +44,8 @@ $(SIM_DIR)/Vtop: $(DESIGN_SRCS) $(VERILATOR_CPP_TB)
 	$(VERILATOR) $(VERILATOR_OPTS) $(DESIGN_SRCS) --exe ../$(VERILATOR_CPP_TB)
 	cp /usr/local/share/verilator/include/verilated.cpp .
 	cp /usr/local/share/verilator/include/verilated_vcd_c.cpp .
-	python3 setup.py build_ext -I/usr/local/share/verilator/include -i
-	#python3 setup_trace.py build_ext -I/usr/local/share/verilator/include -i
+	#python3 setup.py build_ext -I/usr/local/share/verilator/include -i
+	python3 setup_trace.py build_ext -I/usr/local/share/verilator/include -i
 
 clean:
 	rm -rf build/ sim/ tmp.vcd *.so cp verilated.cpp verilated_vcd_c.cpp

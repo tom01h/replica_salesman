@@ -1,5 +1,6 @@
 nbeta=32
-niter=3000
+#niter=3000
+niter=1
 dbeta=5e0
 ncity=30
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
@@ -55,6 +56,7 @@ for icity in range(0, ncity+1):
     r = np.sum(r, axis=1)
     r = np.sqrt(r)
     distance_2[icity] = r*(2**17)
+top.set_distance(ncity+1, distance_2.ravel().tolist())
 
 for ibeta in range(0, nbeta):
     distance_i[ibeta] = calc_distance_i(ordering[ibeta])
@@ -87,18 +89,20 @@ for iter in range(1, niter+1):
             else:
                 ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
         delta_distance = delta_distance_i(ordering[ibeta], k, l, iter)
+        print("delta_distance", ibeta, delta_distance)  ################################
+        if iter % 2 == 0:  # 2-opt
+            opt_com = 1
+        else:              # or-opt (simple)
+            if k < l:
+                opt_com = 2
+            else:
+                opt_com = 3
+        top.delta_distance(opt_com, k, l)
         # Metropolis test #
         metropolis = random.random()
         if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
-            if iter % 2 == 0:  # 2-opt
-                opt_com = 1
-            else:              # or-opt (simple)
-                if k < l:
-                    opt_com = 2
-                else:
-                    opt_com = 3
         else:
             opt_com = 0
         top.set_opt(opt_com, k, l)

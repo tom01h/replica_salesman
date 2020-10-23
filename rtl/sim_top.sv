@@ -146,25 +146,25 @@ always_comb begin
     else                                      in_exchange = {NOP,  NOP};
     if (sim_state == DIST && (in_opt[0].command == OR0 || in_opt[0].command == OR1))
         case(count)
-            0:                                in_distance = {K  , ZERO};
+            0:                                in_distance = {KN , ZERO};
             1:                                in_distance = {KM , MNS};
             2:                                in_distance = {KP , PLS};
-            3:                                in_distance = {K  , MNS};
-            4:                                in_distance = {L  , PLS};
+            3:                                in_distance = {KN , MNS};
+            4:                                in_distance = {LN , PLS};
             5:                                in_distance = {LP , MNS};
-            6:                                in_distance = {K  , PLS};
-            default:                          in_distance = {K  , DNOP};
+            6:                                in_distance = {KN , PLS};
+            default:                          in_distance = {KN , DNOP};
         endcase
     else if (sim_state == DIST && in_opt[0].command == TWO)
         case(count) 
-            0:                                in_distance = {K  , ZERO};
+            0:                                in_distance = {KN , ZERO};
             1:                                in_distance = {KM , MNS};
             2:                                in_distance = {LM , PLS};
-            3:                                in_distance = {L  , MNS};
-            4:                                in_distance = {K  , PLS};
-            default:                          in_distance = {K  , DNOP};
+            3:                                in_distance = {LN , MNS};
+            4:                                in_distance = {KN , PLS};
+            default:                          in_distance = {KN , DNOP};
         endcase
-    else                                      in_distance = {K  , DNOP};
+    else                                      in_distance = {KN , DNOP};
 end        
 
 always_comb begin
