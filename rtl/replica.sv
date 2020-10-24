@@ -4,24 +4,29 @@ module replica
     input  logic                      clk,
     input  logic                      reset,
     input  exchange_command_t         c_exchange,
+    input  exchange_command_t         c_metropolis,
     input  distance_command_t         c_distance,
     input  opt_t                      opt,
     input  logic                      rbank,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
-    input  logic                      prev_valid,
-    input  replica_data_t             prev_data,
-    input  logic                      folw_valid,
-    input  replica_data_t             folw_data,
-    output logic                      out_valid,
-    output replica_data_t             out_data,
-    output logic signed [20:0]        delta_distance
+    input  total_data_t               prev_dis_data,
+    input  total_data_t               folw_dis_data,
+    output total_data_t               out_dis_data,
+    input  logic                      prev_ord_valid,
+    input  replica_data_t             prev_ord_data,
+    input  logic                      folw_ord_valid,
+    input  replica_data_t             folw_ord_data,
+    output logic                      out_ord_valid,
+    output replica_data_t             out_ord_data
 );
 
-logic                    ordering_read;
-logic [city_num_log-1:0] ordering_addr;
-logic [city_num_log-1:0] ordering_data;
+logic                      ordering_read;
+logic [city_num_log-1:0]   ordering_addr;
+logic [city_num_log-1:0]   ordering_data;
+
+delata_data_t              delta_distance;
 
 distance distance
 (
@@ -38,22 +43,34 @@ distance distance
     .delta_distance  ( delta_distance  )
 );    
 
+metropolis metropolis
+(
+    .clk             ( clk             ),
+    .reset           ( reset           ),
+    .command         ( c_metropolis    ),
+    .opt             ( opt             ),
+    .delta_distance  ( delta_distance  ),
+    .prev_data       ( prev_dis_data   ),
+    .folw_data       ( folw_dis_data   ),
+    .out_data        ( out_dis_data    )
+);
+
 exchange exchange
 (
-    .clk           ( clk           ),
-    .reset         ( reset         ),
-    .command       ( c_exchange    ),
-    .opt           ( opt           ),
-    .rbank         ( rbank         ),
-    .prev_valid    ( prev_valid    ),
-    .prev_data     ( prev_data     ),
-    .folw_valid    ( folw_valid    ),
-    .folw_data     ( folw_data     ),
-    .out_valid     ( out_valid     ),
-    .out_data      ( out_data      ),
-    .ordering_read ( ordering_read ),
-    .ordering_addr ( ordering_addr ),
-    .ordering_data ( ordering_data )
+    .clk           ( clk              ),
+    .reset         ( reset            ),
+    .command       ( c_exchange       ),
+    .opt           ( opt              ),
+    .rbank         ( rbank            ),
+    .prev_valid    ( prev_ord_valid   ),
+    .prev_data     ( prev_ord_data    ),
+    .folw_valid    ( folw_ord_valid   ),
+    .folw_data     ( folw_ord_data    ),
+    .out_valid     ( out_ord_valid    ),
+    .out_data      ( out_ord_data     ),
+    .ordering_read ( ordering_read    ),
+    .ordering_addr ( ordering_addr    ),
+    .ordering_data ( ordering_data    )
 
 );
 

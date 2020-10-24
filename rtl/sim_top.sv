@@ -9,11 +9,13 @@ parameter replica_num = 4;
 
 typedef enum logic [2:0] {
     RST  = 0,
-    SFTI = 1,
-    DIST = 2,
-    SWAP = 3,
-    SFTO = 4,
-    FIN  = 5
+    SIO = 1,
+    SID = 2,
+    DIST = 3,
+    SWAP = 4,
+    SOO = 5,
+    SOD = 6,
+    FIN  = 7
 } sim_state_t;
 
 sim_state_t sim_state;
@@ -32,21 +34,28 @@ always_ff @(posedge clk) begin
                 if (count < (city_num+1)*city_num/2) begin
                     count <= count + 1;
                 end else begin
-                    sim_state   <= SFTI;
+                    sim_state   <= SIO;
                     shift_start <= '1;
                     count   <= 0;
                 end
-            SFTI:
+            SIO:
                 if (shift_start) begin
                     shift_start <= '0;
                 end else if(~shift_run) begin
                     if (count < 10) begin
                         count <= count + 1;
                     end else begin
-                        sim_state   <= DIST;
+                        sim_state   <= SID;
                         count   <= 0;
                     end
                 end    
+            SID:
+                if (count < 10) begin
+                    count <= count + 1;
+                end else begin
+                    sim_state   <= DIST;
+                    count   <= 0;
+                end
             DIST:
                 if (count < 20) begin
                     count <= count + 1;
@@ -58,17 +67,28 @@ always_ff @(posedge clk) begin
                 if (count < 10) begin
                     count <= count + 1;
                 end else begin
-                    sim_state   <= SFTO;
+                    sim_state   <= SOO;
                     shift_start <= '1;
                     count   <= 0;
                 end
-            SFTO:
+            SOO:
                 if (shift_start) begin
                     shift_start <= '0;
                 end else if (~shift_run) begin
+                    if (count < 10) begin
+                        count <= count + 1;
+                    end else begin
+                        sim_state   <= SOD;
+                        count   <= 0;
+                    end
+                end    
+            SOD:
+                if (count < 10) begin
+                    count <= count + 1;
+                end else begin
                     sim_state   <= FIN;
                     count   <= 0;
-                end    
+                end
             FIN:
                 if (count < 10) begin
                     count <= count + 1;
@@ -127,7 +147,7 @@ distance_command_t       in_distance;
 opt_t [replica_num-1:0]  in_opt;
 
 always_ff @(posedge clk) begin
-    if (sim_state == SFTI && shift_run) begin
+    if (sim_state == SIO && shift_run) begin
         in_valid <= '1;
         for (int i = 0; i < 8; i += 1) begin
             //in_data[i] <= ((replica_count + cycle_count) % city_div) * 8 + i;
@@ -194,10 +214,11 @@ always_comb begin
     end        
 end
 
-replica_data_t    [replica_num-1:0]  folw_data;
-logic             [replica_num+1:0]  out_valid;
-replica_data_t    [replica_num+1:0]  out_data;
+logic             [replica_num+1:0]  ord_valid;
+replica_data_t    [replica_num+1:0]  ord_data;
+total_data_t      [replica_num+1:0]  dst_data;
 exchange_command_t [1:0]             c_exchange;
+exchange_command_t                   c_metropolis;
 distance_command_t                   c_distance;
 opt_t [replica_num-1:0]              opt;
 logic                                in_valid_d1;
@@ -207,6 +228,17 @@ replica_data_t                       in_data_d1;
 replica_data_t                       in_data_d2;
 replica_data_t                       in_data_d3;
 logic                                rbank;
+
+always_comb begin
+    dst_data[0]  = (count+1)*10;
+    if((sim_state == SID || sim_state == SOD) && count < replica_num) begin
+        c_metropolis = PREV;
+    end else if(sim_state == DIST && count == 18) begin
+        c_metropolis = SELF;
+    end else begin
+        c_metropolis = NOP;
+    end    
+end
 
 always_ff @(posedge clk) begin
     opt <= in_opt;
@@ -229,12 +261,12 @@ always_ff @(posedge clk) begin
         in_data_d1  <= in_data;
         in_data_d2  <= in_data_d1;
         in_data_d3  <= in_data_d2;
-        if (in_exchange != NOP) rbank <= ~rbank;
+        if (in_exchange != NOP && (sim_state == SIO || sim_state == SWAP || sim_state == SOO)) rbank <= ~rbank;
     end
 end
 
-assign out_valid[0] = in_valid_d3;
-assign out_data[0]  = in_data_d3;
+assign ord_valid[0] = in_valid_d3;
+assign ord_data[0]  = in_data_d3;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica replica
@@ -242,31 +274,25 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .clk             ( clk             ),
         .reset           ( reset           ),
         .c_exchange      ( c_exchange[g%2] ),
+        .c_metropolis    ( c_metropolis    ),
         .c_distance      ( c_distance      ),
         .opt             ( opt[g]          ),
         .rbank           ( rbank           ),
         .distance_write  ( distance_write  ),
         .distance_w_addr ( distance_w_addr ),
         .distance_w_data ( distance_w_data ),
-        .prev_valid      ( out_valid[g]    ),
-        .prev_data       ( out_data[g]     ),
-        .folw_valid      ( out_valid[g+2]  ),
-        .folw_data       ( out_data[g+2]   ),
-        .out_valid       ( out_valid[g+1]  ),
-        .out_data        ( out_data[g+1]   )
+
+        .prev_dis_data   ( dst_data[g]     ),
+        .folw_dis_data   ( dst_data[g+2]   ),
+        .out_dis_data    ( dst_data[g+1]   ),
+        
+        .prev_ord_valid  ( ord_valid[g]    ),
+        .prev_ord_data   ( ord_data[g]     ),
+        .folw_ord_valid  ( ord_valid[g+2]  ),
+        .folw_ord_data   ( ord_data[g+2]   ),
+        .out_ord_valid   ( ord_valid[g+1]  ),
+        .out_ord_data    ( ord_data[g+1]   )
     );
-end
-
-// for waveform
-
-logic [6:0]     w_in_data [7:0];
-logic [6:0]     w_out_data [7:0];
-
-always_comb begin
-    for (int i = 0; i < 8; i += 1) begin
-        w_in_data[i]  = in_data_d2[i];
-        w_out_data[i] = out_data[4][i];
-    end
 end
 
 endmodule

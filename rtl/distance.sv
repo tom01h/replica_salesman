@@ -11,7 +11,7 @@ module distance
     output logic                      ordering_read,
     output logic [city_num_log-1:0]   ordering_addr,
     input  logic [city_num_log-1:0]   ordering_data,
-    output logic signed [20:0]        delta_distance
+    output delata_data_t              delta_distance
 );
 
 distance_op_t            command_op_i;
