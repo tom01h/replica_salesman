@@ -7,6 +7,7 @@ module top
     input  logic                      set_command,
     input  logic                      run_distance,
     input  exchange_command_t         c_exchange,
+    input  exchange_command_t         c_metropolis,
     input  logic                      set_opt,
     input  opt_command                opt_com,
     input  logic [6:0]                K,
@@ -14,12 +15,16 @@ module top
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
+    input  total_data_t               total_in_data,
+    output total_data_t               total_out_data,
     input  logic                      ordering_in_valid,
     input  logic [7:0][7:0]           ordering_in_data,
     output logic                      ordering_out_valid,
     output logic [7:0][7:0]           ordering_out_data
 
 );
+
+parameter replica_num = 32;
 
 distance_command_t        c_distance;
 logic                     rbank;
@@ -59,8 +64,7 @@ always_ff @(posedge clk)begin
     end
 end
 
-logic signed [31:0][20:0]        delta_distance;
-opt_t  [31:0] opt;
+opt_t        [replica_num-1:0]            opt;
 integer count;
 integer opt_count;
 integer dist_count;
@@ -81,7 +85,7 @@ always_ff @(posedge clk)begin
         count                  <= count + 1;
         if(count == 5)begin
             opt_run            <= '0;
-            for(int i=0; i<32; i++)begin
+            for(int i=0; i<replica_num; i++)begin
                 opt[i].command <= 0;
             end
         end
@@ -93,10 +97,9 @@ always_ff @(posedge clk)begin
         count                   <= 0;
     end else if(dist_run)begin
         count                   <= count + 1;
-        if(count == 18) begin
+        if(count == 20) begin
             dist_run           <= 0;
             dist_count         <= dist_count + 1;
-            $display("%d", delta_distance[dist_count]);
         end
     end
 end
@@ -125,34 +128,42 @@ always_ff @(posedge clk)begin
     else                                      c_distance = {KN , DNOP};
 end
 
-logic             [33:0]  ordering_valid;
-replica_data_t    [33:0]  ordering_data;
+logic             [replica_num+1:0]  ordering_valid;
+replica_data_t    [replica_num+1:0]  ordering_data;
+total_data_t      [replica_num+1:0]  dis_data;
 
 assign ordering_valid[0] = in_valid_d3;
 assign ordering_data[0]  = in_data_d3;
+assign dis_data[0] = total_in_data;
+assign total_out_data = dis_data[replica_num];
 
 always_comb
-    for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[32][7-i][6:0];
+    for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[replica_num][7-i][6:0];
 
-for (genvar g = 0; g < 32; g += 1) begin
+for (genvar g = 0; g < replica_num; g += 1) begin
     replica replica
     (
         .clk             ( clk                 ),
         .reset           ( reset               ),
         .c_exchange      ( c_exchange_d1[g]    ),
+        .c_metropolis    ( (c_metropolis == PREV || dist_count == g) ? c_metropolis : NOP       ),
         .c_distance      ( (dist_count == g) ? c_distance : {KN , DNOP} ),
         .opt             ( opt[g]              ),
         .rbank           ( rbank               ),
         .distance_write  ( distance_write      ),
         .distance_w_addr ( distance_w_addr     ),
         .distance_w_data ( distance_w_data     ),
-        .prev_valid      ( ordering_valid[g]   ),
-        .prev_data       ( ordering_data[g]    ),
-        .folw_valid      ( ordering_valid[g+2] ),
-        .folw_data       ( ordering_data[g+2]  ),
-        .out_valid       ( ordering_valid[g+1] ),
-        .out_data        ( ordering_data[g+1]  ),
-        .delta_distance  ( delta_distance[g]   )
+
+        .prev_dis_data   ( dis_data[g]         ),
+        .folw_dis_data   ( dis_data[g+2]       ),
+        .out_dis_data    ( dis_data[g+1]       ),
+        
+        .prev_ord_valid  ( ordering_valid[g]   ),
+        .prev_ord_data   ( ordering_data[g]    ),
+        .folw_ord_valid  ( ordering_valid[g+2] ),
+        .folw_ord_data   ( ordering_data[g+2]  ),
+        .out_ord_valid   ( ordering_valid[g+1] ),
+        .out_ord_data    ( ordering_data[g+1]  )
     );
 end
 

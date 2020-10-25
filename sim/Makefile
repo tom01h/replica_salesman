@@ -31,6 +31,7 @@ DESIGN_SRCS = \
 top.sv \
 ../rtl/replica.sv \
 ../rtl/distance.sv \
+../rtl/metropolis.sv \
 ../rtl/exchange.sv \
 ../rtl/opt_route.sv \
 

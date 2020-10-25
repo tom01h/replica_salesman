@@ -19,8 +19,8 @@ def calc_distance_i(ordering):
         distance += distance_2[ordering[icity]][ordering[icity+1]]
     return distance
 
-def delta_distance_i(ordering, k, l, iter):
-    if iter % 2 == 0:  # 2-opt
+def delta_distance_i(ordering, k, l, opt):
+    if opt == 0:       # 2-opt
         delta  = distance_2[ordering[k-1]][ordering[l-1]] + distance_2[ordering[k]][ordering[l]]
         delta -= distance_2[ordering[k-1]][ordering[k]]   + distance_2[ordering[l-1]][ordering[l]]
     else:              # or-opt (simple)
@@ -60,13 +60,16 @@ top.set_distance(ncity+1, distance_2.ravel().tolist())
 
 for ibeta in range(0, nbeta):
     distance_i[ibeta] = calc_distance_i(ordering[ibeta])
+top.set_total(distance_i.tolist())
 
 # Main loop #
 for iter in range(1, niter+1):
+    opt = iter % 2
+    #opt = 0
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
-            if iter % 2 == 0:  # 2-opt
+            if opt == 0:       # 2-opt
                 k = random.randrange(1, ncity+1)
                 l = random.randrange(1, ncity+1)
                 if k != l:
@@ -79,7 +82,7 @@ for iter in range(1, niter+1):
                 if k != l and k != l + 1:
                     info_kl = 0
         # Metropolis for each replica #
-        if iter % 2 == 0:  # 2-opt
+        if opt == 0:       # 2-opt
             ordering_fin = np.hstack((ordering[ibeta][0:k], ordering[ibeta][k:l][::-1], ordering[ibeta][l:]))
         else:              # or-opt (simple)
             p = ordering[ibeta][k]
@@ -88,24 +91,26 @@ for iter in range(1, niter+1):
                 ordering_fin = np.hstack((ordering_fin[0:l],   p, ordering_fin[l:]))
             else:
                 ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
-        delta_distance = delta_distance_i(ordering[ibeta], k, l, iter)
-        print("delta_distance", ibeta, delta_distance)  ################################
-        if iter % 2 == 0:  # 2-opt
-            opt_com = 1
-        else:              # or-opt (simple)
-            if k < l:
-                opt_com = 2
-            else:
-                opt_com = 3
-        top.delta_distance(opt_com, k, l)
+        delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
         # Metropolis test #
         metropolis = random.random()
         if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
+            if opt == 0:       # 2-opt
+                opt_com = 1
+            else:              # or-opt (simple)
+                if k < l:
+                    opt_com = 2
+                else:
+                    opt_com = 3
         else:
             opt_com = 0
+        top.delta_distance(opt_com, k, l)
         top.set_opt(opt_com, k, l)
+
+    print(distance_i)
+
     # Exchange replicas #
     if(iter%2):
         top.set_command(1)

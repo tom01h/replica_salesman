@@ -11,10 +11,12 @@ module metropolis
     output total_data_t             out_data
 );
 
-total_data_t             write_data;
+total_data_t                        write_data;
+logic signed [$bits(out_data):0]    delta;
+assign delta = $signed(delta_distance);
 assign write_data  = (command == PREV) ? prev_data :
                      (command == FOLW) ? folw_data :
-                     (command == SELF && opt.command != THR) ? out_data + delta_distance : 
+                     (command == SELF && opt.command != THR) ? out_data + delta : 
                                          out_data;
 
 always_ff @(posedge clk) begin
