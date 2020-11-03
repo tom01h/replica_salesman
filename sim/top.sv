@@ -140,13 +140,22 @@ assign total_out_data = dis_data[replica_num];
 always_comb
     for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[replica_num][7-i][6:0];
 
+exchange_command_t [31:0] c_metropolis_w;
+always_comb
+    case(c_metropolis)
+        PREV: for(int i=0; i<32; i++) c_metropolis_w[i] = c_metropolis;
+        SELF: for(int i=0; i<32; i++) if(i==dist_count) c_metropolis_w[i] = c_metropolis; else c_metropolis_w[i] = NOP;
+        FOLW: for(int i=0; i<32; i++) if(c_exchange_d1[i]==SELF) c_metropolis_w[i] = NOP; else c_metropolis_w[i] = c_exchange_d1[i];
+        default: for(int i=0; i<32; i++) c_metropolis_w[i] = NOP;
+    endcase
+    
 for (genvar g = 0; g < replica_num; g += 1) begin
     replica replica
     (
         .clk             ( clk                 ),
         .reset           ( reset               ),
         .c_exchange      ( c_exchange_d1[g]    ),
-        .c_metropolis    ( (c_metropolis == PREV || dist_count == g) ? c_metropolis : NOP       ),
+        .c_metropolis    ( c_metropolis_w[g]   ),
         .c_distance      ( (dist_count == g) ? c_distance : {KN , DNOP} ),
         .opt             ( opt[g]              ),
         .rbank           ( rbank               ),

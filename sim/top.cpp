@@ -170,6 +170,28 @@ set_total (PyObject *self, PyObject *args){
 }
 
 static PyObject *
+get_total (PyObject *self, PyObject *args) {
+  int size;
+  long val;
+  PyObject *list;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &size))
+    return NULL;
+
+  list = PyList_New(0);
+  verilator_top->c_metropolis = 2;
+  for(int i = 0; i < size; i++){
+    val = verilator_top->total_out_data;
+    PyList_Append(list, Py_BuildValue("i", val));
+    eval();
+  }
+  verilator_top->c_metropolis = 0;
+  eval();
+
+  return list;
+}
+
+static PyObject *
 delta_distance (PyObject *self, PyObject *args) {
   int command, K, L;
   // 送られてきた値をパース
@@ -237,7 +259,9 @@ run_opt (PyObject *self, PyObject *args) {
   verilator_top->c_exchange = command;
   eval();
   verilator_top->run_command = 0;
+  verilator_top->c_metropolis = 3;
   eval();
+  verilator_top->c_metropolis = 0;
   eval();
   eval();
   eval();
@@ -266,11 +290,12 @@ static PyMethodDef TopMethods[] = {
   {"get_ordering",    (PyCFunction)get_ordering,    METH_VARARGS, "top2: get_ordering"},
   {"set_distance",    (PyCFunction)set_distance,    METH_VARARGS, "top3: set_distance"},
   {"set_total",       (PyCFunction)set_total,       METH_VARARGS, "top4: set_total"},
-  {"delta_distance",  (PyCFunction)delta_distance,  METH_VARARGS, "top5: delta_distance"},
-  {"set_opt",         (PyCFunction)set_opt,         METH_VARARGS, "top6: set_opt"},
-  {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top7: set_command"},
-  {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top8: run_opt"},
-  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top9: fin"},
+  {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
+  {"delta_distance",  (PyCFunction)delta_distance,  METH_VARARGS, "top6: delta_distance"},
+  {"set_opt",         (PyCFunction)set_opt,         METH_VARARGS, "top7: set_opt"},
+  {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top8: set_command"},
+  {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top9: run_opt"},
+  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top10: fin"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

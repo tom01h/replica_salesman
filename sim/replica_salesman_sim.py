@@ -1,6 +1,6 @@
 nbeta=32
-#niter=3000
-niter=1
+niter=3000
+#niter=2
 dbeta=5e0
 ncity=30
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
@@ -65,7 +65,6 @@ top.set_total(distance_i.tolist())
 # Main loop #
 for iter in range(1, niter+1):
     opt = iter % 2
-    #opt = 0
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
@@ -109,8 +108,6 @@ for iter in range(1, niter+1):
         top.delta_distance(opt_com, k, l)
         top.set_opt(opt_com, k, l)
 
-    print(distance_i)
-
     # Exchange replicas #
     if(iter%2):
         top.set_command(1)
@@ -129,6 +126,7 @@ for iter in range(1, niter+1):
     if(iter%2):
         top.set_command(1)
     top.run_opt(0)
+
     # data output #
     if iter % 50 == 0 or iter == niter:
         distance_32 = distance_i[31]/(2**17)
@@ -138,19 +136,29 @@ for iter in range(1, niter+1):
         distance_list = np.append(distance_list, minimum_distance)
         print(iter, distance_32, minimum_distance)
 
+# compare ordiering #
 rtl_ordering = np.zeros_like(ordering)
 for ibeta in reversed(range(0, nbeta)):
     rtl_ordering[ibeta] = top.get_ordering(ncity+1)
 
 np.set_printoptions(linewidth = 100)
 if(np.array_equal(ordering, rtl_ordering)):
-    print("OK")
+    print("OK: ordering")
 else:
     for ibeta in range(0, nbeta):
         if(not np.array_equal(ordering[ibeta], rtl_ordering[ibeta])):
-            print("NG", ibeta)
+            print("NG: ordering", ibeta)
             print(ordering[ibeta])
             print(rtl_ordering[ibeta])
+
+# compare total distance #
+rtl_distance_i = np.flip(top.get_total(nbeta))
+if(np.array_equal(distance_i, rtl_distance_i)):
+    print("OK: total distance")
+else:
+    print("NG: total distance")
+    print(distance_i)
+    print(rtl_distance_i)
 
 # save point #
 top.fin()
