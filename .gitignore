@@ -5,7 +5,13 @@ rtl/*.wlf
 rtl/transcript
 sim/sim
 sim/build
+sim/work
 sim/*.vcd
 sim/*.wlf
 sim/transcript
 sim/verilated*
+sim/*.dll
+sim/*.obj
+sim/*.so
+sim/__pycache__/
+sim/dpiheader.h

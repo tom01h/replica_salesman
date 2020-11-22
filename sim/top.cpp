@@ -284,6 +284,13 @@ fin (PyObject *self, PyObject *args) {
   return Py_None;
 }
 
+static PyObject *
+init (PyObject *self, PyObject *args) {
+  
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
   {"set_ordering",    (PyCFunction)set_ordering,    METH_VARARGS, "top1: set_ordering"},
@@ -296,6 +303,7 @@ static PyMethodDef TopMethods[] = {
   {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top8: set_command"},
   {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top9: run_opt"},
   {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top10: fin"},
+  {"init",            (PyCFunction)init,            METH_NOARGS,  "top11: init"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

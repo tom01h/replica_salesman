@@ -4,8 +4,12 @@
 - [ ] 合成できない計算を使って全体を動かす
 - [ ] 合成できる
 - [ ] インタフェースをつけて FPGA で実行
+- [ ] 4段パイプライン化
+- [ ] 50インスタンス・200レプリカ
 
 ## RTL シミュレーションを実行する
+
+### Verilator
 
 Verilator の出力した C++ のコードを使って Python の C++ モジュールを作成して検証します。
 
@@ -21,5 +25,23 @@ replica_salesman/sim$ make
 
 ```
 replica_salesman/sim$ python3 replica_salesman_sim.py
+```
+
+### MidelSim (Windows 版)
+
+DPI-C と Python-API を使って検証します。
+
+Windows 版の ModelSim と Windows 版の Python 32bit 版が必要です。
+
+ビルド＆RUN
+
+```
+replica_salesman/sim$ ./build.sh
+```
+
+RUN のみ
+
+```
+replica_salesman/sim$ ./run.sh
 ```
 

@@ -71,7 +71,12 @@ integer dist_count;
 logic opt_run;
 logic dist_run;
 always_ff @(posedge clk)begin
-    if(set_opt)begin
+    if(reset)begin
+        for(int i=0; i<replica_num; i+=1)begin
+            opt[i].command <= THR;
+        end
+    end
+    else if(set_opt)begin
         opt[opt_count].command <= opt_com;
         opt[opt_count].K       <= K;
         opt[opt_count].L       <= L;
@@ -86,7 +91,7 @@ always_ff @(posedge clk)begin
         if(count == 5)begin
             opt_run            <= '0;
             for(int i=0; i<replica_num; i++)begin
-                opt[i].command <= 0;
+                opt[i].command <= THR;
             end
         end
     end else if(run_distance)begin
