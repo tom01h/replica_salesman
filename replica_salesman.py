@@ -10,6 +10,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 import pickle
+import xor64
 
 def calc_distance_i(ordering):
     distance = 0
@@ -55,21 +56,26 @@ for icity in range(0, ncity+1):
 for ibeta in range(0, nbeta):
     distance_i[ibeta] = calc_distance_i(ordering[ibeta])
 
+for ibeta in range(0, nbeta):
+    xor64.init(ibeta, random.randrange(1<<64))
+
 # Main loop #
 for iter in range(1, niter+1):
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
             if iter % 2 == 0:  # 2-opt
-                k = random.randrange(1, ncity+1)
-                l = random.randrange(1, ncity+1)
+                msk = ( 1<<(math.ceil(math.log2(ncity))) ) -1
+                k = xor64.random(ibeta, 1, ncity, msk)
+                l = xor64.random(ibeta, 1, ncity, msk)
                 if k != l:
                     if k > l:
                         k, l = l, k
                     info_kl = 0
             else:              # or-opt (simple)
-                k = random.randrange(1, ncity)
-                l = random.randrange(0, ncity)
+                msk = ( 1<<(math.ceil(math.log2(ncity-1))) ) -1
+                k = xor64.random(ibeta, 1, ncity-1, msk)
+                l = xor64.random(ibeta, 0, ncity-1, msk)
                 if k != l and k != l + 1:
                     info_kl = 0
         # Metropolis for each replica #

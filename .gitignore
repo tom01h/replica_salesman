@@ -12,6 +12,8 @@ sim/transcript
 sim/verilated*
 sim/*.dll
 sim/*.obj
-sim/*.so
 sim/__pycache__/
 sim/dpiheader.h
+*.so
+*.pickle
+build/

@@ -12,9 +12,20 @@
 
 目指しているのはこんなの。50個並べる予定。
 
-sim/ 下で Python の結果と比較しながら部品を製作中です。
-
 ![ブロック図](ブロック図.svg)
+
+### 実行
+
+動作モデルの実行は以下。
+
+RTL に使う乱数発生器のモデルは `xor64.cpp` に記述しています。その他は `replica_salesman.py` の中です。
+
+```
+python3 setup.py build_ext -I/usr/local/share/verilator/include -i
+python3 replica_salesman.py
+```
+
+RTL で作成中の部品は sim/ 下で Python の結果と比較しながら検証できます。
 
 ### アルゴリズムを簡単に説明
 
