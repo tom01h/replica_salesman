@@ -4,6 +4,7 @@ module tb;
     parameter nbeta=32;
     parameter dbeta=5;
     parameter ncity=30+1;
+    parameter replica_num = 32;
 
     logic  clk;
     logic  reset;
@@ -18,15 +19,15 @@ module tb;
         c_tb();
     end
 
+    logic                      set_random;
+    logic [63:0]               random_seed;
+    logic                      random_run;
     logic                      run_command;
     logic                      set_command;
     logic                      run_distance;
     exchange_command_t         c_exchange;
     exchange_command_t         c_metropolis;
-    logic                      set_opt;
-    opt_command                opt_com;
-    logic [6:0]                K;
-    logic [6:0]                L;
+    opt_command_t [replica_num-1:0] opt_com;
     logic                      distance_write;
     logic [city_num_log*2-1:0] distance_w_addr;
     distance_data_t            distance_w_data;
@@ -40,10 +41,11 @@ module tb;
     task v_init();
         reset = 1'b1;
         repeat(10) @(negedge clk);
+        set_random = 'b0;
+        random_run = 'b0;
         run_command = 'b0;
         set_command = 'b0;
         run_distance = 'b0;
-        set_opt = 'b0;
         distance_write = 'b0;
         ordering_in_valid = 'b0;
         reset = 1'b0;
@@ -128,26 +130,17 @@ module tb;
         end
     endtask
 
-    task v_delta_distance (input int command, input int iK, input int iL);
+    task v_delta_distance (input int command[nbeta]);
         run_distance = 'b1;
-        opt_com = opt_command'(command);
-        K = iK;
-        L = iL;
+        for(int i = 0; i < nbeta; i++)begin
+            opt_com[i] = opt_command_t'(command[i]);
+        end
         repeat(1) @(negedge clk);
         run_distance = 'b0;
         repeat(20) @(negedge clk);
         c_metropolis = SELF;
         repeat(1) @(negedge clk);
         c_metropolis = NOP;
-    endtask
-
-    task v_set_opt (input int command, input int iK, input int iL);
-        set_opt = 'b1;
-        opt_com = opt_command'(command);
-        K = iK;
-        L = iL;
-        repeat(1) @(negedge clk);
-        set_opt = 'b0;
     endtask
 
     task v_set_command (input int command);
@@ -169,6 +162,29 @@ module tb;
         repeat(15) @(negedge clk);
     endtask
 
+    task v_set_random (input longint unsigned seed[nbeta]);
+        repeat(1) @(negedge clk);
+        set_random = 'b1;
+        repeat(1) @(negedge clk);
+        set_random = 'b0;
+        for(int i = 0; i < nbeta; i++)begin
+            random_seed = seed[i];
+            repeat(1) @(negedge clk);
+        end
+        repeat(1) @(negedge clk);
+    endtask
+
+    task v_run_random (input int command[nbeta]);
+        repeat(1) @(negedge clk);
+        random_run = 'b1;
+        for(int i = 0; i < nbeta; i++)begin
+            opt_com[i] = opt_command_t'(command[i]);
+        end
+        repeat(1) @(negedge clk);
+        random_run = 'b0;
+        repeat(20) @(negedge clk);
+    endtask
+
     export "DPI-C" task v_init;
     export "DPI-C" task v_finish;
     export "DPI-C" task v_set_ordering;
@@ -177,9 +193,10 @@ module tb;
     export "DPI-C" task v_set_total;
     export "DPI-C" task v_get_total;
     export "DPI-C" task v_delta_distance;
-    export "DPI-C" task v_set_opt;
     export "DPI-C" task v_set_command;
     export "DPI-C" task v_run_opt;
+    export "DPI-C" task v_set_random;
+    export "DPI-C" task v_run_random;
 
     import "DPI-C" context task c_tb();
 
@@ -187,15 +204,15 @@ module tb;
     (
         .clk                 ( clk                ),
         .reset               ( reset              ),
+        .set_random          ( set_random         ),
+        .random_seed         ( random_seed        ),
+        .random_run          ( random_run         ),
         .run_command         ( run_command        ),
         .set_command         ( set_command        ),
         .run_distance        ( run_distance       ),
         .c_exchange          ( c_exchange         ),
         .c_metropolis        ( c_metropolis       ),
-        .set_opt             ( set_opt            ),
         .opt_com             ( opt_com            ),
-        .K                   ( K                  ),
-        .L                   ( L                  ),
         .distance_write      ( distance_write     ),
         .distance_w_addr     ( distance_w_addr    ),
         .distance_w_data     ( distance_w_data    ),

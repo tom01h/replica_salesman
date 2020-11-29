@@ -40,12 +40,12 @@ typedef enum logic [1:0] { // K, L の対象関係は以下のみサポート
     TWO = 2'b01,           // 2-opt  K < L
     OR0 = 2'b10,           // or-opt K < L
     OR1 = 2'b11            // or-opt K > L + 1
-} opt_command;
+} opt_command_t;
 
 typedef struct packed {
-    opt_command command;
-    logic [6:0] K;
-    logic [6:0] L;
+    opt_command_t command;
+    logic [6:0]   K;
+    logic [6:0]   L;
 } opt_t;
 
 typedef logic [7:0][6:0] replica_data_t;

@@ -3,11 +3,13 @@
 export WSLENV=PYTHONPATH/l
 export PYTHONPATH=$PWD
 
-rm -r work cexports.obj cimports.dll dpiheader.h tb.obj
+rm -r __pycache__/  work cexports.obj cimports.dll dpiheader.h tb.obj
 
 vlib.exe work
 
-vlog.exe -sv -dpiheader dpiheader.h ../rtl/replica_pkg.sv tb.sv top.sv ../rtl/replica.sv ../rtl/distance.sv ../rtl/exchange.sv ../rtl/metropolis.sv ../rtl/opt_route.sv
+vlog.exe -sv -dpiheader dpiheader.h ../rtl/replica_pkg.sv tb.sv top.sv \
+    ../rtl/replica.sv ../rtl/random.sv  ../rtl/distance.sv ../rtl/exchange.sv \
+    ../rtl/metropolis.sv ../rtl/opt_route.sv
 vsim.exe tb -dpiexportobj cexports -c
 
 #/mnt/c/intelFPGA_pro/20.3/modelsim_ase/gcc-4.2.1-mingw32vc12/bin/

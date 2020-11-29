@@ -1,17 +1,20 @@
 module top
     import replica_pkg::*;
+#(
+    parameter replica_num = 32
+)
 (
     input  logic                      clk,
     input  logic                      reset,
+    input  logic                      set_random,
+    input  logic [63:0]               random_seed,
+    input  logic                      random_run,
     input  logic                      run_command,
     input  logic                      set_command,
     input  logic                      run_distance,
     input  exchange_command_t         c_exchange,
     input  exchange_command_t         c_metropolis,
-    input  logic                      set_opt,
-    input  opt_command                opt_com,
-    input  logic [6:0]                K,
-    input  logic [6:0]                L,
+    input  opt_command_t [replica_num-1:0] opt_com,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
@@ -24,8 +27,6 @@ module top
 
 );
 
-parameter replica_num = 32;
-
 distance_command_t        c_distance;
 logic                     rbank;
 exchange_command_t [31:0] c_exchange_l, c_exchange_d1;
@@ -33,6 +34,13 @@ logic                     in_valid_d1,   in_valid_d2,   in_valid_d3;
 replica_data_t            in_data_d1,    in_data_d2,    in_data_d3;
 integer com_count;
 
+logic [replica_num-1:0]   random_init;
+
+always_ff @(posedge clk)begin
+    if(reset) random_init <= 'b0;
+    else      random_init <= {random_init,set_random};
+end
+    
 always_ff @(posedge clk)begin
     if(reset)begin
         rbank <= '0;
@@ -64,53 +72,53 @@ always_ff @(posedge clk)begin
     end
 end
 
-opt_t        [replica_num-1:0]            opt;
+opt_command_t [replica_num-1:0]            opt_command;
 integer count;
 integer opt_count;
-integer dist_count;
 logic opt_run;
 logic dist_run;
 always_ff @(posedge clk)begin
     if(reset)begin
         for(int i=0; i<replica_num; i+=1)begin
-            opt[i].command <= THR;
+            opt_command[i] <= THR;
         end
-    end
-    else if(set_opt)begin
-        opt[opt_count].command <= opt_com;
-        opt[opt_count].K       <= K;
-        opt[opt_count].L       <= L;
-        opt_count              <= opt_count + 1;
     end else if(run_command)begin
         count                  <= 0;
         opt_count              <= 0;
-        dist_count             <= 0;
         opt_run                <= 1;
     end else if(opt_run)begin
         count                  <= count + 1;
         if(count == 5)begin
             opt_run            <= '0;
             for(int i=0; i<replica_num; i++)begin
-                opt[i].command <= THR;
+                opt_command[i] <= THR;
             end
         end
     end else if(run_distance)begin
-        opt[dist_count].command <= opt_com;
-        opt[dist_count].K       <= K;
-        opt[dist_count].L       <= L;
+        opt_command             <= opt_com;
         dist_run                <= 1;
         count                   <= 0;
     end else if(dist_run)begin
         count                   <= count + 1;
         if(count == 20) begin
             dist_run           <= 0;
-            dist_count         <= dist_count + 1;
         end
+    end else if(random_run)begin
+        opt_command            <= opt_com;
+    end
+end
+
+opt_command_t opt_com_a;
+always_comb begin
+    opt_com_a = THR;
+    for(int i=0; i<replica_num; i++) begin
+        if(opt_com[i] == OR0 || opt_com[i] == OR1) begin opt_com_a = OR0; break; end
+        else if(opt_com[i] == TWO)                 begin opt_com_a = TWO; break; end
     end
 end
 
 always_ff @(posedge clk)begin
-    if (dist_run && (opt_com == OR0 || opt_com == OR1))
+    if (dist_run && opt_com_a == OR0)
         case(count)
             0:                                c_distance = {KN , ZERO};
             1:                                c_distance = {KM , MNS};
@@ -121,7 +129,7 @@ always_ff @(posedge clk)begin
             6:                                c_distance = {KN , PLS};
             default:                          c_distance = {KN , DNOP};
         endcase
-    else if (dist_run && opt_com == TWO)
+    else if (dist_run && opt_com_a == TWO)
         case(count)
             0:                                c_distance = {KN , ZERO};
             1:                                c_distance = {KM , MNS};
@@ -149,7 +157,7 @@ exchange_command_t [31:0] c_metropolis_w;
 always_comb
     case(c_metropolis)
         PREV: for(int i=0; i<32; i++) c_metropolis_w[i] = c_metropolis;
-        SELF: for(int i=0; i<32; i++) if(i==dist_count) c_metropolis_w[i] = c_metropolis; else c_metropolis_w[i] = NOP;
+        SELF: for(int i=0; i<32; i++) c_metropolis_w[i] = c_metropolis;
         FOLW: for(int i=0; i<32; i++) if(c_exchange_d1[i]==SELF) c_metropolis_w[i] = NOP; else c_metropolis_w[i] = c_exchange_d1[i];
         default: for(int i=0; i<32; i++) c_metropolis_w[i] = NOP;
     endcase
@@ -159,10 +167,13 @@ for (genvar g = 0; g < replica_num; g += 1) begin
     (
         .clk             ( clk                 ),
         .reset           ( reset               ),
+        .random_init     ( random_init[g]      ),
+        .random_seed     ( random_seed         ),
+        .random_run      ( random_run          ),
         .c_exchange      ( c_exchange_d1[g]    ),
         .c_metropolis    ( c_metropolis_w[g]   ),
-        .c_distance      ( (dist_count == g) ? c_distance : {KN , DNOP} ),
-        .opt             ( opt[g]              ),
+        .c_distance      ( c_distance          ),
+        .opt_command     ( opt_command[g]      ),
         .rbank           ( rbank               ),
         .distance_write  ( distance_write      ),
         .distance_w_addr ( distance_w_addr     ),

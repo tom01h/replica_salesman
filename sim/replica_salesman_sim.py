@@ -1,6 +1,6 @@
 nbeta=32
 #niter=3000
-niter=30
+niter=6
 dbeta=5e0
 ncity=30
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
@@ -39,6 +39,10 @@ def py_tb():
 
     top.init()
 
+    seeds = [random.randrange(1<<64) for i in range(nbeta)]
+    top.c_init_random(seeds)
+    top.set_random(seeds)
+        
     if ninit == 0:
         with open("salesman.pickle", "rb") as f:
             x, _, _, _, _ = pickle.load(f)
@@ -67,20 +71,26 @@ def py_tb():
 
     # Main loop #
     for iter in range(1, niter+1):
+        opt_list = np.zeros(nbeta, dtype = np.int32)
         opt = iter % 2
+        for ibeta in range(0, nbeta):
+            opt_list[ibeta] = opt*2+1
+        top.run_random(opt_list.tolist())
         for ibeta in range(0, nbeta):
             info_kl = 1
             while info_kl == 1:
                 if opt == 0:       # 2-opt
-                    k = random.randrange(1, ncity+1)
-                    l = random.randrange(1, ncity+1)
+                    msk = ( 1<<(math.ceil(math.log2(ncity))) ) -1
+                    k = top.c_run_random(ibeta, 1, ncity, msk)
+                    l = top.c_run_random(ibeta, 1, ncity, msk)
                     if k != l:
                         if k > l:
                             k, l = l, k
                         info_kl = 0
                 else:              # or-opt (simple)
-                    k = random.randrange(1, ncity)
-                    l = random.randrange(0, ncity)
+                    msk = ( 1<<(math.ceil(math.log2(ncity-1))) ) -1
+                    k = top.c_run_random(ibeta, 1, ncity-1, msk)
+                    l = top.c_run_random(ibeta, 0, ncity-1, msk)
                     if k != l and k != l + 1:
                         info_kl = 0
             # Metropolis for each replica #
@@ -108,8 +118,8 @@ def py_tb():
                         opt_com = 3
             else:
                 opt_com = 0
-            top.delta_distance(opt_com, k, l)
-            top.set_opt(opt_com, k, l)
+            opt_list[ibeta] = opt_com
+        top.delta_distance(opt_list.tolist())
 
         # Exchange replicas #
         if(iter%2):

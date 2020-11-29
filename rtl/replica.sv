@@ -3,10 +3,13 @@ module replica
 (
     input  logic                      clk,
     input  logic                      reset,
+    input  logic                      random_init,
+    input  logic [63:0]               random_seed,
+    input  logic                      random_run,
     input  exchange_command_t         c_exchange,
     input  exchange_command_t         c_metropolis,
     input  distance_command_t         c_distance,
-    input  opt_t                      opt,
+    input  opt_command_t              opt_command,
     input  logic                      rbank,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
@@ -22,11 +25,31 @@ module replica
     output replica_data_t             out_ord_data
 );
 
+opt_t                      opt;
+logic [6:0]                K;
+logic [6:0]                L;
+assign opt.command = opt_command;
+assign opt.K       = K;
+assign opt.L       = L;
+
 logic                      ordering_read;
 logic [city_num_log-1:0]   ordering_addr;
 logic [city_num_log-1:0]   ordering_data;
 
 delata_data_t              delta_distance;
+
+random random
+(
+    .clk         ( clk         ),
+    .reset       ( reset       ),
+    .cmd         ( opt.command ),
+    .init        ( random_init ),
+    .i_seed      ( random_seed ),
+    .run         ( random_run  ),
+    .ready       (             ),
+    .K           ( K           ),
+    .L           ( L           )
+);
 
 distance distance
 (
