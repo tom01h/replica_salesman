@@ -1,5 +1,8 @@
 module replica
     import replica_pkg::*;
+#(
+    parameter id = 0
+)
 (
     input  logic                      clk,
     input  logic                      reset,
@@ -28,6 +31,8 @@ module replica
 opt_t                      opt;
 logic [6:0]                K;
 logic [6:0]                L;
+logic [31:0]               r_metropolis;
+logic [31:0]               r_exchange;
 assign opt.command = opt_command;
 assign opt.K       = K;
 assign opt.L       = L;
@@ -40,15 +45,17 @@ delata_data_t              delta_distance;
 
 random random
 (
-    .clk         ( clk         ),
-    .reset       ( reset       ),
-    .cmd         ( opt.command ),
-    .init        ( random_init ),
-    .i_seed      ( random_seed ),
-    .run         ( random_run  ),
-    .ready       (             ),
-    .K           ( K           ),
-    .L           ( L           )
+    .clk          ( clk          ),
+    .reset        ( reset        ),
+    .cmd          ( opt.command  ),
+    .init         ( random_init  ),
+    .i_seed       ( random_seed  ),
+    .run          ( random_run   ),
+    .ready        (              ),
+    .K            ( K            ),
+    .L            ( L            ),
+    .r_metropolis ( r_metropolis ),
+    .r_exchange   ( r_exchange   )
 );
 
 distance distance
@@ -66,13 +73,14 @@ distance distance
     .delta_distance  ( delta_distance  )
 );    
 
-metropolis metropolis
+metropolis #(.id(id)) metropolis
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
     .command         ( c_metropolis    ),
     .opt             ( opt             ),
     .delta_distance  ( delta_distance  ),
+    .r_metropolis    ( r_metropolis    ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .out_data        ( out_dis_data    )

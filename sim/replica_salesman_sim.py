@@ -105,7 +105,7 @@ def py_tb():
                     ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
-            metropolis = random.random()
+            metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)
             if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
@@ -124,10 +124,11 @@ def py_tb():
         # Exchange replicas #
         if(iter%2):
             top.set_command(1)
+            metropolis = (top.c_run_random(0, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
         for ibeta in range(iter % 2, nbeta-1, 2):
             action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
             # Metropolis test #
-            metropolis = random.random()
+            metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)
             if math.exp(action/(2**17)) > metropolis:
                 ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                 distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
@@ -138,6 +139,9 @@ def py_tb():
                 top.set_command(1)
         if(iter%2):
             top.set_command(1)
+            metropolis = (top.c_run_random(nbeta-1, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
+        for ibeta in range(iter % 2 +1, nbeta, 2):
+            metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
         top.run_opt(0)
 
         # data output #

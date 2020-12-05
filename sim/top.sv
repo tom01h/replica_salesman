@@ -163,7 +163,7 @@ always_comb
     endcase
     
 for (genvar g = 0; g < replica_num; g += 1) begin
-    replica replica
+    replica #(.id(g)) replica
     (
         .clk             ( clk                 ),
         .reset           ( reset               ),

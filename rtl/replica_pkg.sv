@@ -6,6 +6,7 @@ parameter city_num = 30;
 parameter city_num_log = $clog2(city_num);
 parameter city_div = (city_num + 7) / 8;
 parameter city_div_log = $clog2(city_div);
+parameter dbeta = 5;
 
 typedef enum logic [1:0] {
     NOP  = 2'b00,

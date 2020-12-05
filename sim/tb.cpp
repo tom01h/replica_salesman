@@ -239,10 +239,10 @@ c_init_random(PyObject *self, PyObject *args){
 
 static PyObject*
 c_run_random(PyObject *self, PyObject *args) {
-    int p, start, end, msk;
+    unsigned int p, start, end, msk;
     unsigned int val;
     // 送られてきた値をパース
-    if(!PyArg_ParseTuple(args, "iiii", &p, &start, &end, &msk))
+    if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
         return NULL;
 
     do{
