@@ -151,7 +151,7 @@ always_comb
     endcase
     
 for (genvar g = 0; g < replica_num; g += 1) begin
-    replica #(.id(g)) replica
+    node #(.id(g)) node
     (
         .clk             ( clk                 ),
         .reset           ( reset               ),
