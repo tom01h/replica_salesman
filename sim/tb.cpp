@@ -119,20 +119,13 @@ get_total (PyObject *self, PyObject *args) {
 }
 
 static PyObject *
-delta_distance (PyObject *self, PyObject *args) {
-  int array[nbeta];
-  PyObject *p_list, *p_value;
-  int size;
+metropolis_test (PyObject *self, PyObject *args) {
+  int val;
   // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
+  if(!PyArg_ParseTuple(args, "i", &val))
     return NULL;
 
-  for(int i = 0; i < nbeta; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsLong(p_value);
-  }
-
-  v_delta_distance(array);
+  v_metropolis_test(val);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -186,19 +179,12 @@ set_random (PyObject *self, PyObject *args){
 
 static PyObject *
 run_random (PyObject *self, PyObject *args) {
-  int array[nbeta];
-  PyObject *p_list, *p_value;
-  int size;
+  int val;
   // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
+  if(!PyArg_ParseTuple(args, "i", &val))
     return NULL;
 
-  for(int i = 0; i < nbeta; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsLong(p_value);
-  }
-
-  v_run_random(array);
+  v_run_random(val);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -262,7 +248,7 @@ static PyMethodDef TopMethods[] = {
   {"set_distance",    (PyCFunction)set_distance,    METH_VARARGS, "top3: set_distance"},
   {"set_total",       (PyCFunction)set_total,       METH_VARARGS, "top4: set_total"},
   {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
-  {"delta_distance",  (PyCFunction)delta_distance,  METH_VARARGS, "top6: delta_distance"},
+  {"metropolis_test", (PyCFunction)metropolis_test, METH_VARARGS, "top6: metropolis_test"},
   {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top7: set_command"},
   {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top8: run_opt"},
   {"set_random",      (PyCFunction)set_random,      METH_VARARGS, "top9: set_random"},

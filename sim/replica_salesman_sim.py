@@ -71,11 +71,9 @@ def py_tb():
 
     # Main loop #
     for iter in range(1, niter+1):
-        opt_list = np.zeros(nbeta, dtype = np.int32)
         opt = iter % 2
-        for ibeta in range(0, nbeta):
-            opt_list[ibeta] = opt*2+1
-        top.run_random(opt_list.tolist())
+        top.run_random(opt*2+1)
+        top.metropolis_test(opt*2+1)
         for ibeta in range(0, nbeta):
             info_kl = 1
             while info_kl == 1:
@@ -109,17 +107,6 @@ def py_tb():
             if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
-                if opt == 0:       # 2-opt
-                    opt_com = 1
-                else:              # or-opt (simple)
-                    if k < l:
-                        opt_com = 2
-                    else:
-                        opt_com = 3
-            else:
-                opt_com = 0
-            opt_list[ibeta] = opt_com
-        top.delta_distance(opt_list.tolist())
 
         # Exchange replicas #
         if(iter%2):

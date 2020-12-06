@@ -27,7 +27,7 @@ module tb;
     logic                      run_distance;
     exchange_command_t         c_exchange;
     exchange_command_t         c_metropolis;
-    opt_command_t [replica_num-1:0] opt_com;
+    opt_command_t              opt_com;
     logic                      distance_write;
     logic [city_num_log*2-1:0] distance_w_addr;
     distance_data_t            distance_w_data;
@@ -37,6 +37,7 @@ module tb;
     logic [7:0][7:0]           ordering_in_data;
     logic                      ordering_out_valid;
     logic [7:0][7:0]           ordering_out_data;
+    logic                      exchange_valid;
 
     task v_init();
         reset = 1'b1;
@@ -49,6 +50,7 @@ module tb;
         distance_write = 'b0;
         ordering_in_valid = 'b0;
         reset = 1'b0;
+        exchange_valid = 1'b0;
     endtask
 
     task v_finish();
@@ -130,11 +132,10 @@ module tb;
         end
     endtask
 
-    task v_delta_distance (input int command[nbeta]);
+    task v_metropolis_test (input int command);
         run_distance = 'b1;
-        for(int i = 0; i < nbeta; i++)begin
-            opt_com[i] = opt_command_t'(command[i]);
-        end
+        exchange_valid = 'b1;
+        opt_com = opt_command_t'(command);
         repeat(1) @(negedge clk);
         run_distance = 'b0;
         repeat(20) @(negedge clk);
@@ -160,6 +161,7 @@ module tb;
         repeat(1) @(negedge clk);
         c_metropolis = NOP;
         repeat(15) @(negedge clk);
+        exchange_valid = 'b0;
     endtask
 
     task v_set_random (input longint unsigned seed[nbeta]);
@@ -174,12 +176,10 @@ module tb;
         repeat(1) @(negedge clk);
     endtask
 
-    task v_run_random (input int command[nbeta]);
+    task v_run_random (input int command);
         repeat(1) @(negedge clk);
         random_run = 'b1;
-        for(int i = 0; i < nbeta; i++)begin
-            opt_com[i] = opt_command_t'(command[i]);
-        end
+        opt_com = opt_command_t'(command);
         repeat(1) @(negedge clk);
         random_run = 'b0;
         repeat(20) @(negedge clk);
@@ -192,7 +192,7 @@ module tb;
     export "DPI-C" task v_set_distance;
     export "DPI-C" task v_set_total;
     export "DPI-C" task v_get_total;
-    export "DPI-C" task v_delta_distance;
+    export "DPI-C" task v_metropolis_test;
     export "DPI-C" task v_set_command;
     export "DPI-C" task v_run_opt;
     export "DPI-C" task v_set_random;
@@ -213,6 +213,7 @@ module tb;
         .c_exchange          ( c_exchange         ),
         .c_metropolis        ( c_metropolis       ),
         .opt_com             ( opt_com            ),
+        .exchange_valid      ( exchange_valid     ),
         .distance_write      ( distance_write     ),
         .distance_w_addr     ( distance_w_addr    ),
         .distance_w_data     ( distance_w_data    ),

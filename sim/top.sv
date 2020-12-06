@@ -14,7 +14,8 @@ module top
     input  logic                      run_distance,
     input  exchange_command_t         c_exchange,
     input  exchange_command_t         c_metropolis,
-    input  opt_command_t [replica_num-1:0] opt_com,
+    input  opt_command_t              opt_com,
+    input  logic                      exchange_valid,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
@@ -72,16 +73,14 @@ always_ff @(posedge clk)begin
     end
 end
 
-opt_command_t [replica_num-1:0]            opt_command;
+opt_command_t             opt_command;
 integer count;
 integer opt_count;
 logic opt_run;
 logic dist_run;
 always_ff @(posedge clk)begin
     if(reset)begin
-        for(int i=0; i<replica_num; i+=1)begin
-            opt_command[i] <= THR;
-        end
+        opt_command            <= THR;
     end else if(run_command)begin
         count                  <= 0;
         opt_count              <= 0;
@@ -90,9 +89,7 @@ always_ff @(posedge clk)begin
         count                  <= count + 1;
         if(count == 5)begin
             opt_run            <= '0;
-            for(int i=0; i<replica_num; i++)begin
-                opt_command[i] <= THR;
-            end
+            opt_command        <= THR;
         end
     end else if(run_distance)begin
         opt_command             <= opt_com;
@@ -108,17 +105,8 @@ always_ff @(posedge clk)begin
     end
 end
 
-opt_command_t opt_com_a;
-always_comb begin
-    opt_com_a = THR;
-    for(int i=0; i<replica_num; i++) begin
-        if(opt_com[i] == OR0 || opt_com[i] == OR1) begin opt_com_a = OR0; break; end
-        else if(opt_com[i] == TWO)                 begin opt_com_a = TWO; break; end
-    end
-end
-
 always_ff @(posedge clk)begin
-    if (dist_run && opt_com_a == OR0)
+    if (dist_run && opt_com == OR1)
         case(count)
             0:                                c_distance = {KN , ZERO};
             1:                                c_distance = {KM , MNS};
@@ -129,7 +117,7 @@ always_ff @(posedge clk)begin
             6:                                c_distance = {KN , PLS};
             default:                          c_distance = {KN , DNOP};
         endcase
-    else if (dist_run && opt_com_a == TWO)
+    else if (dist_run && opt_com == TWO)
         case(count)
             0:                                c_distance = {KN , ZERO};
             1:                                c_distance = {KM , MNS};
@@ -173,7 +161,8 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .c_exchange      ( c_exchange_d1[g]    ),
         .c_metropolis    ( c_metropolis_w[g]   ),
         .c_distance      ( c_distance          ),
-        .opt_command     ( opt_command[g]      ),
+        .opt_command     ( opt_command         ),
+        .exchange_valid  ( exchange_valid      ),
         .rbank           ( rbank               ),
         .distance_write  ( distance_write      ),
         .distance_w_addr ( distance_w_addr     ),

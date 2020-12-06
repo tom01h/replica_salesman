@@ -13,6 +13,7 @@ module replica
     input  exchange_command_t         c_metropolis,
     input  distance_command_t         c_distance,
     input  opt_command_t              opt_command,
+    input  logic                      exchange_valid,
     input  logic                      rbank,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
@@ -29,6 +30,7 @@ module replica
 );
 
 opt_t                      opt;
+opt_t                      opt_ex;
 logic [6:0]                K;
 logic [6:0]                L;
 logic [31:0]               r_metropolis;
@@ -78,7 +80,9 @@ metropolis #(.id(id)) metropolis
     .clk             ( clk             ),
     .reset           ( reset           ),
     .command         ( c_metropolis    ),
-    .opt             ( opt             ),
+    .exchange_valid  ( exchange_valid  ),
+    .in_opt          ( opt             ),
+    .out_opt         ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
     .r_metropolis    ( r_metropolis    ),
     .prev_data       ( prev_dis_data   ),
@@ -91,7 +95,7 @@ exchange exchange
     .clk           ( clk              ),
     .reset         ( reset            ),
     .command       ( c_exchange       ),
-    .opt           ( opt              ),
+    .opt           ( opt_ex           ),
     .rbank         ( rbank            ),
     .prev_valid    ( prev_ord_valid   ),
     .prev_data     ( prev_ord_data    ),
