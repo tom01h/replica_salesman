@@ -95,13 +95,22 @@ for iter in range(1, niter+1):
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
     # Exchange replicas #
-    for ibeta in range(iter % 2, nbeta-1, 2):
-        action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
-        # Metropolis test #
-        metropolis = random.random()
-        if math.exp(action/(2**17)) > metropolis:
-            ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
-            distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
+    if iter % 2 == 0:
+        for ibeta in range(0, nbeta-1, 2):
+            action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
+            # Metropolis test #
+            metropolis = random.random()
+            if math.exp(action/(2**17)) > metropolis:
+                ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
+                distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
+    else:
+        for ibeta in range(2, nbeta-1, 2):
+            action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
+            # Metropolis test #
+            metropolis = random.random()
+            if math.exp(action/(2**17)) > metropolis:
+                ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
+                distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
     # data output #
     if iter % 50 == 0:
         distance_32 = distance_i[31]/(2**17)

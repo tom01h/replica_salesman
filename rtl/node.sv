@@ -1,4 +1,4 @@
-module replica
+module node
     import replica_pkg::*;
 #(
     parameter id = 0

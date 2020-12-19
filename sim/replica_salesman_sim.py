@@ -109,25 +109,36 @@ def py_tb():
                 ordering[ibeta] = ordering_fin.copy()
 
         # Exchange replicas #
-        if(iter%2):
+        if iter % 2 == 0:
+            for ibeta in range(0, nbeta-1, 2):
+                action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
+                # Metropolis test #
+                metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)
+                if math.exp(action/(2**17)) > metropolis:
+                    ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
+                    distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
+                    top.set_command(3)
+                    top.set_command(2)
+                else:
+                    top.set_command(1)
+                    top.set_command(1)
+        else:
             top.set_command(1)
             metropolis = (top.c_run_random(0, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
-        for ibeta in range(iter % 2, nbeta-1, 2):
-            action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
-            # Metropolis test #
-            metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)
-            if math.exp(action/(2**17)) > metropolis:
-                ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
-                distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
-                top.set_command(3)
-                top.set_command(2)
-            else:
-                top.set_command(1)
-                top.set_command(1)
-        if(iter%2):
+            for ibeta in range(2, nbeta-1, 2):
+                action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
+                # Metropolis test #
+                metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)
+                if math.exp(action/(2**17)) > metropolis:
+                    ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
+                    distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
+                    top.set_command(3)
+                    top.set_command(2)
+                else:
+                    top.set_command(1)
+                    top.set_command(1)
             top.set_command(1)
-            metropolis = (top.c_run_random(nbeta-1, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
-        for ibeta in range(iter % 2 +1, nbeta, 2):
+        for ibeta in range(1, nbeta, 2):
             metropolis = (top.c_run_random(ibeta, 0, 2**32-1, 2**32-1) + 1) / (2**32)  # dummy
         top.run_opt(0)
 
