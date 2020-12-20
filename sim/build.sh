@@ -8,8 +8,8 @@ rm -r __pycache__/  work cexports.obj cimports.dll dpiheader.h tb.obj
 vlib.exe work
 
 vlog.exe -sv -dpiheader dpiheader.h ../rtl/replica_pkg.sv tb.sv top.sv \
-    ../rtl/node.sv ../rtl/random.sv  ../rtl/distance.sv ../rtl/exchange.sv \
-    ../rtl/metropolis.sv ../rtl/opt_route.sv
+    ../rtl/node.sv ../rtl/random.sv  ../rtl/distance.sv ../rtl/metropolis.sv \
+    ../rtl/replica.sv ../rtl/replica_d.sv ../rtl/exchange.sv ../rtl/opt_route.sv
 vsim.exe tb -dpiexportobj cexports -c
 
 #/mnt/c/intelFPGA_pro/20.3/modelsim_ase/gcc-4.2.1-mingw32vc12/bin/

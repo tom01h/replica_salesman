@@ -1,7 +1,8 @@
 module node
     import replica_pkg::*;
 #(
-    parameter id = 0
+    parameter id = 0,
+    parameter replica_num = 32
 )
 (
     input  logic                      clk,
@@ -10,7 +11,8 @@ module node
     input  logic [63:0]               random_seed,
     input  logic                      random_run,
     input  exchange_command_t         c_exchange,
-    input  exchange_command_t         c_metropolis,
+    input  logic                      metropolis_test,
+    input  logic                      shift_distance,
     input  distance_command_t         c_distance,
     input  opt_command_t              opt_command,
     input  logic                      exchange_valid,
@@ -21,6 +23,9 @@ module node
     input  total_data_t               prev_dis_data,
     input  total_data_t               folw_dis_data,
     output total_data_t               out_dis_data,
+    input  logic                      prev_exchange,
+    input  logic                      folw_exchange,
+    output logic                      out_exchange,
     input  logic                      prev_ord_valid,
     input  replica_data_t             prev_ord_data,
     input  logic                      folw_ord_valid,
@@ -31,6 +36,7 @@ module node
 
 opt_t                      opt;
 opt_t                      opt_ex;
+exchange_command_t         exchange_ex;
 logic [6:0]                K;
 logic [6:0]                L;
 logic [31:0]               r_metropolis;
@@ -79,7 +85,9 @@ metropolis #(.id(id)) metropolis
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .command         ( c_metropolis    ),
+    .command         ( exchange_ex     ),
+    .metropolis_test ( metropolis_test ),
+    .shift_distance  ( shift_distance  ),
     .exchange_valid  ( exchange_valid  ),
     .in_opt          ( opt             ),
     .out_opt         ( opt_ex          ),
@@ -90,11 +98,47 @@ metropolis #(.id(id)) metropolis
     .out_data        ( out_dis_data    )
 );
 
+generate
+if(id[0] == 0)
+replica #(.id(id), .replica_num(replica_num)) replica
+(
+    .clk             ( clk             ),
+    .reset           ( reset           ),
+    .in_exchange     ( c_exchange      ),
+    .exchange_ex     ( exchange_ex     ),
+    .prev_exchange   ( prev_exchange   ),
+    .folw_exchange   ( folw_exchange   ),
+    .out_exchange    ( out_exchange    ),
+    .opt_command     ( opt_command     ),
+    .r_exchange      ( r_exchange      ),
+    .prev_data       ( prev_dis_data   ),
+    .folw_data       ( folw_dis_data   ),
+    .self_data       ( out_dis_data    )
+);
+else
+replica_d #(.id(id), .replica_num(replica_num)) replica
+(
+    .clk             ( clk             ),
+    .reset           ( reset           ),
+    .in_exchange     ( c_exchange      ),
+    .exchange_ex     ( exchange_ex     ),
+    .prev_exchange   ( prev_exchange   ),
+    .folw_exchange   ( folw_exchange   ),
+    .out_exchange    ( out_exchange    ),
+    .opt_command     ( opt_command     ),
+    .r_exchange      ( r_exchange      ),
+    .prev_data       ( prev_dis_data   ),
+    .folw_data       ( folw_dis_data   ),
+    .self_data       ( out_dis_data    )
+);
+endgenerate
+
 exchange exchange
 (
     .clk           ( clk              ),
     .reset         ( reset            ),
-    .command       ( c_exchange       ),
+    //.command       ( c_exchange       ),
+    .command       ( exchange_ex      ),
     .opt           ( opt_ex           ),
     .rbank         ( rbank            ),
     .prev_valid    ( prev_ord_valid   ),

@@ -118,45 +118,6 @@ get_total (PyObject *self, PyObject *args) {
   return list;
 }
 
-static PyObject *
-metropolis_test (PyObject *self, PyObject *args) {
-  int val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &val))
-    return NULL;
-
-  v_metropolis_test(val);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject *
-set_command (PyObject *self, PyObject *args) {
-  int command;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &command))
-    return NULL;
-
-  v_set_command(command);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject *
-run_opt (PyObject *self, PyObject *args) {
-  int command;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &command))
-    return NULL;
-
-  v_run_opt(command);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
 static PyObject*
 set_random (PyObject *self, PyObject *args){
   unsigned long long array[nbeta];
@@ -178,13 +139,13 @@ set_random (PyObject *self, PyObject *args){
 }
 
 static PyObject *
-run_random (PyObject *self, PyObject *args) {
+run (PyObject *self, PyObject *args) {
   int val;
   // 送られてきた値をパース
   if(!PyArg_ParseTuple(args, "i", &val))
     return NULL;
 
-  v_run_random(val);
+  v_run(val);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -248,15 +209,12 @@ static PyMethodDef TopMethods[] = {
   {"set_distance",    (PyCFunction)set_distance,    METH_VARARGS, "top3: set_distance"},
   {"set_total",       (PyCFunction)set_total,       METH_VARARGS, "top4: set_total"},
   {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
-  {"metropolis_test", (PyCFunction)metropolis_test, METH_VARARGS, "top6: metropolis_test"},
-  {"set_command",     (PyCFunction)set_command,     METH_VARARGS, "top7: set_command"},
-  {"run_opt",         (PyCFunction)run_opt,         METH_VARARGS, "top8: run_opt"},
-  {"set_random",      (PyCFunction)set_random,      METH_VARARGS, "top9: set_random"},
-  {"run_random",      (PyCFunction)run_random,      METH_VARARGS, "top10: run_random"},
-  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top11: fin"},
-  {"init",            (PyCFunction)init,            METH_NOARGS,  "top12: init"},
-  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top13: c_init_random"},
-  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top14: c_run_random"},
+  {"set_random",      (PyCFunction)set_random,      METH_VARARGS, "top6: set_random"},
+  {"run",             (PyCFunction)run,             METH_VARARGS, "top7: run"},
+  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top8: fin"},
+  {"init",            (PyCFunction)init,            METH_NOARGS,  "top9: init"},
+  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top10: c_init_random"},
+  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top11: c_run_random"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

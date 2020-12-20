@@ -7,6 +7,8 @@ module metropolis
     input  logic                    clk,
     input  logic                    reset,
     input  exchange_command_t       command,
+    input  logic                    metropolis_test,
+    input  logic                    shift_distance,
     input  logic                    exchange_valid,
     input  opt_t                    in_opt,
     output opt_t                    out_opt,
@@ -27,9 +29,11 @@ assign test = (delta_distance <= 0) || (n_metropolis > random);
 total_data_t                        write_data;
 logic signed [$bits(out_data):0]    delta;
 assign delta = $signed(delta_distance);
-assign write_data  = (command == PREV) ? prev_data :
+assign write_data  = ( shift_distance) ? prev_data :
+                     (~exchange_valid) ? out_data :
+                     (command == PREV) ? prev_data :
                      (command == FOLW) ? folw_data :
-                     (command == SELF && test) ? out_data + delta : 
+                     (metropolis_test && test) ? out_data + delta : 
                                          out_data;
 
 always_ff @(posedge clk) begin
