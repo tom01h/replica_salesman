@@ -7,6 +7,9 @@ module replica
 (
     input  logic                    clk,
     input  logic                    reset,
+    input  logic                    exchange_valid,
+    input  logic                    replica_run,
+    input  logic                    exchange_run,
     input  exchange_command_t       in_exchange,
     output exchange_command_t       exchange_ex,
     input  logic                    prev_exchange,
@@ -19,14 +22,14 @@ module replica
     input  total_data_t             self_data
 );
 
-logic en;
-assign en = (in_exchange != NOP) && (opt_command != THR);
-
 real action;
 real n_exchange;
 real random;
 logic test;
+exchange_command_t       exchange_l;
+
 assign out_exchange = test;
+assign exchange_ex = (~exchange_valid) ? in_exchange : exchange_l;
 
 // id[0] == 0
 always_comb begin
@@ -37,16 +40,21 @@ always_comb begin
     end
     n_exchange = $exp(action);
     random = r_exchange/$itor(1<<16)/$itor(1<<16);
-    test = (action >= 0) || (n_exchange > random);
-
-    if(~en)                                     exchange_ex = in_exchange;
-    else if(opt_command == OR1)
-        if((id == 0) || (id == replica_num-1))  exchange_ex = SELF;
-        else if(~test)                          exchange_ex = SELF;
-        else                                    exchange_ex = PREV;
-    else
-        if(~test)                               exchange_ex = SELF;
-        else                                    exchange_ex = FOLW;
 end
 
+always_ff @(posedge clk) begin
+    if(replica_run)
+        test <= (action >= 0) || (n_exchange > random);
+        
+    if(exchange_run) begin
+        if(opt_command == OR1)
+            if((id == 0) || (id == replica_num-1))  exchange_l <= SELF;
+            else if(~test)                          exchange_l <= SELF;
+            else                                    exchange_l <= PREV;
+        else
+            if(~test)                               exchange_l <= SELF;
+            else                                    exchange_l <= FOLW;
+    end else                                        exchange_l <= NOP;
+end
+    
 endmodule

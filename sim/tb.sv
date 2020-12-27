@@ -23,7 +23,6 @@ module tb;
     logic [63:0]               random_seed;
     logic                      random_run;
     logic                      run_command;
-    logic                      run_distance;
     exchange_command_t         c_exchange;
     opt_command_t              opt_com;
     logic                      distance_write;
@@ -36,7 +35,6 @@ module tb;
     logic                      ordering_out_valid;
     logic [7:0][7:0]           ordering_out_data;
     logic                      exchange_valid;
-    logic                      metropolis_test;
     logic                      shift_distance;
 
     task v_init();
@@ -45,12 +43,10 @@ module tb;
         set_random = 'b0;
         random_run = 'b0;
         run_command = 'b0;
-        run_distance = 'b0;
         distance_write = 'b0;
         ordering_in_valid = 'b0;
         reset = 1'b0;
         exchange_valid = 1'b0;
-        metropolis_test = 'b0;
         shift_distance = 'b0;
     endtask
 
@@ -147,30 +143,24 @@ module tb;
     endtask
 
     task v_run (input int command);
+        exchange_valid = 'b1;
         repeat(1) @(negedge clk);
         random_run = 'b1;
         opt_com = opt_command_t'(command);
         repeat(1) @(negedge clk);
         random_run = 'b0;
-        repeat(20) @(negedge clk);
+        repeat(20) @(negedge clk);  // random
+        repeat(20) @(negedge clk);  // delta distance
+        repeat(20) @(negedge clk);  // metropolis test
 
-        run_distance = 'b1;
-        exchange_valid = 'b1;
-        opt_com = opt_command_t'(command);
-        repeat(1) @(negedge clk);
-        run_distance = 'b0;
-        repeat(20) @(negedge clk);
-        metropolis_test = 'b1;
-        repeat(1) @(negedge clk);
-        metropolis_test = 'b0;
+        repeat(18) @(negedge clk);  // exchange test
 
-        repeat(1) @(negedge clk);
+        repeat(1) @(negedge clk);   // BUS IF が出来るまでは微調整が必要
         run_command = 'b1;
-        c_exchange = FOLW;
         repeat(1) @(negedge clk);
         run_command = 'b0;
-        repeat(1) @(negedge clk);
-        repeat(15) @(negedge clk);
+
+        repeat(20) @(negedge clk);  // replica exchange
         exchange_valid = 'b0;
     endtask
 
@@ -194,9 +184,7 @@ module tb;
         .random_seed         ( random_seed        ),
         .random_run          ( random_run         ),
         .run_command         ( run_command        ),
-        .run_distance        ( run_distance       ),
         .c_exchange          ( c_exchange         ),
-        .metropolis_test     ( metropolis_test    ),
         .shift_distance      ( shift_distance     ),
         .opt_com             ( opt_com            ),
         .exchange_valid      ( exchange_valid     ),

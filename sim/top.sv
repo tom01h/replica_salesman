@@ -10,9 +10,7 @@ module top
     input  logic [63:0]               random_seed,
     input  logic                      random_run,
     input  logic                      run_command,
-    input  logic                      run_distance,
     input  exchange_command_t         c_exchange,
-    input  logic                      metropolis_test,
     input  logic                      shift_distance,
     input  opt_command_t              opt_com,
     input  logic                      exchange_valid,
@@ -28,7 +26,6 @@ module top
 
 );
 
-distance_command_t        c_distance;
 logic                     rbank;
 exchange_command_t        c_exchange_d1;
 logic                     in_valid_d1,   in_valid_d2,   in_valid_d3;
@@ -65,7 +62,6 @@ opt_command_t             opt_command;
 integer count;
 integer opt_count;
 logic opt_run;
-logic dist_run;
 always_ff @(posedge clk)begin
     if(reset)begin
         opt_command            <= THR;
@@ -79,42 +75,9 @@ always_ff @(posedge clk)begin
             opt_run            <= '0;
             opt_command        <= THR;
         end
-    end else if(run_distance)begin
-        opt_command             <= opt_com;
-        dist_run                <= 1;
-        count                   <= 0;
-    end else if(dist_run)begin
-        count                   <= count + 1;
-        if(count == 20) begin
-            dist_run           <= 0;
-        end
     end else if(random_run)begin
         opt_command            <= opt_com;
     end
-end
-
-always_ff @(posedge clk)begin
-    if (dist_run && opt_com == OR1)
-        case(count)
-            0:                                c_distance = {KN , ZERO};
-            1:                                c_distance = {KM , MNS};
-            2:                                c_distance = {KP , PLS};
-            3:                                c_distance = {KN , MNS};
-            4:                                c_distance = {LN , PLS};
-            5:                                c_distance = {LP , MNS};
-            6:                                c_distance = {KN , PLS};
-            default:                          c_distance = {KN , DNOP};
-        endcase
-    else if (dist_run && opt_com == TWO)
-        case(count)
-            0:                                c_distance = {KN , ZERO};
-            1:                                c_distance = {KM , MNS};
-            2:                                c_distance = {LM , PLS};
-            3:                                c_distance = {LN , MNS};
-            4:                                c_distance = {KN , PLS};
-            default:                          c_distance = {KN , DNOP};
-        endcase
-    else                                      c_distance = {KN , DNOP};
 end
 
 logic             [replica_num+1:0]  ordering_valid;
@@ -132,6 +95,25 @@ assign t_exchange[replica_num+1] = 'b0;
 always_comb
     for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[replica_num][7-i][6:0];
 
+logic                 random_run_w;
+distance_command_t    distance_com;
+logic                 metropolis_run;
+logic                 replica_run;
+logic                 exchange_run;
+
+node_control node_control
+(
+    .clk            ( clk            ),
+    .reset          ( reset          ),
+    .run            ( random_run     ),
+    .opt_command    ( opt_command    ),
+    .random_run     ( random_run_w   ),
+    .distance_com   ( distance_com   ),
+    .metropolis_run ( metropolis_run ),
+    .replica_run    ( replica_run    ),
+    .exchange_run   ( exchange_run   )
+);
+
 for (genvar g = 0; g < replica_num; g += 1) begin
     node #(.id(g), .replica_num(replica_num)) node
     (
@@ -139,11 +121,13 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .reset           ( reset               ),
         .random_init     ( random_init[g]      ),
         .random_seed     ( random_seed         ),
-        .random_run      ( random_run          ),
+        .random_run      ( random_run_w        ),
         .c_exchange      ( c_exchange_d1       ),
-        .metropolis_test ( metropolis_test     ),
+        .metropolis_run  ( metropolis_run      ),
+        .replica_run     ( replica_run         ),
+        .exchange_run    ( exchange_run        ),
         .shift_distance  ( shift_distance      ),
-        .c_distance      ( c_distance          ),
+        .distance_com    ( distance_com        ),
         .opt_command     ( opt_command         ),
         .exchange_valid  ( exchange_valid      ),
         .rbank           ( rbank               ),

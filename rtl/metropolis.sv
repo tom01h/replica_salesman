@@ -7,7 +7,7 @@ module metropolis
     input  logic                    clk,
     input  logic                    reset,
     input  exchange_command_t       command,
-    input  logic                    metropolis_test,
+    input  logic                    metropolis_run,
     input  logic                    shift_distance,
     input  logic                    exchange_valid,
     input  opt_t                    in_opt,
@@ -33,7 +33,7 @@ assign write_data  = ( shift_distance) ? prev_data :
                      (~exchange_valid) ? out_data :
                      (command == PREV) ? prev_data :
                      (command == FOLW) ? folw_data :
-                     (metropolis_test && test) ? out_data + delta : 
+                     (metropolis_run && test) ? out_data + delta : 
                                          out_data;
 
 always_ff @(posedge clk) begin
