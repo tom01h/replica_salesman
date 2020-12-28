@@ -32,8 +32,7 @@ module tb;
     logic                      ordering_write;
     logic [7:0][7:0]           ordering_wdata;
     logic                      ordering_ready;
-    logic                      ordering_out_valid;
-    logic [7:0][7:0]           ordering_out_data;
+    logic [7:0][7:0]           ordering_rdata;
     logic                      exchange_valid;
     logic                      shift_distance;
 
@@ -77,12 +76,13 @@ module tb;
         for(int i = 0; i < size/8; i++)begin
             do @(negedge clk); while(ordering_ready == 0);
             for(int j = 0; j < 8; j++)begin
-                data[i*8+j] = ordering_out_data[7-j];
+                data[i*8+j] = ordering_rdata[7-j];
             end
+            // ordering_read = 'b0; @(negedge clk); ordering_read = 'b1;
         end
         do @(negedge clk); while(ordering_ready == 0);
         for(int j = 0; j < size%8; j++)begin
-            data[size/8*8+j] = ordering_out_data[7-j];
+            data[size/8*8+j] = ordering_rdata[7-j];
         end
         ordering_read = 'b0;
     endtask
@@ -178,7 +178,6 @@ module tb;
         .ordering_write      ( ordering_write     ),
         .ordering_wdata      ( ordering_wdata     ),
         .ordering_ready      ( ordering_ready     ),
-        .ordering_out_valid  ( ordering_out_valid ),
-        .ordering_out_data   ( ordering_out_data  )
+        .ordering_rdata      ( ordering_rdata     )
     );
 endmodule

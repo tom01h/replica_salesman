@@ -3,34 +3,67 @@ module node_reg
 (
     input  logic                    clk,
     input  logic                    reset,
+    
     input  logic [city_div_log-1:0] ordering_num,
     input  logic                    ordering_read,
     input  logic                    ordering_out_valid,
+    input  replica_data_t           ordering_out_data,
+    output logic [7:0][7:0]         ordering_rdata,
     input  logic                    ordering_write,
     input  logic [7:0][7:0]         ordering_wdata,
     output logic                    ordering_reg_valid,
     output replica_data_t           ordering_reg_data,
     output logic                    ordering_ready,
+
     output logic                    exchange_shift,
     output logic                    exchange_shift_d
 );
 
-logic [city_div_log-1:0] ordering_cnt;
-logic                    ordering_rready;
+replica_data_t [city_div-1:0]     ordering_data;
+logic          [city_div_log:0]   ordering_wadder;
+logic          [city_div_log:0]   ordering_radder;
+logic                             ordering_wready;
+logic                             ordering_rready;
 
-assign ordering_ready = ordering_rready || ordering_out_valid && ordering_read;
+assign ordering_ready  = ordering_wready & ordering_rready;
+
+always_ff @(posedge clk) begin
+    if(reset)                                               ordering_rready <= 'b1;
+    else if(ordering_read & exchange_shift_d)               ordering_rready <= 'b0;
+    else if(ordering_radder[city_div_log] & exchange_shift) ordering_rready <= 'b0;
+    else if(ordering_wadder != ordering_radder)             ordering_rready <= 'b1;
+    
+    if(reset)                   ordering_wadder <= 'b0;
+    else if(exchange_shift)     ordering_wadder <= 'b0;
+    else if(ordering_out_valid && ordering_wadder <= city_div)
+                                ordering_wadder <= ordering_wadder + 1;
+    if(ordering_out_valid)      ordering_data[ordering_wadder] <= ordering_out_data;
+end
+
+logic          [city_div_log-1:0] ordering_cnt;
+
 assign exchange_shift = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
+
+always_ff @(posedge clk)
+    for(int i=0; i<8; i++) ordering_rdata[i] = {1'b0, ordering_data[ordering_radder][7-i]};
 
 always_ff @(posedge clk) begin
     exchange_shift_d <= exchange_shift;    
     if(reset) begin
         ordering_cnt   <= 'b0;
-        ordering_rready <= 1'b1;
-    end else if(ordering_write || ordering_read) begin
+        ordering_wready <= 1'b1;
+        ordering_radder <= '1;
+    end else if(ordering_write) begin
+        ordering_radder <= '1;
         if(ordering_cnt == ordering_num)               ordering_cnt <= 'b0;
-        else if(ordering_cnt == 'b0 && ordering_ready) begin ordering_rready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
-        else if(ordering_ready)                        ordering_cnt <= ordering_cnt + 1;
-        else if(ordering_write)                        ordering_rready <= 1'b1;
+        else if(ordering_ready)begin
+            if(ordering_cnt == 'b0)              begin ordering_wready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
+            else                                       ordering_cnt <= ordering_cnt + 1;
+        end else                                       ordering_wready <= 1'b1;
+    end else if(ordering_read) begin
+        if(ordering_cnt == ordering_num)               ordering_cnt <= 'b0;
+        else if(ordering_wadder != ordering_radder)    ordering_cnt <= ordering_cnt + 1;
+        if(ordering_wadder != ordering_radder)     ordering_radder <= ordering_cnt;
     end
 end
 

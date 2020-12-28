@@ -26,8 +26,7 @@ module top
     input  logic                      ordering_write,
     input  logic [7:0][7:0]           ordering_wdata,
     output logic                      ordering_ready,
-    output logic                      ordering_out_valid,
-    output logic [7:0][7:0]           ordering_out_data
+    output logic [7:0][7:0]           ordering_rdata
 
 );
 
@@ -43,14 +42,15 @@ logic                                exchange_shift_d;
 
 logic             [replica_num+1:0]  ordering_valid;
 replica_data_t    [replica_num+1:0]  ordering_data;
+logic                                ordering_out_valid;
+replica_data_t                       ordering_out_data;
 logic                                ordering_reg_valid;
 replica_data_t                       ordering_reg_data;
 
 assign ordering_valid[0]  = ordering_reg_valid;
 assign ordering_data[0]   = ordering_reg_data;
 assign ordering_out_valid = ordering_valid[replica_num];
-always_comb
-    for(int i=0; i<8; i++) ordering_out_data[i] = {1'b0, ordering_data[replica_num][7-i]};
+assign ordering_out_data  = ordering_data[replica_num];
 
 node_reg node_reg
 (
@@ -59,6 +59,8 @@ node_reg node_reg
     .ordering_num       ( 2'd3               ),
     .ordering_read      ( ordering_read      ),
     .ordering_out_valid ( ordering_out_valid ),
+    .ordering_out_data  ( ordering_out_data  ),
+    .ordering_rdata     ( ordering_rdata     ),
     .ordering_write     ( ordering_write     ),
     .ordering_wdata     ( ordering_wdata     ),
     .ordering_reg_valid ( ordering_reg_valid ),

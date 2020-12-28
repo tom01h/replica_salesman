@@ -161,9 +161,11 @@ end
 always_ff @(posedge clk) begin
     if(set_p) p <= out_data_i[K8];
     hold_d1 <= hold[7:0];
-    if((dcount == (L+1)/8) && (opt_d.command == OR1)) hold_d1[L8] <= '1;
-    if(rev_d && K8 + L8 < 7 && (opt_d.command == TWO)) hold_d1 <= hold_d1 | hold;
-    if((dcount == (L-1)/8) && ~rev_d && K8 + L8 >= 7 && (opt_d.command == TWO)) hold_d1 <= hold_d1 | hold;
+    if(command == NOP) begin
+        if((dcount == (L+1)/8) && (opt_d.command == OR1)) hold_d1[L8] <= '1;
+        if(                        rev_d && K8 + L8 <  7 && (opt_d.command == TWO)) hold_d1 <= hold_d1 | hold;
+        if((dcount == (L-1)/8) && ~rev_d && K8 + L8 >= 7 && (opt_d.command == TWO)) hold_d1 <= hold_d1 | hold;
+    end        
     for(int i = 0; i < 8; i += 1) begin
         if (opt_d.command == OR0) begin
             if(~set_p & use_p & i == L8)  out_data_hold[i] <= p;
