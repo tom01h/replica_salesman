@@ -8,7 +8,7 @@ rm -r __pycache__/  work cexports.obj cimports.dll dpiheader.h tb.obj
 vlib.exe work
 
 vlog.exe -sv -dpiheader dpiheader.h ../rtl/replica_pkg.sv tb.sv top.sv \
-    ../rtl/node.sv ../rtl/node_control.sv \
+    ../rtl/node.sv ../rtl/node_control.sv ../rtl/node_reg.sv \
     ../rtl/random.sv  ../rtl/distance.sv ../rtl/metropolis.sv \
     ../rtl/replica.sv ../rtl/replica_d.sv ../rtl/exchange.sv ../rtl/opt_route.sv
 vsim.exe tb -dpiexportobj cexports -c

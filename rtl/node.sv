@@ -14,11 +14,11 @@ module node
     input  logic                      metropolis_run,
     input  logic                      replica_run,
     input  logic                      exchange_run,
-    input  exchange_command_t         c_exchange,
+    input  logic                      exchange_shift_d,
     input  logic                      shift_distance,
     input  opt_command_t              opt_command,
     input  logic                      exchange_valid,
-    input  logic                      rbank,
+    input  logic                      exchange_bank,
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
@@ -55,17 +55,17 @@ delata_data_t              delta_distance;
 
 random random
 (
-    .clk          ( clk          ),
-    .reset        ( reset        ),
-    .cmd          ( opt.command  ),
-    .init         ( random_init  ),
-    .i_seed       ( random_seed  ),
-    .run          ( random_run   ),
-    .ready        (              ),
-    .K            ( K            ),
-    .L            ( L            ),
-    .r_metropolis ( r_metropolis ),
-    .r_exchange   ( r_exchange   )
+    .clk             ( clk             ),
+    .reset           ( reset           ),
+    .cmd             ( opt.command     ),
+    .init            ( random_init     ),
+    .i_seed          ( random_seed     ),
+    .run             ( random_run      ),
+    .ready           (                 ),
+    .K               ( K               ),
+    .L               ( L               ),
+    .r_metropolis    ( r_metropolis    ),
+    .r_exchange      ( r_exchange      )
 );
 
 distance distance
@@ -109,7 +109,7 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .exchange_valid  ( exchange_valid  ),
     .replica_run     ( replica_run     ),
     .exchange_run    ( exchange_run    ),
-    .in_exchange     ( c_exchange      ),
+    .exchange_shift_d( exchange_shift_d),
     .exchange_ex     ( exchange_ex     ),
     .prev_exchange   ( prev_exchange   ),
     .folw_exchange   ( folw_exchange   ),
@@ -128,7 +128,7 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
     .exchange_valid  ( exchange_valid  ),
     .replica_run     ( replica_run     ),
     .exchange_run    ( exchange_run    ),
-    .in_exchange     ( c_exchange      ),
+    .exchange_shift_d( exchange_shift_d),
     .exchange_ex     ( exchange_ex     ),
     .prev_exchange   ( prev_exchange   ),
     .folw_exchange   ( folw_exchange   ),
@@ -143,20 +143,20 @@ endgenerate
 
 exchange exchange
 (
-    .clk           ( clk              ),
-    .reset         ( reset            ),
-    .command       ( exchange_ex      ),
-    .opt           ( opt_ex           ),
-    .rbank         ( rbank            ),
-    .prev_valid    ( prev_ord_valid   ),
-    .prev_data     ( prev_ord_data    ),
-    .folw_valid    ( folw_ord_valid   ),
-    .folw_data     ( folw_ord_data    ),
-    .out_valid     ( out_ord_valid    ),
-    .out_data      ( out_ord_data     ),
-    .ordering_read ( ordering_read    ),
-    .ordering_addr ( ordering_addr    ),
-    .ordering_data ( ordering_data    )
+    .clk             ( clk              ),
+    .reset           ( reset            ),
+    .command         ( exchange_ex      ),
+    .opt             ( opt_ex           ),
+    .exchange_bank   ( exchange_bank    ),
+    .prev_valid      ( prev_ord_valid   ),
+    .prev_data       ( prev_ord_data    ),
+    .folw_valid      ( folw_ord_valid   ),
+    .folw_data       ( folw_ord_data    ),
+    .out_valid       ( out_ord_valid    ),
+    .out_data        ( out_ord_data     ),
+    .ordering_read   ( ordering_read    ),
+    .ordering_addr   ( ordering_addr    ),
+    .ordering_data   ( ordering_data    )
 
 );
 

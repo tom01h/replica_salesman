@@ -6,30 +6,30 @@ module top
 (
     input  logic                      clk,
     input  logic                      reset,
+    
     input  logic                      set_random,
     input  logic [63:0]               random_seed,
-    input  logic                      random_run,
-    input  logic                      run_command,
-    input  exchange_command_t         c_exchange,
-    input  logic                      shift_distance,
+    
+    input  logic                      opt_run,
     input  opt_command_t              opt_com,
     input  logic                      exchange_valid,
+    
     input  logic                      distance_write,
     input  logic [city_num_log*2-1:0] distance_w_addr,
     input  distance_data_t            distance_w_data,
+
+    input  logic                      shift_distance,
     input  total_data_t               total_in_data,
     output total_data_t               total_out_data,
-    input  logic                      ordering_in_valid,
-    input  logic [7:0][7:0]           ordering_in_data,
+
+    input  logic                      ordering_read,
+    input  logic                      ordering_write,
+    input  logic [7:0][7:0]           ordering_wdata,
+    output logic                      ordering_ready,
     output logic                      ordering_out_valid,
     output logic [7:0][7:0]           ordering_out_data
 
 );
-
-logic                     rbank;
-exchange_command_t        c_exchange_d1;
-logic                     in_valid_d1,   in_valid_d2,   in_valid_d3;
-replica_data_t            in_data_d1,    in_data_d2,    in_data_d3;
 
 logic [replica_num-1:0]   random_init;
 
@@ -38,117 +38,101 @@ always_ff @(posedge clk)begin
     else      random_init <= {random_init,set_random};
 end
     
-always_ff @(posedge clk)begin
-    if(reset)begin
-        rbank <= '0;
-        c_exchange_d1 <= NOP;
-    end else begin
-        if(run_command)begin
-            rbank <= ~rbank;
-            c_exchange_d1 <= c_exchange;
-        end else begin
-            c_exchange_d1 <= NOP;
-        end    
-        in_valid_d1 <= ordering_in_valid;
-        for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_in_data[7-i][6:0];
-        in_valid_d2 <= in_valid_d1;
-        in_data_d2 <= in_data_d1;
-        in_valid_d3 <= in_valid_d2;
-        in_data_d3 <= in_data_d2;
-    end
-end
-
-opt_command_t             opt_command;
-integer count;
-integer opt_count;
-logic opt_run;
-always_ff @(posedge clk)begin
-    if(reset)begin
-        opt_command            <= THR;
-    end else if(run_command)begin
-        count                  <= 0;
-        opt_count              <= 0;
-        opt_run                <= 1;
-    end else if(opt_run)begin
-        count                  <= count + 1;
-        if(count == 5)begin
-            opt_run            <= '0;
-            opt_command        <= THR;
-        end
-    end else if(random_run)begin
-        opt_command            <= opt_com;
-    end
-end
+logic                                exchange_shift;
+logic                                exchange_shift_d;
 
 logic             [replica_num+1:0]  ordering_valid;
 replica_data_t    [replica_num+1:0]  ordering_data;
-total_data_t      [replica_num+1:0]  dis_data;
-logic             [replica_num+1:0]  t_exchange;
+logic                                ordering_reg_valid;
+replica_data_t                       ordering_reg_data;
 
-assign ordering_valid[0] = in_valid_d3;
-assign ordering_data[0]  = in_data_d3;
-assign dis_data[0] = total_in_data;
-assign total_out_data = dis_data[replica_num];
-assign t_exchange[0] = 'b0;
-assign t_exchange[replica_num+1] = 'b0;
-
+assign ordering_valid[0]  = ordering_reg_valid;
+assign ordering_data[0]   = ordering_reg_data;
+assign ordering_out_valid = ordering_valid[replica_num];
 always_comb
-    for(int i=0; i<8; i++) ordering_out_data[i][6:0] = ordering_data[replica_num][7-i][6:0];
+    for(int i=0; i<8; i++) ordering_out_data[i] = {1'b0, ordering_data[replica_num][7-i]};
 
-logic                 random_run_w;
+node_reg node_reg
+(
+    .clk                ( clk                ),
+    .reset              ( reset              ),
+    .ordering_num       ( 2'd3               ),
+    .ordering_read      ( ordering_read      ),
+    .ordering_out_valid ( ordering_out_valid ),
+    .ordering_write     ( ordering_write     ),
+    .ordering_wdata     ( ordering_wdata     ),
+    .ordering_reg_valid ( ordering_reg_valid ),
+    .ordering_reg_data  ( ordering_reg_data  ),
+    .ordering_ready     ( ordering_ready     ),
+    .exchange_shift     ( exchange_shift     ),
+    .exchange_shift_d   ( exchange_shift_d   )
+);
+
+logic                 random_run;
 distance_command_t    distance_com;
 logic                 metropolis_run;
 logic                 replica_run;
 logic                 exchange_run;
+logic                 exchange_bank;
 
 node_control node_control
 (
     .clk            ( clk            ),
     .reset          ( reset          ),
-    .run            ( random_run     ),
-    .opt_command    ( opt_command    ),
-    .random_run     ( random_run_w   ),
+    .run            ( opt_run        ),
+    .opt_command    ( opt_com        ),
+    .random_run     ( random_run     ),
     .distance_com   ( distance_com   ),
     .metropolis_run ( metropolis_run ),
     .replica_run    ( replica_run    ),
-    .exchange_run   ( exchange_run   )
+    .exchange_run   ( exchange_run   ),
+    .exchange_bank  ( exchange_bank  ),
+    .exchange_shift ( exchange_shift )
 );
+
+total_data_t      [replica_num+1:0]  dis_data;
+logic             [replica_num+1:0]  t_exchange;
+
+assign dis_data[0] = total_in_data;
+assign total_out_data = dis_data[replica_num];
+assign t_exchange[0] = 'b0;
+assign t_exchange[replica_num+1] = 'b0;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     node #(.id(g), .replica_num(replica_num)) node
     (
-        .clk             ( clk                 ),
-        .reset           ( reset               ),
-        .random_init     ( random_init[g]      ),
-        .random_seed     ( random_seed         ),
-        .random_run      ( random_run_w        ),
-        .c_exchange      ( c_exchange_d1       ),
-        .metropolis_run  ( metropolis_run      ),
-        .replica_run     ( replica_run         ),
-        .exchange_run    ( exchange_run        ),
-        .shift_distance  ( shift_distance      ),
-        .distance_com    ( distance_com        ),
-        .opt_command     ( opt_command         ),
-        .exchange_valid  ( exchange_valid      ),
-        .rbank           ( rbank               ),
-        .distance_write  ( distance_write      ),
-        .distance_w_addr ( distance_w_addr     ),
-        .distance_w_data ( distance_w_data     ),
+        .clk              ( clk                 ),
+        .reset            ( reset               ),
+        .random_init      ( random_init[g]      ),
+        .random_seed      ( random_seed         ),
+        .random_run       ( random_run          ),
+        .metropolis_run   ( metropolis_run      ),
+        .replica_run      ( replica_run         ),
+        .exchange_run     ( exchange_run        ),
+        .exchange_shift_d ( exchange_shift_d    ),
+        .shift_distance   ( shift_distance      ),
+        .distance_com     ( distance_com        ),
+        .opt_command      ( opt_com             ),
+        .exchange_valid   ( exchange_valid      ),
+        .exchange_bank    ( exchange_bank       ),
+        .distance_write   ( distance_write      ),
+        .distance_w_addr  ( distance_w_addr     ),
+        .distance_w_data  ( distance_w_data     ),
 
-        .prev_dis_data   ( dis_data[g]         ),
-        .folw_dis_data   ( dis_data[g+2]       ),
-        .out_dis_data    ( dis_data[g+1]       ),
+        .prev_dis_data    ( dis_data[g]         ),
+        .folw_dis_data    ( dis_data[g+2]       ),
+        .out_dis_data     ( dis_data[g+1]       ),
         
-        .prev_exchange   ( t_exchange[g]       ),
-        .folw_exchange   ( t_exchange[g+2]     ),
-        .out_exchange    ( t_exchange[g+1]     ),
+        .prev_exchange    ( t_exchange[g]       ),
+        .folw_exchange    ( t_exchange[g+2]     ),
+        .out_exchange     ( t_exchange[g+1]     ),
 
-        .prev_ord_valid  ( ordering_valid[g]   ),
-        .prev_ord_data   ( ordering_data[g]    ),
-        .folw_ord_valid  ( ordering_valid[g+2] ),
-        .folw_ord_data   ( ordering_data[g+2]  ),
-        .out_ord_valid   ( ordering_valid[g+1] ),
-        .out_ord_data    ( ordering_data[g+1]  )
+        .prev_ord_valid   ( ordering_valid[g]   ),
+        .prev_ord_data    ( ordering_data[g]    ),
+        .folw_ord_valid   ( ordering_valid[g+2] ),
+        .folw_ord_data    ( ordering_data[g+2]  ),
+        .out_ord_valid    ( ordering_valid[g+1] ),
+        .out_ord_data     ( ordering_data[g+1]  )
     );
 end
 

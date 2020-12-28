@@ -10,7 +10,7 @@ module replica_d
     input  logic                    exchange_valid,
     input  logic                    replica_run,
     input  logic                    exchange_run,
-    input  exchange_command_t       in_exchange,
+    input  logic                    exchange_shift_d,
     output exchange_command_t       exchange_ex,
     input  logic                    prev_exchange,
     input  logic                    folw_exchange,
@@ -25,7 +25,7 @@ module replica_d
 exchange_command_t       exchange_l;
 
 assign out_exchange = (exchange_l != SELF);
-assign exchange_ex = (~exchange_valid) ? in_exchange : exchange_l;
+assign exchange_ex = (exchange_valid) ? exchange_l : (exchange_shift_d) ? PREV : NOP;
 
 always_ff @(posedge clk) begin
     if(exchange_run) begin

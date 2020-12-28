@@ -5,7 +5,7 @@ module exchange
     input  logic                    reset,
     input  exchange_command_t       command,
     input  opt_t                    opt,
-    input  logic                    rbank,
+    input  logic                    exchange_bank,
     input  logic                    prev_valid,
     input  replica_data_t           prev_data,
     input  logic                    folw_valid,
@@ -39,7 +39,7 @@ assign write_data  = (command_d3 == PREV) ? prev_data :
 logic                                   rbank_i;
 logic               [city_div_log-1:0]  raddr_i;
 logic               [2:0]               ordering_sel;
-assign rbank_i = (ordering_read) ? ~rbank : rbank;
+assign rbank_i = (ordering_read) ? ~exchange_bank : exchange_bank;
 assign raddr_i = (ordering_read) ? ordering_addr[city_num_log-1:3] : rcount;
 always_ff @(posedge clk) begin
     ordering_sel <= ordering_addr[2:0];
@@ -67,7 +67,7 @@ always_ff @(posedge clk) begin
     command_d2 <= command_d1;
     command_d3 <= command_d2;
     command_nop_d <= (command == NOP);
-    wbank_d1   <= ~rbank;
+    wbank_d1   <= ~exchange_bank;
     wbank_d2   <= wbank_d1;
     wbank_d3   <= wbank_d2;
     opt_d1     <= opt;

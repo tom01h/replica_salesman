@@ -13,7 +13,9 @@ module node_control
     output distance_command_t       distance_com,
     output logic                    metropolis_run,
     output logic                    replica_run,
-    output logic                    exchange_run
+    output logic                    exchange_run,
+    output logic                    exchange_bank,
+    input  logic                    exchange_shift
 );
 
 logic [6:0] cycle_cnt;
@@ -73,4 +75,10 @@ always_ff @(posedge clk)begin
     else                                      distance_com = {KN , DNOP};
 end
 
+always_ff @(posedge clk)begin
+    if(reset)                exchange_bank <= '0;
+    else if(exchange_run)    exchange_bank <= ~exchange_bank;
+    else if(exchange_shift)  exchange_bank <= ~exchange_bank;
+end
+            
 endmodule

@@ -10,7 +10,7 @@ module replica
     input  logic                    exchange_valid,
     input  logic                    replica_run,
     input  logic                    exchange_run,
-    input  exchange_command_t       in_exchange,
+    input  logic                    exchange_shift_d,
     output exchange_command_t       exchange_ex,
     input  logic                    prev_exchange,
     input  logic                    folw_exchange,
@@ -29,7 +29,7 @@ logic test;
 exchange_command_t       exchange_l;
 
 assign out_exchange = test;
-assign exchange_ex = (~exchange_valid) ? in_exchange : exchange_l;
+assign exchange_ex = (exchange_valid) ? exchange_l : (exchange_shift_d) ? PREV : NOP;
 
 // id[0] == 0
 always_comb begin
