@@ -5,14 +5,17 @@ module node_reg
     input  logic                    reset,
     
     input  logic [city_div_log-1:0] ordering_num,
+    
     input  logic                    ordering_read,
     input  logic                    ordering_out_valid,
     input  replica_data_t           ordering_out_data,
     output logic [7:0][7:0]         ordering_rdata,
+    
     input  logic                    ordering_write,
     input  logic [7:0][7:0]         ordering_wdata,
     output logic                    ordering_reg_valid,
     output replica_data_t           ordering_reg_data,
+
     output logic                    ordering_ready,
 
     output logic                    exchange_shift,
@@ -24,14 +27,16 @@ logic          [city_div_log:0]   ordering_wadder;
 logic          [city_div_log:0]   ordering_radder;
 logic                             ordering_wready;
 logic                             ordering_rready;
+logic                             ordering_read_en;
 
-assign ordering_ready  = ordering_wready & ordering_rready;
+assign ordering_ready   = ordering_wready & ordering_rready;
+assign ordering_read_en = ordering_wadder != ordering_radder;
 
 always_ff @(posedge clk) begin
     if(reset)                                               ordering_rready <= 'b1;
     else if(ordering_read & exchange_shift_d)               ordering_rready <= 'b0;
     else if(ordering_radder[city_div_log] & exchange_shift) ordering_rready <= 'b0;
-    else if(ordering_wadder != ordering_radder)             ordering_rready <= 'b1;
+    else if(ordering_read_en)                               ordering_rready <= 'b1;
     
     if(reset)                   ordering_wadder <= 'b0;
     else if(exchange_shift)     ordering_wadder <= 'b0;
@@ -55,15 +60,15 @@ always_ff @(posedge clk) begin
         ordering_radder <= '1;
     end else if(ordering_write) begin
         ordering_radder <= '1;
-        if(ordering_cnt == ordering_num)               ordering_cnt <= 'b0;
+        if(ordering_cnt == ordering_num)                           ordering_cnt <= 'b0;
         else if(ordering_ready)begin
-            if(ordering_cnt == 'b0)              begin ordering_wready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
-            else                                       ordering_cnt <= ordering_cnt + 1;
-        end else                                       ordering_wready <= 1'b1;
+            if(ordering_cnt == 'b0) begin ordering_wready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
+            else                                                   ordering_cnt <= ordering_cnt + 1;
+        end else                          ordering_wready <= 1'b1;
     end else if(ordering_read) begin
-        if(ordering_cnt == ordering_num)               ordering_cnt <= 'b0;
-        else if(ordering_wadder != ordering_radder)    ordering_cnt <= ordering_cnt + 1;
-        if(ordering_wadder != ordering_radder)     ordering_radder <= ordering_cnt;
+        if(ordering_cnt == ordering_num)                           ordering_cnt <= 'b0;
+        else if(ordering_read_en)                                  ordering_cnt <= ordering_cnt + 1;
+        if(ordering_read_en)              ordering_radder <= ordering_cnt;
     end
 end
 

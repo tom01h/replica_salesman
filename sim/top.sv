@@ -14,20 +14,19 @@ module top
     input  opt_command_t              opt_com,
     input  logic                      exchange_valid,
     
-    input  logic                      distance_write,
-    input  logic [city_num_log*2-1:0] distance_w_addr,
-    input  distance_data_t            distance_w_data,
+    input  logic                      tp_dis_write,
+    input  logic [city_num_log*2-1:0] tp_dis_waddr,
+    input  distance_data_t            tp_dis_wdata,
 
-    input  logic                      shift_distance,
+    input  logic                      distance_shift,
     input  total_data_t               total_in_data,
     output total_data_t               total_out_data,
 
     input  logic                      ordering_read,
+    output logic [7:0][7:0]           ordering_rdata,
     input  logic                      ordering_write,
     input  logic [7:0][7:0]           ordering_wdata,
-    output logic                      ordering_ready,
-    output logic [7:0][7:0]           ordering_rdata
-
+    output logic                      ordering_ready
 );
 
 logic [replica_num-1:0]   random_init;
@@ -57,15 +56,19 @@ node_reg node_reg
     .clk                ( clk                ),
     .reset              ( reset              ),
     .ordering_num       ( 2'd3               ),
+    
     .ordering_read      ( ordering_read      ),
     .ordering_out_valid ( ordering_out_valid ),
     .ordering_out_data  ( ordering_out_data  ),
     .ordering_rdata     ( ordering_rdata     ),
+    
     .ordering_write     ( ordering_write     ),
     .ordering_wdata     ( ordering_wdata     ),
     .ordering_reg_valid ( ordering_reg_valid ),
     .ordering_reg_data  ( ordering_reg_data  ),
+    
     .ordering_ready     ( ordering_ready     ),
+    
     .exchange_shift     ( exchange_shift     ),
     .exchange_shift_d   ( exchange_shift_d   )
 );
@@ -105,21 +108,25 @@ for (genvar g = 0; g < replica_num; g += 1) begin
     (
         .clk              ( clk                 ),
         .reset            ( reset               ),
-        .random_init      ( random_init[g]      ),
+        
+        .random_init      ( random_init[g]      ), // set random seed
         .random_seed      ( random_seed         ),
-        .random_run       ( random_run          ),
-        .metropolis_run   ( metropolis_run      ),
-        .replica_run      ( replica_run         ),
-        .exchange_run     ( exchange_run        ),
-        .exchange_shift_d ( exchange_shift_d    ),
-        .shift_distance   ( shift_distance      ),
-        .distance_com     ( distance_com        ),
-        .opt_command      ( opt_com             ),
-        .exchange_valid   ( exchange_valid      ),
+        .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
+        .tp_dis_waddr     ( tp_dis_waddr        ),
+        .tp_dis_wdata     ( tp_dis_wdata        ),
+        .distance_shift   ( distance_shift      ), // set total distance //// total
+        .exchange_shift_d ( exchange_shift_d    ), // set ordering
+        
+        .exchange_valid   ( exchange_valid      ), // opt running
+        .opt_command      ( opt_com             ), // opt mode
+        
+        .random_run       ( random_run          ), // random
+        .distance_com     ( distance_com        ), // delta distance
+        .metropolis_run   ( metropolis_run      ), // metropolis test
+        .replica_run      ( replica_run         ), // replica exchange test
+        .exchange_run     ( exchange_run        ), // chenge ordering & replica exchange
+
         .exchange_bank    ( exchange_bank       ),
-        .distance_write   ( distance_write      ),
-        .distance_w_addr  ( distance_w_addr     ),
-        .distance_w_data  ( distance_w_data     ),
 
         .prev_dis_data    ( dis_data[g]         ),
         .folw_dis_data    ( dis_data[g+2]       ),

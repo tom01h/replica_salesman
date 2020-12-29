@@ -3,15 +3,17 @@ module distance
 (
     input  logic                      clk,
     input  logic                      reset,
+    
+    input  logic                      tp_dis_write,
+    input  logic [city_num_log*2-1:0] tp_dis_waddr,
+    input  distance_data_t            tp_dis_wdata,
+
     input  distance_command_t         command,
     input  opt_t                      opt,
-    input  logic                      distance_write,
-    input  logic [city_num_log*2-1:0] distance_w_addr,
-    input  distance_data_t            distance_w_data,
+    output delata_data_t              delta_distance,
     output logic                      ordering_read,
     output logic [city_num_log-1:0]   ordering_addr,
-    input  logic [city_num_log-1:0]   ordering_data,
-    output delata_data_t              delta_distance
+    input  logic [city_num_log-1:0]   ordering_data
 );
 
 distance_op_t            command_op_i;
@@ -97,11 +99,11 @@ end
 
 distance_data_t [(city_num+1)*city_num/2-1:0] ram;
 logic [city_num_log*2-1:0] distance_addr;
-assign distance_addr = (distance_write) ? distance_w_addr : distance_r_addr;
+assign distance_addr = (tp_dis_write) ? tp_dis_waddr : distance_r_addr;
 
 always_ff @(posedge clk) begin
-    if(distance_write)
-        ram[distance_addr] <= distance_w_data;
+    if(tp_dis_write)
+        ram[distance_addr] <= tp_dis_wdata;
     else
         distance_data <= ram[distance_addr];
 end

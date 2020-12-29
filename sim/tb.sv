@@ -23,9 +23,9 @@ module tb;
     logic [63:0]               random_seed;
     logic                      opt_run;
     opt_command_t              opt_com;
-    logic                      distance_write;
-    logic [city_num_log*2-1:0] distance_w_addr;
-    distance_data_t            distance_w_data;
+    logic                      tp_dis_write;
+    logic [city_num_log*2-1:0] tp_dis_waddr;
+    distance_data_t            tp_dis_wdata;
     total_data_t               total_in_data;
     total_data_t               total_out_data;
     logic                      ordering_read;
@@ -34,20 +34,20 @@ module tb;
     logic                      ordering_ready;
     logic [7:0][7:0]           ordering_rdata;
     logic                      exchange_valid;
-    logic                      shift_distance;
+    logic                      distance_shift;
 
     task v_init();
-        reset = 1'b1;
+        reset = 'b1;
         repeat(10) @(negedge clk);
         opt_com = THR;
         set_random = 'b0;
         opt_run = 'b0;
-        distance_write = 'b0;
+        tp_dis_write = 'b0;
         ordering_read = 'b0;
         ordering_write = 'b0;
-        reset = 1'b0;
-        exchange_valid = 1'b0;
-        shift_distance = 'b0;
+        reset = 'b0;
+        exchange_valid = 'b0;
+        distance_shift = 'b0;
     endtask
 
     task v_finish();
@@ -88,36 +88,36 @@ module tb;
     endtask
 
     task v_set_distance (input int data[ncity*ncity], input int size);
-        distance_w_addr = 'b0;
+        tp_dis_waddr = 'b0;
 
-        distance_write = 'b1;
+        tp_dis_write = 'b1;
         for(int i=1; i<size; i++)begin
             for(int j=0; j<i; j++)begin
-                distance_w_data = data[i*size + j];
+                tp_dis_wdata = data[i*size + j];
                 repeat(1) @(negedge clk);
-                distance_w_addr += 1;
+                tp_dis_waddr += 1;
             end
         end
-        distance_write = 'b0;
+        tp_dis_write = 'b0;
         
     endtask;
         
     task v_set_total (input int data[nbeta], input int size);
-        shift_distance = 'b1;
+        distance_shift = 'b1;
         for(int i = 0; i < size; i++)begin
             total_in_data = data[i];
             repeat(1) @(negedge clk);
         end
-        shift_distance = 'b0;
+        distance_shift = 'b0;
     endtask
 
     task v_get_total (output int data[nbeta], input int size);
-        shift_distance = 'b1;
+        distance_shift = 'b1;
         for(int i = 0; i < size; i++)begin
             data[i] = total_out_data;
             repeat(1) @(negedge clk);
         end
-        shift_distance = 'b0;
+        distance_shift = 'b0;
     endtask
 
     task v_set_random (input longint unsigned seed[nbeta]);
@@ -166,12 +166,12 @@ module tb;
         .set_random          ( set_random         ),
         .random_seed         ( random_seed        ),
         .opt_run             ( opt_run            ),
-        .shift_distance      ( shift_distance     ),
+        .distance_shift      ( distance_shift     ),
         .opt_com             ( opt_com            ),
         .exchange_valid      ( exchange_valid     ),
-        .distance_write      ( distance_write     ),
-        .distance_w_addr     ( distance_w_addr    ),
-        .distance_w_data     ( distance_w_data    ),
+        .tp_dis_write        ( tp_dis_write       ),
+        .tp_dis_waddr        ( tp_dis_waddr       ),
+        .tp_dis_wdata        ( tp_dis_wdata       ),
         .total_in_data       ( total_in_data      ),
         .total_out_data      ( total_out_data     ),
         .ordering_read       ( ordering_read      ),

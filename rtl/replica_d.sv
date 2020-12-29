@@ -8,18 +8,20 @@ module replica_d
     input  logic                    clk,
     input  logic                    reset,
     input  logic                    exchange_valid,
+
     input  logic                    replica_run,
-    input  logic                    exchange_run,
-    input  logic                    exchange_shift_d,
-    output exchange_command_t       exchange_ex,
-    input  logic                    prev_exchange,
-    input  logic                    folw_exchange,
-    output logic                    out_exchange,
     input  opt_command_t            opt_command,
-    input  logic [31:0]             r_exchange,
+    input  logic [31:0]             r_exchange,       // test 用のランダムデータ
     input  total_data_t             prev_data,
     input  total_data_t             folw_data,
-    input  total_data_t             self_data
+    input  total_data_t             self_data,
+
+    input  logic                    exchange_shift_d, //   exchange_ex に ordering read/write コマンドを乗せる
+    input  logic                    exchange_run,     // このタイミングで exchange と metropolis 向けに
+    output exchange_command_t       exchange_ex,      // このコマンドを作る replica exchange test の結果を乗せる
+    input  logic                    prev_exchange,    // 隣の test 結果を受け取る (replica_d)
+    input  logic                    folw_exchange,    // 隣の test 結果を受け取る (replica_d)
+    output logic                    out_exchange      // 隣に test 結果を渡す     (replica)
 );
 
 exchange_command_t       exchange_l;

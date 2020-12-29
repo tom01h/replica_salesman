@@ -7,28 +7,33 @@ module node
 (
     input  logic                      clk,
     input  logic                      reset,
-    input  logic                      random_init,
+    
+    input  logic                      random_init,       // set random seed
     input  logic [63:0]               random_seed,
-    input  logic                      random_run,
-    input  distance_command_t         distance_com,
-    input  logic                      metropolis_run,
-    input  logic                      replica_run,
-    input  logic                      exchange_run,
-    input  logic                      exchange_shift_d,
-    input  logic                      shift_distance,
-    input  opt_command_t              opt_command,
-    input  logic                      exchange_valid,
+    input  logic                      tp_dis_write,      // set 2点間距離
+    input  logic [city_num_log*2-1:0] tp_dis_waddr,
+    input  distance_data_t            tp_dis_wdata,
+    input  logic                      distance_shift,    // set total distance
+    input  logic                      exchange_shift_d,  // ordering read/write
+
+    input  logic                      exchange_valid,    // opt running
+    input  opt_command_t              opt_command,       // opt mode
+
+    input  logic                      random_run,        // random
+    input  distance_command_t         distance_com,      // delta distance
+    input  logic                      metropolis_run,    // metropolis test
+    input  logic                      replica_run,       // replica exchange test
+    input  logic                      exchange_run,      // chenge ordering & replica exchange
+
     input  logic                      exchange_bank,
-    input  logic                      distance_write,
-    input  logic [city_num_log*2-1:0] distance_w_addr,
-    input  distance_data_t            distance_w_data,
-    input  total_data_t               prev_dis_data,
+
+    input  total_data_t               prev_dis_data,     // for replica exchange test
     input  total_data_t               folw_dis_data,
     output total_data_t               out_dis_data,
-    input  logic                      prev_exchange,
+    input  logic                      prev_exchange,     // for delta distance
     input  logic                      folw_exchange,
     output logic                      out_exchange,
-    input  logic                      prev_ord_valid,
+    input  logic                      prev_ord_valid,    // for exchange ordering
     input  replica_data_t             prev_ord_data,
     input  logic                      folw_ord_valid,
     input  replica_data_t             folw_ord_data,
@@ -72,29 +77,31 @@ distance distance
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
+
+    .tp_dis_write    ( tp_dis_write    ),
+    .tp_dis_waddr    ( tp_dis_waddr    ),
+    .tp_dis_wdata    ( tp_dis_wdata    ),
+
     .command         ( distance_com    ),
     .opt             ( opt             ),
-    .distance_write  ( distance_write  ),
-    .distance_w_addr ( distance_w_addr ),
-    .distance_w_data ( distance_w_data ),
-    .ordering_read   ( ordering_read   ),
+    .delta_distance  ( delta_distance  ),
+    .ordering_read   ( ordering_read   ), // ordering メモリを読む
     .ordering_addr   ( ordering_addr   ),
-    .ordering_data   ( ordering_data   ),
-    .delta_distance  ( delta_distance  )
+    .ordering_data   ( ordering_data   )
 );    
 
 metropolis #(.id(id)) metropolis
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .command         ( exchange_ex     ),
+    .command         ( exchange_ex     ), // replica exchange test の結果を見て total distance を交換
     .metropolis_run  ( metropolis_run  ),
-    .shift_distance  ( shift_distance  ),
+    .distance_shift  ( distance_shift  ),
     .exchange_valid  ( exchange_valid  ),
     .in_opt          ( opt             ),
     .out_opt         ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
-    .r_metropolis    ( r_metropolis    ),
+    .r_metropolis    ( r_metropolis    ), // test 用のランダムデータ
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .out_data        ( out_dis_data    )
@@ -107,37 +114,41 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .clk             ( clk             ),
     .reset           ( reset           ),
     .exchange_valid  ( exchange_valid  ),
+    
     .replica_run     ( replica_run     ),
-    .exchange_run    ( exchange_run    ),
-    .exchange_shift_d( exchange_shift_d),
-    .exchange_ex     ( exchange_ex     ),
-    .prev_exchange   ( prev_exchange   ),
-    .folw_exchange   ( folw_exchange   ),
-    .out_exchange    ( out_exchange    ),
     .opt_command     ( opt_command     ),
-    .r_exchange      ( r_exchange      ),
+    .r_exchange      ( r_exchange      ), // test 用のランダムデータ
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
-    .self_data       ( out_dis_data    )
+    .self_data       ( out_dis_data    ),
+    
+    .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
+    .exchange_run    ( exchange_run    ), // このタイミングで exchange と metropolis 向けに
+    .exchange_ex     ( exchange_ex     ), // このコマンドを作る replica exchange test の結果を乗せる
+    .prev_exchange   ( prev_exchange   ),
+    .folw_exchange   ( folw_exchange   ),
+    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す
 );
-else
+else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
 replica_d #(.id(id), .replica_num(replica_num)) replica
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
     .exchange_valid  ( exchange_valid  ),
+
     .replica_run     ( replica_run     ),
-    .exchange_run    ( exchange_run    ),
-    .exchange_shift_d( exchange_shift_d),
-    .exchange_ex     ( exchange_ex     ),
-    .prev_exchange   ( prev_exchange   ),
-    .folw_exchange   ( folw_exchange   ),
-    .out_exchange    ( out_exchange    ),
     .opt_command     ( opt_command     ),
     .r_exchange      ( r_exchange      ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
-    .self_data       ( out_dis_data    )
+    .self_data       ( out_dis_data    ),
+
+    .exchange_shift_d( exchange_shift_d),
+    .exchange_run    ( exchange_run    ),
+    .exchange_ex     ( exchange_ex     ),
+    .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る
+    .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る
+    .out_exchange    ( out_exchange    )
 );
 endgenerate
 
@@ -145,8 +156,8 @@ exchange exchange
 (
     .clk             ( clk              ),
     .reset           ( reset            ),
-    .command         ( exchange_ex      ),
-    .opt             ( opt_ex           ),
+    .command         ( exchange_ex      ), // このコマンドで動く コマンドは replica で exchange_run から生成
+    .opt             ( opt_ex           ), // ordering 変更規則 動作開始は command 入力の時
     .exchange_bank   ( exchange_bank    ),
     .prev_valid      ( prev_ord_valid   ),
     .prev_data       ( prev_ord_data    ),
@@ -154,7 +165,7 @@ exchange exchange
     .folw_data       ( folw_ord_data    ),
     .out_valid       ( out_ord_valid    ),
     .out_data        ( out_ord_data     ),
-    .ordering_read   ( ordering_read    ),
+    .ordering_read   ( ordering_read    ), // delta distance 計算用の IF
     .ordering_addr   ( ordering_addr    ),
     .ordering_data   ( ordering_data    )
 
