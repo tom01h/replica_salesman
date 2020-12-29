@@ -9,7 +9,6 @@ module top
     
     input  logic                      opt_run,
     input  opt_command_t              opt_com,
-    input  logic                      exchange_valid,
     
     input  logic                      set_random,
     input  logic [63:0]               random_seed,
@@ -117,7 +116,6 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .distance_shift   ( distance_shift      ), // total distance read/write
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
-        .exchange_valid   ( exchange_valid      ), // opt running
         .opt_command      ( opt_com             ), // opt mode
         
         .random_run       ( random_run          ), // random

@@ -33,7 +33,6 @@ module tb;
     logic [7:0][7:0]           ordering_wdata;
     logic                      ordering_ready;
     logic [7:0][7:0]           ordering_rdata;
-    logic                      exchange_valid;
     logic                      distance_shift;
 
     task v_init();
@@ -45,9 +44,8 @@ module tb;
         tp_dis_write = 'b0;
         ordering_read = 'b0;
         ordering_write = 'b0;
-        reset = 'b0;
-        exchange_valid = 'b0;
         distance_shift = 'b0;
+        reset = 'b0;
     endtask
 
     task v_finish();
@@ -73,6 +71,7 @@ module tb;
 
     task v_get_ordering (output int data[ncity], input int size);
         ordering_read = 'b1;
+        opt_com = THR;
         for(int i = 0; i < size/8; i++)begin
             do @(negedge clk); while(ordering_ready == 0);
             for(int j = 0; j < 8; j++)begin
@@ -113,6 +112,7 @@ module tb;
 
     task v_get_total (output int data[nbeta], input int size);
         distance_shift = 'b1;
+        opt_com = THR;
         for(int i = 0; i < size; i++)begin
             data[i] = distance_rdata;
             repeat(1) @(negedge clk);
@@ -133,7 +133,6 @@ module tb;
     endtask
 
     task v_run (input int command);
-        exchange_valid = 'b1;
         repeat(1) @(negedge clk);
         opt_run = 'b1;
         opt_com = opt_command_t'(command);
@@ -144,7 +143,6 @@ module tb;
         repeat(20) @(negedge clk);  // metropolis test
         repeat(20) @(negedge clk);  // exchange test
         repeat(20) @(negedge clk);  // replica exchange
-        exchange_valid = 'b0;
     endtask
 
     export "DPI-C" task v_init;
@@ -166,7 +164,6 @@ module tb;
 
         .opt_run             ( opt_run            ),
         .opt_com             ( opt_com            ),
-        .exchange_valid      ( exchange_valid     ),
 
         .set_random          ( set_random         ),
         .random_seed         ( random_seed        ),

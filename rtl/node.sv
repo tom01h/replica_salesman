@@ -16,7 +16,6 @@ module node
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
-    input  logic                      exchange_valid,    // opt running
     input  opt_command_t              opt_command,       // opt mode
 
     input  logic                      random_run,        // random
@@ -44,6 +43,7 @@ module node
 opt_t                      opt;
 opt_t                      opt_ex;
 exchange_command_t         exchange_ex;
+exchange_command_t         exchange_mtr;
 logic [6:0]                K;
 logic [6:0]                L;
 logic [31:0]               r_metropolis;
@@ -94,14 +94,16 @@ metropolis #(.id(id)) metropolis
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .command         ( exchange_ex     ), // replica exchange test の結果を見て total distance を交換
-    .metropolis_run  ( metropolis_run  ),
+
     .distance_shift  ( distance_shift  ),
-    .exchange_valid  ( exchange_valid  ),
+
+    .metropolis_run  ( metropolis_run  ),
     .in_opt          ( opt             ),
     .out_opt         ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
     .r_metropolis    ( r_metropolis    ), // test 用のランダムデータ
+
+    .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .out_data        ( out_dis_data    )
@@ -113,7 +115,6 @@ replica #(.id(id), .replica_num(replica_num)) replica
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .exchange_valid  ( exchange_valid  ),
     
     .replica_run     ( replica_run     ),
     .opt_command     ( opt_command     ),
@@ -125,16 +126,16 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
     .exchange_run    ( exchange_run    ), // このタイミングで exchange と metropolis 向けに
     .exchange_ex     ( exchange_ex     ), // このコマンドを作る replica exchange test の結果を乗せる
-    .prev_exchange   ( prev_exchange   ),
-    .folw_exchange   ( folw_exchange   ),
-    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す
+    .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
+    .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
+    .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
+    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す     (replica)
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
 replica_d #(.id(id), .replica_num(replica_num)) replica
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .exchange_valid  ( exchange_valid  ),
 
     .replica_run     ( replica_run     ),
     .opt_command     ( opt_command     ),
@@ -143,12 +144,13 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
 
-    .exchange_shift_d( exchange_shift_d),
-    .exchange_run    ( exchange_run    ),
-    .exchange_ex     ( exchange_ex     ),
-    .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る
-    .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る
-    .out_exchange    ( out_exchange    )
+    .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
+    .exchange_run    ( exchange_run    ), // このタイミングで exchange と metropolis 向けに
+    .exchange_ex     ( exchange_ex     ), // このコマンドを作る replica exchange test の結果を乗せる
+    .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
+    .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
+    .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
+    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す     (replica)
 );
 endgenerate
 
