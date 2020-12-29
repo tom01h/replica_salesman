@@ -108,7 +108,7 @@ def py_tb():
                 ordering[ibeta] = ordering_fin.copy()
 
         # Exchange replicas #
-        if iter % 2 == 0:       # 2-opt
+        if opt == 0:       # 2-opt
             for ibeta in range(0, nbeta-1, 2):
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
@@ -162,11 +162,10 @@ def py_tb():
         print(rtl_distance_i)
 
     # save point #
-    top.fin()
-
     with open("salesman.pickle", "wb") as f:
         pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list), f)
 
+    """
     fig = plt.figure()
     ax = fig.add_subplot(111)
     orderd = x[minimum_ordering].T
@@ -179,6 +178,9 @@ def py_tb():
     plt.plot(distance_list[::2], marker='+')
     plt.savefig("distance.png")
     plt.clf()
+    """
+
+    top.fin()
 
     return
 

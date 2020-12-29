@@ -17,6 +17,8 @@ module tb;
     initial begin
         clk = 1'b1;
         c_tb();
+        repeat(10) @(negedge clk);
+        $finish;
     end
 
     logic                      set_random;
@@ -50,7 +52,7 @@ module tb;
 
     task v_finish();
         repeat(10) @(negedge clk);
-        $finish;
+        //$finish;
     endtask
 
     task v_set_ordering (input int data[ncity], input int size);

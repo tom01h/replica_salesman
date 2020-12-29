@@ -18,8 +18,8 @@ def calc_distance_i(ordering):
         distance += distance_2[ordering[icity]][ordering[icity+1]]
     return distance
 
-def delta_distance_i(ordering, k, l, iter):
-    if iter % 2 == 0:  # 2-opt
+def delta_distance_i(ordering, k, l, opt):
+    if opt == 0:  # 2-opt
         delta  = distance_2[ordering[k-1]][ordering[l-1]] + distance_2[ordering[k]][ordering[l]]
         delta -= distance_2[ordering[k-1]][ordering[k]]   + distance_2[ordering[l-1]][ordering[l]]
     else:              # or-opt (simple)
@@ -61,10 +61,11 @@ for ibeta in range(0, nbeta):
 
 # Main loop #
 for iter in range(1, niter+1):
+    opt = iter % 2
     for ibeta in range(0, nbeta):
         info_kl = 1
         while info_kl == 1:
-            if iter % 2 == 0:  # 2-opt
+            if opt == 0:       # 2-opt
                 msk = ( 1<<(math.ceil(math.log2(ncity))) ) -1
                 k = xor64.random(ibeta, 1, ncity, msk)
                 l = xor64.random(ibeta, 1, ncity, msk)
@@ -79,7 +80,7 @@ for iter in range(1, niter+1):
                 if k != l and k != l + 1:
                     info_kl = 0
         # Metropolis for each replica #
-        if iter % 2 == 0:  # 2-opt
+        if opt == 0:       # 2-opt
             ordering_fin = np.hstack((ordering[ibeta][0:k], ordering[ibeta][k:l][::-1], ordering[ibeta][l:]))
         else:              # or-opt (simple)
             p = ordering[ibeta][k]
@@ -88,14 +89,14 @@ for iter in range(1, niter+1):
                 ordering_fin = np.hstack((ordering_fin[0:l],   p, ordering_fin[l:]))
             else:
                 ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
-        delta_distance = delta_distance_i(ordering[ibeta], k, l, iter)
+        delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
         # Metropolis test #
         metropolis = random.random()
         if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
     # Exchange replicas #
-    if iter % 2 == 0:
+    if opt == 0:       # 2-opt
         for ibeta in range(0, nbeta-1, 2):
             action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
             # Metropolis test #
