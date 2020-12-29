@@ -26,8 +26,8 @@ module tb;
     logic                      tp_dis_write;
     logic [city_num_log*2-1:0] tp_dis_waddr;
     distance_data_t            tp_dis_wdata;
-    total_data_t               total_in_data;
-    total_data_t               total_out_data;
+    total_data_t               distance_wdata;
+    total_data_t               distance_rdata;
     logic                      ordering_read;
     logic                      ordering_write;
     logic [7:0][7:0]           ordering_wdata;
@@ -105,7 +105,7 @@ module tb;
     task v_set_total (input int data[nbeta], input int size);
         distance_shift = 'b1;
         for(int i = 0; i < size; i++)begin
-            total_in_data = data[i];
+            distance_wdata = data[i];
             repeat(1) @(negedge clk);
         end
         distance_shift = 'b0;
@@ -114,7 +114,7 @@ module tb;
     task v_get_total (output int data[nbeta], input int size);
         distance_shift = 'b1;
         for(int i = 0; i < size; i++)begin
-            data[i] = total_out_data;
+            data[i] = distance_rdata;
             repeat(1) @(negedge clk);
         end
         distance_shift = 'b0;
@@ -163,21 +163,26 @@ module tb;
     (
         .clk                 ( clk                ),
         .reset               ( reset              ),
-        .set_random          ( set_random         ),
-        .random_seed         ( random_seed        ),
+
         .opt_run             ( opt_run            ),
-        .distance_shift      ( distance_shift     ),
         .opt_com             ( opt_com            ),
         .exchange_valid      ( exchange_valid     ),
+
+        .set_random          ( set_random         ),
+        .random_seed         ( random_seed        ),
+
         .tp_dis_write        ( tp_dis_write       ),
         .tp_dis_waddr        ( tp_dis_waddr       ),
         .tp_dis_wdata        ( tp_dis_wdata       ),
-        .total_in_data       ( total_in_data      ),
-        .total_out_data      ( total_out_data     ),
+        
+        .distance_shift      ( distance_shift     ),
+        .distance_wdata      ( distance_wdata     ),
+        .distance_rdata      ( distance_rdata     ),
+
         .ordering_read       ( ordering_read      ),
+        .ordering_rdata      ( ordering_rdata     ),
         .ordering_write      ( ordering_write     ),
         .ordering_wdata      ( ordering_wdata     ),
-        .ordering_ready      ( ordering_ready     ),
-        .ordering_rdata      ( ordering_rdata     )
+        .ordering_ready      ( ordering_ready     )
     );
 endmodule

@@ -13,7 +13,7 @@ module node
     input  logic                      tp_dis_write,      // set 2点間距離
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
     input  distance_data_t            tp_dis_wdata,
-    input  logic                      distance_shift,    // set total distance
+    input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
     input  logic                      exchange_valid,    // opt running

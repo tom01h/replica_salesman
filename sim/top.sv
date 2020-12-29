@@ -7,20 +7,20 @@ module top
     input  logic                      clk,
     input  logic                      reset,
     
-    input  logic                      set_random,
-    input  logic [63:0]               random_seed,
-    
     input  logic                      opt_run,
     input  opt_command_t              opt_com,
     input  logic                      exchange_valid,
+    
+    input  logic                      set_random,
+    input  logic [63:0]               random_seed,
     
     input  logic                      tp_dis_write,
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
     input  distance_data_t            tp_dis_wdata,
 
     input  logic                      distance_shift,
-    input  total_data_t               total_in_data,
-    output total_data_t               total_out_data,
+    input  total_data_t               distance_wdata,
+    output total_data_t               distance_rdata,
 
     input  logic                      ordering_read,
     output logic [7:0][7:0]           ordering_rdata,
@@ -98,8 +98,8 @@ node_control node_control
 total_data_t      [replica_num+1:0]  dis_data;
 logic             [replica_num+1:0]  t_exchange;
 
-assign dis_data[0] = total_in_data;
-assign total_out_data = dis_data[replica_num];
+assign dis_data[0] = distance_wdata;
+assign distance_rdata = dis_data[replica_num];
 assign t_exchange[0] = 'b0;
 assign t_exchange[replica_num+1] = 'b0;
 
@@ -114,8 +114,8 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
         .tp_dis_waddr     ( tp_dis_waddr        ),
         .tp_dis_wdata     ( tp_dis_wdata        ),
-        .distance_shift   ( distance_shift      ), // set total distance //// total
-        .exchange_shift_d ( exchange_shift_d    ), // set ordering
+        .distance_shift   ( distance_shift      ), // total distance read/write
+        .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
         .exchange_valid   ( exchange_valid      ), // opt running
         .opt_command      ( opt_com             ), // opt mode
