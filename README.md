@@ -18,7 +18,9 @@
 
 動作モデルの実行は以下。
 
-RTL に使う乱数発生器のモデルは `xor64.cpp` に記述しています。その他は `replica_salesman.py` の中です。
+RTL に使う乱数発生器のモデルは `xor64.cpp` に記述しています。  
+exp の近似計算は `fmath.cpp` に記述しています。  
+その他は `replica_salesman.py` の中です。
 
 ```
 python3 setup.py build_ext -I/usr/local/share/verilator/include -i

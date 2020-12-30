@@ -2,33 +2,32 @@
 
 static PyObject*
 exp(PyObject *self, PyObject *args) {
-    int ix;
+    int32_t x, y, z;
     int l;
-    unsigned int val;
+    int32_t recip;
+    
     // 送られてきた値をパース
-    if(!PyArg_ParseTuple(args, "ii", &ix, &l))
+    if(!PyArg_ParseTuple(args, "ii", &x, &l))
         return NULL;
     
-    float x, y, z;
-    
-    x = float(ix)/10;
-
-    z = x / l;
-    y = 1.0;
+    recip = int32_t((1.0/l) * (1<<15));
+    y = 1<<23;
+    z = ((int64_t)x * recip) >> 15;
 
     for(int i = l; i > 0; i--){
-        y = 1 + z * y;
+        recip = int32_t(1.0 / (i-1) * (1<<15));
+        int64_t one = (int64_t)1<<(14+23);
+
+        y = (one + (int64_t)z * y) >> 14;
         if(i != 1){
-            z = x / (i-1);
+            z = ((int64_t)x * recip) >> 15;
         }
         if(y < 0){
             return Py_BuildValue("i", 0);
         }
     }
 
-    val = (unsigned int)(y * (1<<23));
-
-    return Py_BuildValue("i", val);
+    return Py_BuildValue("i", y);
 }
 
 // メソッドの定義

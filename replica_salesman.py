@@ -1,6 +1,6 @@
 nbeta=32
 niter=3000
-dbeta=5e0
+dbeta=5
 ncity=30
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config.
 
@@ -11,6 +11,7 @@ import math
 import matplotlib.pyplot as plt
 import pickle
 import xor64
+import fmath
 
 def calc_distance_i(ordering):
     distance = 0
@@ -30,7 +31,7 @@ def delta_distance_i(ordering, k, l, opt):
 minimum_distance = 100e0
 ordering = np.arange(0, ncity+1, 1)
 ordering = np.tile(ordering, (nbeta, 1))
-beta = np.arange(1, nbeta+1, 1, dtype = np.float32) * dbeta
+beta = np.arange(1, nbeta+1, 1) * dbeta
 distance_list = []
 distance_i = np.zeros(nbeta, dtype = np.int32)
 distance_2 = np.zeros((ncity+1, ncity+1), dtype = np.int32)
@@ -92,7 +93,7 @@ for iter in range(1, niter+1):
         delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
         # Metropolis test #
         metropolis = random.random()
-        if math.exp(-delta_distance/(2**17) * beta[ibeta]) > metropolis:
+        if delta_distance < 0 or fmath.exp(int(-delta_distance * beta[ibeta])>>(17-14), 15) > metropolis * (1<<23):
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
     # Exchange replicas #
@@ -101,7 +102,7 @@ for iter in range(1, niter+1):
             action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
             # Metropolis test #
             metropolis = random.random()
-            if math.exp(action/(2**17)) > metropolis:
+            if action >=0 or fmath.exp(action>>(17-14), 15) > metropolis * (1<<23):
                 ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                 distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
     else:
@@ -109,7 +110,7 @@ for iter in range(1, niter+1):
             action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
             # Metropolis test #
             metropolis = random.random()
-            if math.exp(action/(2**17)) > metropolis:
+            if action >=0 or fmath.exp(action>>(17-14), 15) > metropolis * (1<<23):
                 ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                 distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
     # data output #
