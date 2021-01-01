@@ -34,7 +34,7 @@ assign exchange_ex  = (exchange_shift_d) ? PREV : exchange_l;
 assign exchange_mtr = exchange_l;
 
 exp exp(
-    .x(action >> 3),
+    .x(action >>> 3),
     .y(n_exchange)
 );
 

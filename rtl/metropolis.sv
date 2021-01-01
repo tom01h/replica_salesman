@@ -24,7 +24,7 @@ module metropolis
 logic               test;
 logic signed [31:0] n_metropolis;
 exp exp(
-    .x((-delta_distance * (id+1) * dbeta) >> 3),
+    .x($signed(-delta_distance * (id+1) * dbeta) >>> 3),
     .y(n_metropolis)
 );
 
