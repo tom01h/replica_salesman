@@ -24,30 +24,31 @@ module replica
     output logic                    out_exchange      // 隣に test 結果を渡す     (replica)
 );
 
-real action;
-real n_exchange;
-real random;
-logic test;
+logic signed [31:0]      action;
+logic signed [31:0]      n_exchange;
+logic                    test;
 exchange_command_t       exchange_l;
 
 assign out_exchange = test;
 assign exchange_ex  = (exchange_shift_d) ? PREV : exchange_l;
 assign exchange_mtr = exchange_l;
 
-// id[0] == 0
+exp exp(
+    .x(action >> 3),
+    .y(n_exchange)
+);
+
 always_comb begin
     if(opt_command == OR1) begin
-        action = ($itor(self_data) - $itor(prev_data))/$itor(1<<17) * $itor(dbeta) ;
+        action = $signed(self_data - prev_data) * $signed(dbeta);
     end else begin
-        action = ($itor(folw_data) - $itor(self_data))/$itor(1<<17) * $itor(dbeta) ;
+        action = $signed(folw_data - self_data) * $signed(dbeta);
     end
-    n_exchange = $exp(action);
-    random = r_exchange/$itor(1<<16)/$itor(1<<16);
 end
 
 always_ff @(posedge clk) begin
     if(replica_run)
-        test <= (action >= 0) || (n_exchange > random);
+        test <= (action >= 0) || (n_exchange > r_exchange[22:0]);
         
     if(exchange_run) begin
         if(opt_command == OR1)

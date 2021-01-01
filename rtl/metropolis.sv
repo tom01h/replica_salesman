@@ -21,12 +21,14 @@ module metropolis
     output total_data_t             out_data
 );
 
-real n_metropolis;
-real random;
-logic test;
-assign n_metropolis = $exp(($itor(-delta_distance)/$itor(1<<17)) * $itor(id+1) * $itor(dbeta));
-assign random = $itor(r_metropolis)/$itor(1<<16)/$itor(1<<16);
-assign test = (delta_distance <= 0) || (n_metropolis > random);
+logic               test;
+logic signed [31:0] n_metropolis;
+exp exp(
+    .x((-delta_distance * (id+1) * dbeta) >> 3),
+    .y(n_metropolis)
+);
+
+assign test = (delta_distance < 0) || (n_metropolis > r_metropolis[22:0]);
 
 total_data_t                        write_data;
 logic signed [$bits(out_data):0]    delta;

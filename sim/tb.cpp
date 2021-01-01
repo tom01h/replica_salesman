@@ -186,20 +186,49 @@ c_init_random(PyObject *self, PyObject *args){
 
 static PyObject*
 c_run_random(PyObject *self, PyObject *args) {
-    unsigned int p, start, end, msk;
-    unsigned int val;
-    // 送られてきた値をパース
-    if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
-        return NULL;
+  unsigned int p, start, end, msk;
+  unsigned int val;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
+    return NULL;
 
-    do{
-        x[p] = x[p] ^ (x[p] << 13);
-        x[p] = x[p] ^ (x[p] >> 7);
-        x[p] = x[p] ^ (x[p] << 17);
-        val = x[p] & msk;
-    }while(!((start <= val) && (val <= end)));
+  do{
+    x[p] = x[p] ^ (x[p] << 13);
+    x[p] = x[p] ^ (x[p] >> 7);
+    x[p] = x[p] ^ (x[p] << 17);
+    val = x[p] & msk;
+  }while(!((start <= val) && (val <= end)));
 
-    return Py_BuildValue("I", val);
+  return Py_BuildValue("I", val);
+}
+
+static PyObject*
+c_exp(PyObject *self, PyObject *args) {
+  int32_t x, y, z;
+  int l;
+  int32_t recip;
+  
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "ii", &x, &l))
+    return NULL;
+  
+  recip = int32_t((1.0/l) * (1<<15));
+  y = 1<<23;
+  z = ((int64_t)x * recip) >> 15;
+
+  for(int i = l; i > 0; i--){
+    recip = int32_t(1.0 / (i-1) * (1<<15));
+    int64_t one = (int64_t)1<<(14+23);
+
+    y = (one + (int64_t)z * y) >> 14;
+    z = ((int64_t)x * recip) >> 15;
+
+    if(y < 0){
+      return Py_BuildValue("i", 0);
+    }
+  }
+
+  return Py_BuildValue("i", y);
 }
 
 // メソッドの定義
@@ -215,6 +244,7 @@ static PyMethodDef TopMethods[] = {
   {"init",            (PyCFunction)init,            METH_NOARGS,  "top9: init"},
   {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top10: c_init_random"},
   {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top11: c_run_random"},
+  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top12: c_exp"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };
