@@ -22,13 +22,15 @@ module metropolis
 );
 
 logic               test;
-logic signed [31:0] n_metropolis;
-exp exp(
-    .x($signed(-delta_distance * (id+1) * dbeta) >>> 3),
+logic signed [26:0] n_metropolis;
+exp #(
+    .nbeta(dbeta * (id+1))
+) exp (
+    .x(-delta_distance),
     .y(n_metropolis)
 );
 
-assign test = (delta_distance < 0) || (n_metropolis > r_metropolis[22:0]);
+assign test = (-delta_distance >= 0) || (n_metropolis > r_metropolis[22:0]);
 
 total_data_t                        write_data;
 logic signed [$bits(out_data):0]    delta;
