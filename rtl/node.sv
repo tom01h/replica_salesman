@@ -37,7 +37,11 @@ module node
     input  logic                      folw_ord_valid,
     input  replica_data_t             folw_ord_data,
     output logic                      out_ord_valid,
-    output replica_data_t             out_ord_data
+    output replica_data_t             out_ord_data,
+
+    input  logic                      exp_init,
+    input  logic                      exp_run,
+    input  logic [16:0]               exp_recip
 );
 
 opt_t                      opt;
@@ -106,7 +110,11 @@ metropolis #(.id(id)) metropolis
     .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
-    .out_data        ( out_dis_data    )
+    .out_data        ( out_dis_data    ),
+
+    .exp_init        ( exp_init        ),
+    .exp_run         ( exp_run         ),
+    .exp_recip       ( exp_recip       )
 );
 
 generate
@@ -129,7 +137,11 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
-    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す     (replica)
+    .out_exchange    ( out_exchange    ), // 隣に test 結果を渡す     (replica)
+
+    .exp_init        ( exp_init        ),
+    .exp_run         ( exp_run         ),
+    .exp_recip       ( exp_recip       )
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
 replica_d #(.id(id), .replica_num(replica_num)) replica
@@ -150,7 +162,12 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
     .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
-    .out_exchange    ( out_exchange    )  // 隣に test 結果を渡す     (replica)
+    .out_exchange    ( out_exchange    ), // 隣に test 結果を渡す     (replica)
+
+    .exp_init        ( exp_init        ),
+    .exp_run         ( exp_run         ),
+    .exp_recip       ( exp_recip       )
+
 );
 endgenerate
 

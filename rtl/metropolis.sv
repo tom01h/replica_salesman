@@ -18,7 +18,11 @@ module metropolis
     input  exchange_command_t       command,
     input  total_data_t             prev_data,
     input  total_data_t             folw_data,
-    output total_data_t             out_data
+    output total_data_t             out_data,
+
+    input  logic                    exp_init,
+    input  logic                    exp_run,
+    input  logic [16:0]             exp_recip
 );
 
 logic               test;
@@ -26,8 +30,12 @@ logic signed [26:0] n_metropolis;
 exp #(
     .nbeta(dbeta * (id+1))
 ) exp (
-    .x(-delta_distance),
-    .y(n_metropolis)
+    .clk     ( clk             ),
+    .x       ( -delta_distance ),
+    .y       ( n_metropolis    ),
+    .init    ( exp_init        ),
+    .run     ( exp_run         ),
+    .recip   ( exp_recip       )
 );
 
 assign test = (-delta_distance >= 0) || (n_metropolis > r_metropolis[22:0]);
@@ -47,15 +55,17 @@ always_ff @(posedge clk) begin
     out_opt.L <= in_opt.L;
     if(in_opt.command == THR) begin
         out_opt.command <= THR;
-    end else if(test) begin
-        if(in_opt.command == TWO) begin
-            out_opt.command <= TWO;
+    end else if(metropolis_run) begin
+        if(test) begin
+            if(in_opt.command == TWO) begin
+                out_opt.command <= TWO;
+            end else begin
+                if(in_opt.K < in_opt.L) out_opt.command <= OR0;
+                else                    out_opt.command <= OR1;
+            end
         end else begin
-            if(in_opt.K < in_opt.L) out_opt.command <= OR0;
-            else                    out_opt.command <= OR1;
+            out_opt.command <= THR;
         end
-    end else begin
-        out_opt.command <= THR;
     end    
 end
 

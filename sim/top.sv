@@ -78,7 +78,9 @@ logic                 metropolis_run;
 logic                 replica_run;
 logic                 exchange_run;
 logic                 exchange_bank;
-
+logic                 exp_init;
+logic                 exp_run;
+logic [16:0]          exp_recip;
 node_control node_control
 (
     .clk            ( clk            ),
@@ -91,7 +93,10 @@ node_control node_control
     .replica_run    ( replica_run    ),
     .exchange_run   ( exchange_run   ),
     .exchange_bank  ( exchange_bank  ),
-    .exchange_shift ( exchange_shift )
+    .exchange_shift ( exchange_shift ),
+    .exp_init       ( exp_init       ),
+    .exp_run        ( exp_run        ),
+    .exp_recip      ( exp_recip      )
 );
 
 total_data_t      [replica_num+1:0]  dis_data;
@@ -139,8 +144,12 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .folw_ord_valid   ( ordering_valid[g+2] ),
         .folw_ord_data    ( ordering_data[g+2]  ),
         .out_ord_valid    ( ordering_valid[g+1] ),
-        .out_ord_data     ( ordering_data[g+1]  )
-    );
+        .out_ord_data     ( ordering_data[g+1]  ),
+
+        .exp_init         ( exp_init            ),
+        .exp_run          ( exp_run             ),
+        .exp_recip        ( exp_recip           )
+);
 end
 
 endmodule

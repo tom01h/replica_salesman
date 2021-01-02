@@ -15,7 +15,10 @@ module node_control
     output logic                    replica_run,
     output logic                    exchange_run,
     output logic                    exchange_bank,
-    input  logic                    exchange_shift
+    input  logic                    exchange_shift,
+    output logic                    exp_init,
+    output logic                    exp_run,
+    output logic [16:0]             exp_recip
 );
 
 logic [6:0] cycle_cnt;
@@ -24,8 +27,8 @@ logic       run_distance;
 
 assign random_run     = run;
 assign distance_run   = (cycle_cnt == 20);
-assign metropolis_run = (cycle_cnt == 40);
-assign replica_run    = (cycle_cnt == 60);
+assign metropolis_run = (cycle_cnt == 58);
+assign replica_run    = (cycle_cnt == 78);
 assign exchange_run   = (cycle_cnt == 80);
 assign cycle_finish   = (cycle_cnt == 100);
 
@@ -80,5 +83,47 @@ always_ff @(posedge clk)begin
     else if(exchange_run)    exchange_bank <= ~exchange_bank;
     else if(exchange_shift)  exchange_bank <= ~exchange_bank;
 end
-            
+
+assign exp_init = (cycle_cnt == 40) || (cycle_cnt == 60);
+logic [3:0]        exp_count;
+logic [3:0]        rom_addr;
+assign rom_addr = exp_count - 1;
+
+always_ff @(posedge clk)begin
+    if(reset) begin
+        exp_run <= 'b0;
+        exp_count <= 'd0;
+    end else if(exp_init) begin
+        exp_run <= 'b1;
+        exp_count <= 'd15;
+    end else if(exp_count >= 2) begin
+        exp_run <= 'b1;
+        exp_count <= exp_count - 1;
+    end else if(exp_count == 1) begin
+        exp_run <= 'b0;
+        exp_count <= 'd0;
+    end
+end
+
+always_ff @(posedge clk)
+    if(exp_init || exp_run)
+        case(rom_addr)
+            'd0  : exp_recip <= (1<<15) / 15;
+            'd1  : exp_recip <= (1<<15) / 1;
+            'd2  : exp_recip <= (1<<15) / 2;
+            'd3  : exp_recip <= (1<<15) / 3;
+            'd4  : exp_recip <= (1<<15) / 4;
+            'd5  : exp_recip <= (1<<15) / 5;
+            'd6  : exp_recip <= (1<<15) / 6;
+            'd7  : exp_recip <= (1<<15) / 7;
+            'd8  : exp_recip <= (1<<15) / 8;
+            'd9  : exp_recip <= (1<<15) / 9;
+            'd10 : exp_recip <= (1<<15) / 10;
+            'd11 : exp_recip <= (1<<15) / 11;
+            'd12 : exp_recip <= (1<<15) / 12;
+            'd13 : exp_recip <= (1<<15) / 13;
+            'd14 : exp_recip <= (1<<15) / 14;
+            'd15 : exp_recip <= (1<<15) / 15;
+        endcase
+
 endmodule

@@ -21,7 +21,11 @@ module replica
     output exchange_command_t       exchange_mtr,     //   ordering read/write コマンドが乗ってない
     input  logic                    prev_exchange,    // 隣の test 結果を受け取る (replica_d)
     input  logic                    folw_exchange,    // 隣の test 結果を受け取る (replica_d)
-    output logic                    out_exchange      // 隣に test 結果を渡す     (replica)
+    output logic                    out_exchange,     // 隣に test 結果を渡す     (replica)
+
+    input  logic                    exp_init,
+    input  logic                    exp_run,
+    input  logic [16:0]             exp_recip
 );
 
 logic signed [31:0]      action;
@@ -35,9 +39,13 @@ assign exchange_mtr = exchange_l;
 
 exp #(
     .nbeta(dbeta)
-    ) exp (
-    .x(action[20:0]),
-    .y(n_exchange)
+) exp (
+    .clk     ( clk             ),
+    .x       ( action[20:0]    ),
+    .y       ( n_exchange      ),
+    .init    ( exp_init        ),
+    .run     ( exp_run         ),
+    .recip   ( exp_recip       )
 );
 
 always_comb begin
