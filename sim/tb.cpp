@@ -10,28 +10,6 @@
 
 unsigned long long x[nbeta];
 
-static PyObject*
-set_ordering (PyObject *self, PyObject *args){
-  int array[ncity+1];
-  PyObject *p_list, *p_value;
-  int size;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
-    return NULL;
-  // リストのサイズ取得
-  size = PyList_Size(p_list);
-
-  for(int i = 0; i < size; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsLong(p_value);
-  }
-
-  v_set_ordering(array, size);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
 static PyObject *
 get_ordering (PyObject *self, PyObject *args) {
   int array[ncity+1];
@@ -53,50 +31,6 @@ get_ordering (PyObject *self, PyObject *args) {
   return list;
 }
 
-static PyObject*
-set_distance (PyObject *self, PyObject *args){
-  int array[(ncity+1)*(ncity+1)];
-  PyObject *p_list, *p_value;
-  int size, l_size;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "iO!", &size, &PyList_Type, &p_list))
-    return NULL;
-
-  l_size = PyList_Size(p_list);
-
-  for(int i = 0; i < l_size; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsLong(p_value);
-  }
-
-  v_set_distance(array, size);
-  
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-set_total (PyObject *self, PyObject *args){
-  int array[nbeta];
-  PyObject *p_list, *p_value;
-  int size;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
-    return NULL;
-  // リストのサイズ取得
-  size = PyList_Size(p_list);
-
-  for(int i = 0; i < size; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsLong(p_value);
-  }
-
-  v_set_total(array, size);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
 static PyObject *
 get_total (PyObject *self, PyObject *args) {
   int array[nbeta];
@@ -116,26 +50,6 @@ get_total (PyObject *self, PyObject *args) {
   }
 
   return list;
-}
-
-static PyObject*
-set_random (PyObject *self, PyObject *args){
-  unsigned long long array[nbeta];
-  PyObject *p_list, *p_value;
-  unsigned long long val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
-    return NULL;
-
-  for(int i = 0; i < nbeta; i++){
-    p_value = PyList_GetItem(p_list, i);
-    array[i] = PyLong_AsUnsignedLongLong(p_value);
-  }
-
-  v_set_random(array);
-
-  Py_INCREF(Py_None);
-  return Py_None;
 }
 
 static PyObject *
@@ -231,20 +145,31 @@ c_exp(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", y);
 }
 
+static PyObject*
+write64(PyObject *self, PyObject *args) {
+  int  address;
+  unsigned long long data;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "iK", &address, &data))
+    return NULL;
+
+  v_write64(address, data);
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
-  {"set_ordering",    (PyCFunction)set_ordering,    METH_VARARGS, "top1: set_ordering"},
   {"get_ordering",    (PyCFunction)get_ordering,    METH_VARARGS, "top2: get_ordering"},
-  {"set_distance",    (PyCFunction)set_distance,    METH_VARARGS, "top3: set_distance"},
-  {"set_total",       (PyCFunction)set_total,       METH_VARARGS, "top4: set_total"},
   {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
-  {"set_random",      (PyCFunction)set_random,      METH_VARARGS, "top6: set_random"},
   {"run",             (PyCFunction)run,             METH_VARARGS, "top7: run"},
   {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top8: fin"},
   {"init",            (PyCFunction)init,            METH_NOARGS,  "top9: init"},
   {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top10: c_init_random"},
   {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top11: c_run_random"},
   {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top12: c_exp"},
+  {"write64",         (PyCFunction)write64,         METH_VARARGS, "top13: write64"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

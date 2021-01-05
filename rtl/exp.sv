@@ -4,7 +4,7 @@ module exp
 )
 (
     input  logic               clk,
-    input  logic signed [20:0] x,  // .17
+    input  logic signed [20:0] x,   // .17
     output logic signed [26:0] y,   // .23
     input  logic               init,
     input  logic               run,
@@ -24,7 +24,7 @@ logic               nega;
 always_ff @(posedge clk) begin
     init_l <= init;
     run_l  <= run;
-    
+
     if(init) begin
         a0 <= $signed(x);
         b0 <= $signed(nbeta);

@@ -41,7 +41,10 @@ def py_tb():
 
     seeds = [random.randrange(1<<64) for i in range(nbeta)]
     top.c_init_random(seeds)
-    top.set_random(seeds)
+    address = 0x01000
+    for data in seeds:
+        top.write64(address, data)
+        address += 8
         
     if ninit == 0:
         with open("salesman.pickle", "rb") as f:
@@ -54,8 +57,22 @@ def py_tb():
         x = x.astype(np.float32)
         x = np.insert(x, ncity, x[0], axis=0)
 
+    address = 0x08000
     for ibeta in reversed(range(0, nbeta)):
-        top.set_ordering(ordering[ibeta].tolist())
+        i = 0
+        data = 0
+        for c in ordering[ibeta]:
+            data += c * 2 ** (i * 8)
+            if i == 7:
+                top.write64(address, int(data))
+                address += 8
+                data = 0
+                i = 0
+            else:
+                i += 1
+        if i != 0:
+            top.write64(address, int(data))
+            address += 8
 
     for icity in range(0, ncity+1):
         r = x[icity] - x
@@ -63,11 +80,19 @@ def py_tb():
         r = np.sum(r, axis=1)
         r = np.sqrt(r)
         distance_2[icity] = r*(2**17)
-    top.set_distance(ncity+1, distance_2.ravel().tolist())
+    address = 0x10000
+    for i in range(1, ncity+1):
+        for j in range(0, i):
+            data = int(distance_2[i][j])
+            top.write64(address, data)
+            address += 8
 
+    address = 0x02000
     for ibeta in range(0, nbeta):
-        distance_i[ibeta] = calc_distance_i(ordering[ibeta])
-    top.set_total(distance_i.tolist())
+        data = int(calc_distance_i(ordering[ibeta]))
+        top.write64(address, int(data))
+        address += 8
+        distance_i[ibeta] = data
 
     # Main loop #
     for iter in range(1, niter+1):

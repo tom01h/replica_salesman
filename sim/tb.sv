@@ -21,18 +21,10 @@ module tb;
         $finish;
     end
 
-    logic                      set_random;
-    logic [63:0]               random_seed;
     logic                      opt_run;
     opt_command_t              opt_com;
-    logic                      tp_dis_write;
-    logic [city_num_log*2-1:0] tp_dis_waddr;
-    distance_data_t            tp_dis_wdata;
-    total_data_t               distance_wdata;
     total_data_t               distance_rdata;
     logic                      ordering_read;
-    logic                      ordering_write;
-    logic [7:0][7:0]           ordering_wdata;
     logic                      ordering_ready;
     logic [7:0][7:0]           ordering_rdata;
     logic                      distance_shift;
@@ -41,11 +33,8 @@ module tb;
         reset = 'b1;
         repeat(10) @(negedge clk);
         opt_com = THR;
-        set_random = 'b0;
         opt_run = 'b0;
-        tp_dis_write = 'b0;
         ordering_read = 'b0;
-        ordering_write = 'b0;
         distance_shift = 'b0;
         reset = 'b0;
     endtask
@@ -54,22 +43,6 @@ module tb;
         repeat(10) @(negedge clk);
         //$finish;
     endtask
-
-    task v_set_ordering (input int data[ncity], input int size);
-        ordering_write = 'b1;
-        for(int i = 0; i < size/8; i++)begin
-            for(int j = 0; j < 8; j++)begin
-                ordering_wdata[7-j] = data[i*8+j];
-            end
-            do @(negedge clk); while(ordering_ready == 0);
-        end
-        for(int j = 0; j < 8; j++)begin
-            if(j < size%8) ordering_wdata[7-j] = data[size/8*8+j];
-            else           ordering_wdata[7-j] = 'b0;
-        end
-        do @(negedge clk); while(ordering_ready == 0);
-        ordering_write = 'b0;
-    endtask;
 
     task v_get_ordering (output int data[ncity], input int size);
         ordering_read = 'b1;
@@ -88,30 +61,6 @@ module tb;
         ordering_read = 'b0;
     endtask
 
-    task v_set_distance (input int data[ncity*ncity], input int size);
-        tp_dis_waddr = 'b0;
-
-        tp_dis_write = 'b1;
-        for(int i=1; i<size; i++)begin
-            for(int j=0; j<i; j++)begin
-                tp_dis_wdata = data[i*size + j];
-                repeat(1) @(negedge clk);
-                tp_dis_waddr += 1;
-            end
-        end
-        tp_dis_write = 'b0;
-        
-    endtask;
-        
-    task v_set_total (input int data[nbeta], input int size);
-        distance_shift = 'b1;
-        for(int i = 0; i < size; i++)begin
-            distance_wdata = data[i];
-            repeat(1) @(negedge clk);
-        end
-        distance_shift = 'b0;
-    endtask
-
     task v_get_total (output int data[nbeta], input int size);
         distance_shift = 'b1;
         opt_com = THR;
@@ -120,18 +69,6 @@ module tb;
             repeat(1) @(negedge clk);
         end
         distance_shift = 'b0;
-    endtask
-
-    task v_set_random (input longint unsigned seed[nbeta]);
-        repeat(1) @(negedge clk);
-        set_random = 'b1;
-        repeat(1) @(negedge clk);
-        set_random = 'b0;
-        for(int i = 0; i < nbeta; i++)begin
-            random_seed = seed[i];
-            repeat(1) @(negedge clk);
-        end
-        repeat(1) @(negedge clk);
     endtask
 
     task v_run (input int command);
@@ -147,15 +84,49 @@ module tb;
         repeat(20) @(negedge clk);  // replica exchange
     endtask
 
+    logic [31:0]               S_AXI_AWADDR;
+    logic                      S_AXI_AWVALID;
+    logic                      S_AXI_AWREADY;
+    logic [63:0]               S_AXI_WDATA;
+    logic [7:0]                S_AXI_WSTRB;
+    logic                      S_AXI_WVALID;
+    logic                      S_AXI_WREADY;
+    logic [1:0]                S_AXI_BRESP;
+    logic                      S_AXI_BVALID;
+    logic                      S_AXI_BREADY;
+
+    logic [31:0]               S_AXI_ARADDR;
+    logic                      S_AXI_ARVALID;
+    logic                      S_AXI_ARREADY;
+    logic [63:0]               S_AXI_RDATA;
+    logic [1:0]                S_AXI_RRESP;
+    logic                      S_AXI_RVALID;
+    logic                      S_AXI_RREADY;
+
+    initial begin
+        S_AXI_BREADY = 'b1;
+        S_AXI_AWVALID = 'b0;
+        S_AXI_WSTRB = '1;
+        S_AXI_WVALID = 'b0;
+    end
+
+    task v_write64 (input int address, input longint unsigned data);
+        S_AXI_AWADDR = address;
+        S_AXI_AWVALID = 'b1;
+        S_AXI_WDATA = data;
+        S_AXI_WVALID = 'b1;
+        repeat(1) @(negedge clk);
+        S_AXI_AWVALID = 'b0;
+        S_AXI_WVALID = 'b0;
+        repeat(1) @(negedge clk);
+    endtask
+
     export "DPI-C" task v_init;
     export "DPI-C" task v_finish;
-    export "DPI-C" task v_set_ordering;
     export "DPI-C" task v_get_ordering;
-    export "DPI-C" task v_set_distance;
-    export "DPI-C" task v_set_total;
     export "DPI-C" task v_get_total;
-    export "DPI-C" task v_set_random;
     export "DPI-C" task v_run;
+    export "DPI-C" task v_write64;
 
     import "DPI-C" context task c_tb();
 
@@ -164,24 +135,33 @@ module tb;
         .clk                 ( clk                ),
         .reset               ( reset              ),
 
+        .S_AXI_AWADDR        ( S_AXI_AWADDR       ),
+        .S_AXI_AWVALID       ( S_AXI_AWVALID      ),
+        .S_AXI_AWREADY       ( S_AXI_AWREADY      ),
+        .S_AXI_WDATA         ( S_AXI_WDATA        ),
+        .S_AXI_WSTRB         ( S_AXI_WSTRB        ),
+        .S_AXI_WVALID        ( S_AXI_WVALID       ),
+        .S_AXI_WREADY        ( S_AXI_WREADY       ),
+        .S_AXI_BRESP         ( S_AXI_BRESP        ),
+        .S_AXI_BVALID        ( S_AXI_BVALID       ),
+        .S_AXI_BREADY        ( S_AXI_BREADY       ),
+
+        .S_AXI_ARADDR        ( S_AXI_ARADDR       ),
+        .S_AXI_ARVALID       ( S_AXI_ARVALID      ),
+        .S_AXI_ARREADY       ( S_AXI_ARREADY      ),
+        .S_AXI_RDATA         ( S_AXI_RDATA        ),
+        .S_AXI_RRESP         ( S_AXI_RRESP        ),
+        .S_AXI_RVALID        ( S_AXI_RVALID       ),
+        .S_AXI_RREADY        ( S_AXI_RREADY       ),
+
         .opt_run             ( opt_run            ),
         .opt_com             ( opt_com            ),
 
-        .set_random          ( set_random         ),
-        .random_seed         ( random_seed        ),
-
-        .tp_dis_write        ( tp_dis_write       ),
-        .tp_dis_waddr        ( tp_dis_waddr       ),
-        .tp_dis_wdata        ( tp_dis_wdata       ),
-        
         .distance_shift      ( distance_shift     ),
-        .distance_wdata      ( distance_wdata     ),
         .distance_rdata      ( distance_rdata     ),
 
         .ordering_read       ( ordering_read      ),
         .ordering_rdata      ( ordering_rdata     ),
-        .ordering_write      ( ordering_write     ),
-        .ordering_wdata      ( ordering_wdata     ),
         .ordering_ready      ( ordering_ready     )
     );
 endmodule

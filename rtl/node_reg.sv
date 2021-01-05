@@ -54,9 +54,9 @@ always_ff @(posedge clk)
 
 always_ff @(posedge clk) begin
     exchange_shift_d <= exchange_shift;    
+    ordering_wready  <= 1'b1;
     if(reset) begin
         ordering_cnt   <= 'b0;
-        ordering_wready <= 1'b1;
         ordering_radder <= '1;
     end else if(ordering_write) begin
         ordering_radder <= '1;
@@ -64,7 +64,7 @@ always_ff @(posedge clk) begin
         else if(ordering_ready)begin
             if(ordering_cnt == 'b0) begin ordering_wready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
             else                                                   ordering_cnt <= ordering_cnt + 1;
-        end else                          ordering_wready <= 1'b1;
+        end
     end else if(ordering_read) begin
         if(ordering_cnt == ordering_num)                           ordering_cnt <= 'b0;
         else if(ordering_read_en)                                  ordering_cnt <= ordering_cnt + 1;
@@ -79,10 +79,12 @@ assign ordering_reg_valid = in_valid_d3;
 assign ordering_reg_data  = in_data_d3;
 
 always_ff @(posedge clk)begin
-    in_valid_d1 <= ordering_write & (~ordering_ready || ordering_cnt != 'b0);
-    for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_wdata[7-i][6:0];
-    in_valid_d2 <= in_valid_d1;
-    in_data_d2 <= in_data_d1;
+    if(ordering_wready)begin
+        in_valid_d1 <= ordering_write;
+        for(int i=0; i<8; i++) in_data_d1[i][6:0] <= ordering_wdata[i][6:0];
+        in_valid_d2 <= in_valid_d1;
+        in_data_d2 <= in_data_d1;
+    end
     in_valid_d3 <= in_valid_d2;
     in_data_d3 <= in_data_d2;
 end

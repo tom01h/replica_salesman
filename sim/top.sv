@@ -7,34 +7,87 @@ module top
     input  logic                      clk,
     input  logic                      reset,
     
+    input  logic [31:0]               S_AXI_AWADDR,
+    input  logic                      S_AXI_AWVALID,
+    output logic                      S_AXI_AWREADY,
+    input  logic [63:0]               S_AXI_WDATA,
+    input  logic [7:0]                S_AXI_WSTRB,
+    input  logic                      S_AXI_WVALID,
+    output logic                      S_AXI_WREADY,
+    output logic [1:0]                S_AXI_BRESP,
+    output logic                      S_AXI_BVALID,
+    input  logic                      S_AXI_BREADY,
+
+    input  logic [31:0]               S_AXI_ARADDR,
+    input  logic                      S_AXI_ARVALID,
+    output logic                      S_AXI_ARREADY,
+    output logic [63:0]               S_AXI_RDATA,
+    output logic [1:0]                S_AXI_RRESP,
+    output logic                      S_AXI_RVALID,
+    input  logic                      S_AXI_RREADY,
+
     input  logic                      opt_run,
     input  opt_command_t              opt_com,
     
-    input  logic                      set_random,
-    input  logic [63:0]               random_seed,
-    
-    input  logic                      tp_dis_write,
-    input  logic [city_num_log*2-1:0] tp_dis_waddr,
-    input  distance_data_t            tp_dis_wdata,
-
     input  logic                      distance_shift,
-    input  total_data_t               distance_wdata,
     output total_data_t               distance_rdata,
 
     input  logic                      ordering_read,
     output logic [7:0][7:0]           ordering_rdata,
-    input  logic                      ordering_write,
-    input  logic [7:0][7:0]           ordering_wdata,
     output logic                      ordering_ready
 );
 
-logic [replica_num-1:0]   random_init;
+logic [replica_num-1:0]    random_init;
+logic [63:0]               random_seed;
 
-always_ff @(posedge clk)begin
-    if(reset) random_init <= 'b0;
-    else      random_init <= {random_init,set_random};
-end
-    
+logic                      tp_dis_write;
+logic [city_num_log*2-1:0] tp_dis_waddr;
+distance_data_t            tp_dis_wdata;
+
+logic                      ordering_write;
+logic [7:0][7:0]           ordering_wdata;
+
+logic                      distance_shift_w;
+total_data_t               distance_wdata;
+
+bus_if #(.replica_num(replica_num)) busif
+(
+    .S_AXI_ACLK      ( clk            ),
+    .S_AXI_ARESETN   ( ~reset         ),
+
+    .S_AXI_AWADDR    ( S_AXI_AWADDR   ),
+    .S_AXI_AWVALID   ( S_AXI_AWVALID  ),
+    .S_AXI_AWREADY   ( S_AXI_AWREADY  ),
+    .S_AXI_WDATA     ( S_AXI_WDATA    ),
+    .S_AXI_WSTRB     ( S_AXI_WSTRB    ),
+    .S_AXI_WVALID    ( S_AXI_WVALID   ),
+    .S_AXI_WREADY    ( S_AXI_WREADY   ),
+    .S_AXI_BRESP     ( S_AXI_BRESP    ),
+    .S_AXI_BVALID    ( S_AXI_BVALID   ),
+    .S_AXI_BREADY    ( S_AXI_BREADY   ),
+
+    .S_AXI_ARADDR    ( S_AXI_ARADDR   ),
+    .S_AXI_ARVALID   ( S_AXI_ARVALID  ),
+    .S_AXI_ARREADY   ( S_AXI_ARREADY  ),
+    .S_AXI_RDATA     ( S_AXI_RDATA    ),
+    .S_AXI_RRESP     ( S_AXI_RRESP    ),
+    .S_AXI_RVALID    ( S_AXI_RVALID   ),
+    .S_AXI_RREADY    ( S_AXI_RREADY   ),
+
+    .random_init     ( random_init    ),
+    .random_seed     ( random_seed    ),
+
+    .tp_dis_write    ( tp_dis_write   ),
+    .tp_dis_waddr    ( tp_dis_waddr   ),
+    .tp_dis_wdata    ( tp_dis_wdata   ),
+
+    .ordering_write  ( ordering_write ),
+    .ordering_wdata  ( ordering_wdata ),
+
+    .distance_shift  ( distance_shift_w ),
+    .distance_wdata  ( distance_wdata )
+);
+   
 logic                                exchange_shift;
 logic                                exchange_shift_d;
 
@@ -118,7 +171,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
         .tp_dis_waddr     ( tp_dis_waddr        ),
         .tp_dis_wdata     ( tp_dis_wdata        ),
-        .distance_shift   ( distance_shift      ), // total distance read/write
+        .distance_shift   ( distance_shift | distance_shift_w      ), // total distance read/write
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
         .opt_command      ( opt_com             ), // opt mode
