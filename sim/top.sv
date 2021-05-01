@@ -26,9 +26,6 @@ module top
     output logic                      S_AXI_RVALID,
     input  logic                      S_AXI_RREADY,
 
-    input  logic                      opt_run,
-    input  opt_command_t              opt_com,
-    
     input  logic                      distance_shift,
     output total_data_t               distance_rdata,
 
@@ -49,6 +46,11 @@ logic [7:0][7:0]           ordering_wdata;
 
 logic                      distance_shift_w;
 total_data_t               distance_wdata;
+
+logic                      run_write;
+logic [23:0]               run_times;
+
+logic                      running;
 
 bus_if #(.replica_num(replica_num)) busif
 (
@@ -85,7 +87,12 @@ bus_if #(.replica_num(replica_num)) busif
     .ordering_wdata  ( ordering_wdata ),
 
     .distance_shift  ( distance_shift_w ),
-    .distance_wdata  ( distance_wdata )
+    .distance_wdata  ( distance_wdata ),
+
+    .run_write       ( run_write      ),
+    .run_times       ( run_times      ),
+
+    .running         ( running        )
 );
    
 logic                                exchange_shift;
@@ -134,12 +141,16 @@ logic                 exchange_bank;
 logic                 exp_init;
 logic                 exp_run;
 logic [16:0]          exp_recip;
+opt_command_t         opt_command;
+
 node_control node_control
 (
     .clk            ( clk            ),
     .reset          ( reset          ),
-    .run            ( opt_run        ),
-    .opt_command    ( opt_com        ),
+    .run_write      ( run_write      ),
+    .run_times      ( run_times      ),
+    .running        ( running        ),
+    .opt_command    ( opt_command    ),
     .random_run     ( random_run     ),
     .distance_com   ( distance_com   ),
     .metropolis_run ( metropolis_run ),
@@ -174,7 +185,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .distance_shift   ( distance_shift | distance_shift_w      ), // total distance read/write
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
-        .opt_command      ( opt_com             ), // opt mode
+        .opt_command      ( opt_command         ), // opt mode
         
         .random_run       ( random_run          ), // random
         .distance_com     ( distance_com        ), // delta distance

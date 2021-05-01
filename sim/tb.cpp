@@ -53,19 +53,6 @@ get_total (PyObject *self, PyObject *args) {
 }
 
 static PyObject *
-run (PyObject *self, PyObject *args) {
-  int val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &val))
-    return NULL;
-
-  v_run(val);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject *
 fin (PyObject *self, PyObject *args) {
   v_finish();
 
@@ -159,17 +146,44 @@ write64(PyObject *self, PyObject *args) {
   return Py_None;
 }
 
+static PyObject*
+read64(PyObject *self, PyObject *args) {
+  int  address;
+  unsigned long long data;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &address))
+    return NULL;
+
+  v_read64(address, &data);
+
+  return Py_BuildValue("K", data);
+}
+
+static PyObject*
+vwait(PyObject *self, PyObject *args) {
+  int  times;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &times))
+    return NULL;
+
+  v_wait(times);
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
   {"get_ordering",    (PyCFunction)get_ordering,    METH_VARARGS, "top2: get_ordering"},
   {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
-  {"run",             (PyCFunction)run,             METH_VARARGS, "top7: run"},
   {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top8: fin"},
   {"init",            (PyCFunction)init,            METH_NOARGS,  "top9: init"},
   {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top10: c_init_random"},
   {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top11: c_run_random"},
   {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top12: c_exp"},
   {"write64",         (PyCFunction)write64,         METH_VARARGS, "top13: write64"},
+  {"read64",          (PyCFunction)read64,          METH_VARARGS, "top14: read64"},
+  {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top15: vwait"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };

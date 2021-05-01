@@ -21,8 +21,6 @@ module tb;
         $finish;
     end
 
-    logic                      opt_run;
-    opt_command_t              opt_com;
     total_data_t               distance_rdata;
     logic                      ordering_read;
     logic                      ordering_ready;
@@ -32,8 +30,6 @@ module tb;
     task v_init();
         reset = 'b1;
         repeat(10) @(negedge clk);
-        opt_com = THR;
-        opt_run = 'b0;
         ordering_read = 'b0;
         distance_shift = 'b0;
         reset = 'b0;
@@ -46,7 +42,6 @@ module tb;
 
     task v_get_ordering (output int data[ncity], input int size);
         ordering_read = 'b1;
-        opt_com = THR;
         for(int i = 0; i < size/8; i++)begin
             do @(negedge clk); while(ordering_ready == 0);
             for(int j = 0; j < 8; j++)begin
@@ -63,25 +58,11 @@ module tb;
 
     task v_get_total (output int data[nbeta], input int size);
         distance_shift = 'b1;
-        opt_com = THR;
         for(int i = 0; i < size; i++)begin
             data[i] = distance_rdata;
             repeat(1) @(negedge clk);
         end
         distance_shift = 'b0;
-    endtask
-
-    task v_run (input int command);
-        repeat(1) @(negedge clk);
-        opt_run = 'b1;
-        opt_com = opt_command_t'(command);
-        repeat(1) @(negedge clk);
-        opt_run = 'b0;
-        repeat(20) @(negedge clk);  // random
-        repeat(20) @(negedge clk);  // delta distance
-        repeat(20) @(negedge clk);  // metropolis test
-        repeat(20) @(negedge clk);  // exchange test
-        repeat(20) @(negedge clk);  // replica exchange
     endtask
 
     logic [31:0]               S_AXI_AWADDR;
@@ -108,6 +89,8 @@ module tb;
         S_AXI_AWVALID = 'b0;
         S_AXI_WSTRB = '1;
         S_AXI_WVALID = 'b0;
+        S_AXI_ARVALID = 'b0;
+        S_AXI_RREADY = 'b1;
     end
 
     task v_write64 (input int address, input longint unsigned data);
@@ -121,12 +104,25 @@ module tb;
         repeat(1) @(negedge clk);
     endtask
 
+    task v_read64 (input int address, output longint unsigned data);
+        S_AXI_ARADDR = address;
+        S_AXI_ARVALID = 'b1;
+        repeat(1) @(negedge clk);
+        S_AXI_ARVALID = 'b0;
+        data = S_AXI_RDATA;
+    endtask
+
+    task v_wait (input int times);
+        repeat(times) @(negedge clk);
+    endtask
+
     export "DPI-C" task v_init;
     export "DPI-C" task v_finish;
     export "DPI-C" task v_get_ordering;
     export "DPI-C" task v_get_total;
-    export "DPI-C" task v_run;
     export "DPI-C" task v_write64;
+    export "DPI-C" task v_read64;
+    export "DPI-C" task v_wait;
 
     import "DPI-C" context task c_tb();
 
@@ -153,9 +149,6 @@ module tb;
         .S_AXI_RRESP         ( S_AXI_RRESP        ),
         .S_AXI_RVALID        ( S_AXI_RVALID       ),
         .S_AXI_RREADY        ( S_AXI_RREADY       ),
-
-        .opt_run             ( opt_run            ),
-        .opt_com             ( opt_com            ),
 
         .distance_shift      ( distance_shift     ),
         .distance_rdata      ( distance_rdata     ),

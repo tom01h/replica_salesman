@@ -1,3 +1,11 @@
+#    top.get_ordering(ncity+1)
+#    top.get_total(nbeta)
+#    address = 0x00000  # run
+#    address = 0x01000  # random seeds
+#    address = 0x02000  # total distance
+#    address = 0x08000  # ordering
+#    address = 0x10000  # two point distance
+
 nbeta=32
 #niter=3000
 niter=6
@@ -41,7 +49,7 @@ def py_tb():
 
     seeds = [random.randrange(1<<64) for i in range(nbeta)]
     top.c_init_random(seeds)
-    address = 0x01000
+    address = 0x01000  # random seeds
     for data in seeds:
         top.write64(address, data)
         address += 8
@@ -57,7 +65,7 @@ def py_tb():
         x = x.astype(np.float32)
         x = np.insert(x, ncity, x[0], axis=0)
 
-    address = 0x08000
+    address = 0x08000  # ordering
     for ibeta in reversed(range(0, nbeta)):
         i = 0
         data = 0
@@ -80,14 +88,14 @@ def py_tb():
         r = np.sum(r, axis=1)
         r = np.sqrt(r)
         distance_2[icity] = r*(2**17)
-    address = 0x10000
+    address = 0x10000  # two point distance
     for i in range(1, ncity+1):
         for j in range(0, i):
             data = int(distance_2[i][j])
             top.write64(address, data)
             address += 8
 
-    address = 0x02000
+    address = 0x02000  # total distance
     for ibeta in range(0, nbeta):
         data = int(calc_distance_i(ordering[ibeta]))
         top.write64(address, int(data))
@@ -95,9 +103,23 @@ def py_tb():
         distance_i[ibeta] = data
 
     # Main loop #
+    address = 0x00000  # run
+    data = niter
+    top.write64(address, data)
+
+    while data != 0:
+        data = top.read64(address)
+        top.vwait(100)
+
+    rtl_ordering = np.zeros_like(ordering)
+    for ibeta in reversed(range(0, nbeta)):
+        rtl_ordering[ibeta] = top.get_ordering(ncity+1)
+
+    rtl_distance_i = np.flip(top.get_total(nbeta))
+
+    # Main loop #
     for iter in range(1, niter+1):
         opt = iter % 2
-        top.run(opt*2+1)
         for ibeta in range(0, nbeta):
             info_kl = 1
             while info_kl == 1:
@@ -162,12 +184,8 @@ def py_tb():
             distance_list = np.append(distance_list, minimum_distance)
             print(iter, distance_32, minimum_distance)
 
-    # compare ordiering #
-    rtl_ordering = np.zeros_like(ordering)
-    for ibeta in reversed(range(0, nbeta)):
-        rtl_ordering[ibeta] = top.get_ordering(ncity+1)
-
     np.set_printoptions(linewidth = 100)
+    # compare ordiering #
     if(np.array_equal(ordering, rtl_ordering)):
         print("OK: ordering")
     else:
@@ -178,7 +196,6 @@ def py_tb():
                 print(rtl_ordering[ibeta])
 
     # compare total distance #
-    rtl_distance_i = np.flip(top.get_total(nbeta))
     if(np.array_equal(distance_i, rtl_distance_i)):
         print("OK: total distance")
     else:

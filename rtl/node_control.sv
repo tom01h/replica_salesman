@@ -7,8 +7,10 @@ module node_control
 (
     input  logic                    clk,
     input  logic                    reset,
-    input  logic                    run,
-    input  opt_command_t            opt_command,
+    input  logic                    run_write,
+    input  logic [23:0]             run_times,
+    output logic                    running,
+    output opt_command_t            opt_command,
     output logic                    random_run,
     output distance_command_t       distance_com,
     output logic                    metropolis_run,
@@ -21,9 +23,37 @@ module node_control
     output logic [16:0]             exp_recip
 );
 
-logic [6:0] cycle_cnt;
-logic       cycle_finish;
-logic       run_distance;
+logic        run;
+logic [23:0] run_times_reg;
+logic [23:0] run_cnt;
+logic        cycle_finish;
+
+always_ff @(posedge clk) begin
+    if(reset) begin
+        run <= 'b0;
+        running <= 'b0;
+        run_cnt <= 'b0;
+        opt_command <= THR;
+    end else if (run_write) begin
+        run <= 'b1;
+        running <= 'b1;
+        run_times_reg <= run_times;
+        opt_command <= OR1;
+    end else if(cycle_finish) begin
+        if((run_cnt + 1) != run_times_reg) begin
+            run <= 'b1;
+            run_cnt <= run_cnt + 1;
+            if(opt_command == OR1) opt_command <= TWO;
+            else                   opt_command <= OR1;
+        end else begin
+            running <= 'b0;
+            opt_command <= THR;
+        end
+    end else
+        run <= 'b0;
+end
+
+logic [6:0]  cycle_cnt;
 
 assign random_run     = run;
 assign distance_run   = (cycle_cnt == 20);
