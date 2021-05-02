@@ -38,8 +38,13 @@ module bus_if
     output logic                      ordering_write,
     output logic [7:0][7:0]           ordering_wdata,
 
+    output logic                      ordering_read,
+    input  logic [7:0][7:0]           ordering_rdata,
+    input  logic                      ordering_ready,
+
     output logic                      distance_shift,
     output total_data_t               distance_wdata,
+    input  total_data_t               distance_rdata,
 
     output logic                      run_write,
     output logic [23:0]               run_times,
@@ -58,7 +63,7 @@ module bus_if
     assign S_AXI_WREADY  = (axist == 4'b0000)|(axist == 4'b0001);
     assign S_AXI_ARREADY = (axist == 4'b0000);
     assign S_AXI_BVALID  = (axist == 4'b0011);
-    assign S_AXI_RVALID  = (axist == 4'b1000);
+    assign S_AXI_RVALID  = (axist == 4'b1000) & ordering_ready;
     
     always_comb begin
         for(int i = 0; i < replica_num; i++) begin
@@ -74,17 +79,28 @@ module bus_if
         for(int j = 0; j < 8; j++)
             ordering_wdata[j] = wb_dat_i[j*8 +:8];
 
-        distance_shift = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02);
+        ordering_read = S_AXI_ARVALID && S_AXI_ARREADY && ({S_AXI_ARADDR[19:15],3'b000} == 8'h08);
+
+        distance_shift = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) ||
+                        S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02);
         distance_wdata = wb_dat_i[$bits(distance_wdata)-1:0];
 
         run_write = (S_AXI_BVALID && (wb_adr_i[19:2] == 'h0));
         run_times = wb_dat_i[$bits(run_times)-1  :0];
     end
 
-    always_ff @(posedge S_AXI_ACLK)begin
-        if(S_AXI_ARVALID)begin
-            S_AXI_RDATA <= running;
-        end
+    total_data_t               distance_rdata_d;
+    always_ff @(posedge S_AXI_ACLK)
+        if(distance_shift) distance_rdata_d <= distance_rdata;
+
+    always_comb begin
+        if({rd_adr_i[19:2],2'b00} == 'h0)
+            S_AXI_RDATA = running;
+        if({rd_adr_i[19:15],3'b000} == 8'h08)
+            for(int j = 0; j < 8; j++)
+                S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
+        if(rd_adr_i[19:12] == 8'h02)
+            S_AXI_RDATA = distance_rdata_d;
     end
         
     always_ff @(posedge S_AXI_ACLK)begin
@@ -124,7 +140,7 @@ module bus_if
         end else if(axist==4'b0100)begin
                 axist<=4'b1000;
         end else if(axist==4'b1000)begin
-            if(S_AXI_RREADY)
+            if(S_AXI_RREADY & ordering_ready)
                 axist<=4'b0000;
         end
     end

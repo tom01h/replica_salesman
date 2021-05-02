@@ -24,14 +24,7 @@ module top
     output logic [63:0]               S_AXI_RDATA,
     output logic [1:0]                S_AXI_RRESP,
     output logic                      S_AXI_RVALID,
-    input  logic                      S_AXI_RREADY,
-
-    input  logic                      distance_shift,
-    output total_data_t               distance_rdata,
-
-    input  logic                      ordering_read,
-    output logic [7:0][7:0]           ordering_rdata,
-    output logic                      ordering_ready
+    input  logic                      S_AXI_RREADY
 );
 
 logic [replica_num-1:0]    random_init;
@@ -44,8 +37,13 @@ distance_data_t            tp_dis_wdata;
 logic                      ordering_write;
 logic [7:0][7:0]           ordering_wdata;
 
-logic                      distance_shift_w;
+logic                      ordering_read;
+logic [7:0][7:0]           ordering_rdata;
+logic                      ordering_ready;
+
+logic                      distance_shift;
 total_data_t               distance_wdata;
+total_data_t               distance_rdata;
 
 logic                      run_write;
 logic [23:0]               run_times;
@@ -86,8 +84,13 @@ bus_if #(.replica_num(replica_num)) busif
     .ordering_write  ( ordering_write ),
     .ordering_wdata  ( ordering_wdata ),
 
-    .distance_shift  ( distance_shift_w ),
+    .ordering_read   ( ordering_read  ),
+    .ordering_rdata  ( ordering_rdata ),
+    .ordering_ready  ( ordering_ready ),
+
+    .distance_shift  ( distance_shift ),
     .distance_wdata  ( distance_wdata ),
+    .distance_rdata  ( distance_rdata ),
 
     .run_write       ( run_write      ),
     .run_times       ( run_times      ),
@@ -182,7 +185,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
         .tp_dis_waddr     ( tp_dis_waddr        ),
         .tp_dis_wdata     ( tp_dis_wdata        ),
-        .distance_shift   ( distance_shift | distance_shift_w      ), // total distance read/write
+        .distance_shift   ( distance_shift      ), // total distance read/write
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
         .opt_command      ( opt_command         ), // opt mode

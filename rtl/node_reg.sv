@@ -33,10 +33,9 @@ assign ordering_ready   = ordering_wready & ordering_rready;
 assign ordering_read_en = ordering_wadder != ordering_radder;
 
 always_ff @(posedge clk) begin
-    if(reset)                                               ordering_rready <= 'b1;
-    else if(ordering_read & exchange_shift_d)               ordering_rready <= 'b0;
-    else if(ordering_radder[city_div_log] & exchange_shift) ordering_rready <= 'b0;
-    else if(ordering_read_en)                               ordering_rready <= 'b1;
+    if(reset)                   ordering_rready <= 'b1;
+    else if(exchange_shift)     ordering_rready <= 'b0;
+    else if(ordering_read_en)   ordering_rready <= 'b1;
     
     if(reset)                   ordering_wadder <= 'b0;
     else if(exchange_shift)     ordering_wadder <= 'b0;

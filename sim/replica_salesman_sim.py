@@ -112,10 +112,24 @@ def py_tb():
         top.vwait(100)
 
     rtl_ordering = np.zeros_like(ordering)
-    for ibeta in reversed(range(0, nbeta)):
-        rtl_ordering[ibeta] = top.get_ordering(ncity+1)
 
-    rtl_distance_i = np.flip(top.get_total(nbeta))
+    address = 0x08000  # ordering
+    for ibeta in reversed(range(0, nbeta)):
+        for icity in range(0, ncity+1):
+            if icity % 8 == 0:
+                data = top.read64(address)
+                address += 8
+
+            c = data // 256**(7-icity%8) % 256
+            rtl_ordering[ibeta][icity] = c
+    
+    rtl_distance_i = np.zeros_like(distance_i)
+
+    address = 0x02000  # total distance
+    for ibeta in reversed(range(0, nbeta)):
+        address += 8
+        #print(top.read64(address))
+        rtl_distance_i[ibeta] = top.read64(address)
 
     # Main loop #
     for iter in range(1, niter+1):
@@ -221,8 +235,6 @@ def py_tb():
     plt.savefig("distance.png")
     plt.clf()
     """
-
-    top.fin()
 
     return
 

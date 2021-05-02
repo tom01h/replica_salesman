@@ -11,58 +11,48 @@
 unsigned long long x[nbeta];
 
 static PyObject *
-get_ordering (PyObject *self, PyObject *args) {
-  int array[ncity+1];
-  int size;
-  long val;
-  PyObject *list;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &size))
-    return NULL;
-
-  v_get_ordering(array, size);
-
-  list = PyList_New(0);
-  for(int i = 0; i < size; i++){
-    val = array[i];
-    PyList_Append(list, Py_BuildValue("i", val));
-  }
-
-  return list;
-}
-
-static PyObject *
-get_total (PyObject *self, PyObject *args) {
-  int array[nbeta];
-  int size;
-  long val;
-  PyObject *list;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &size))
-    return NULL;
-
-  v_get_total(array, size);
-
-  list = PyList_New(0);
-  for(int i = 0; i < size; i++){
-    val = array[i];
-    PyList_Append(list, Py_BuildValue("i", val));
-  }
-
-  return list;
-}
-
-static PyObject *
-fin (PyObject *self, PyObject *args) {
-  v_finish();
+init (PyObject *self, PyObject *args) {
+  v_init();
 
   Py_INCREF(Py_None);
   return Py_None;
 }
 
-static PyObject *
-init (PyObject *self, PyObject *args) {
-  v_init();
+static PyObject*
+write64(PyObject *self, PyObject *args) {
+  int  address;
+  unsigned long long data;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "iK", &address, &data))
+    return NULL;
+
+  v_write64(address, data);
+
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject*
+read64(PyObject *self, PyObject *args) {
+  int  address;
+  unsigned long long data;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &address))
+    return NULL;
+
+  v_read64(address, &data);
+
+  return Py_BuildValue("K", data);
+}
+
+static PyObject*
+vwait(PyObject *self, PyObject *args) {
+  int  times;
+  // 送られてきた値をパース
+  if(!PyArg_ParseTuple(args, "i", &times))
+    return NULL;
+
+  v_wait(times);
 
   Py_INCREF(Py_None);
   return Py_None;
@@ -132,58 +122,15 @@ c_exp(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", y);
 }
 
-static PyObject*
-write64(PyObject *self, PyObject *args) {
-  int  address;
-  unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "iK", &address, &data))
-    return NULL;
-
-  v_write64(address, data);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-read64(PyObject *self, PyObject *args) {
-  int  address;
-  unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &address))
-    return NULL;
-
-  v_read64(address, &data);
-
-  return Py_BuildValue("K", data);
-}
-
-static PyObject*
-vwait(PyObject *self, PyObject *args) {
-  int  times;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &times))
-    return NULL;
-
-  v_wait(times);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
 // メソッドの定義
 static PyMethodDef TopMethods[] = {
-  {"get_ordering",    (PyCFunction)get_ordering,    METH_VARARGS, "top2: get_ordering"},
-  {"get_total",       (PyCFunction)get_total,       METH_VARARGS, "top5: get_total"},
-  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top8: fin"},
-  {"init",            (PyCFunction)init,            METH_NOARGS,  "top9: init"},
-  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top10: c_init_random"},
-  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top11: c_run_random"},
-  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top12: c_exp"},
-  {"write64",         (PyCFunction)write64,         METH_VARARGS, "top13: write64"},
-  {"read64",          (PyCFunction)read64,          METH_VARARGS, "top14: read64"},
-  {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top15: vwait"},
+  {"init",            (PyCFunction)init,            METH_NOARGS,  "top1: init"},
+  {"write64",         (PyCFunction)write64,         METH_VARARGS, "top2: write64"},
+  {"read64",          (PyCFunction)read64,          METH_VARARGS, "top3: read64"},
+  {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top4: vwait"},
+  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top5: c_init_random"},
+  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top6: c_run_random"},
+  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top7: c_exp"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };
