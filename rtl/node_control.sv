@@ -87,25 +87,25 @@ end
 always_ff @(posedge clk)begin
     if (dist_run && opt_command == OR1)
         case(dist_count)
-            0:                                distance_com = {KN , ZERO};
-            1:                                distance_com = {KM , MNS};
-            2:                                distance_com = {KP , PLS};
-            3:                                distance_com = {KN , MNS};
-            4:                                distance_com = {LN , PLS};
-            5:                                distance_com = {LP , MNS};
-            6:                                distance_com = {KN , PLS};
-            default:                          distance_com = {KN , DNOP};
+            0:                                distance_com <= {KN , ZERO};
+            1:                                distance_com <= {KM , MNS};
+            2:                                distance_com <= {KP , PLS};
+            3:                                distance_com <= {KN , MNS};
+            4:                                distance_com <= {LN , PLS};
+            5:                                distance_com <= {LP , MNS};
+            6:                                distance_com <= {KN , PLS};
+            default:                          distance_com <= {KN , DNOP};
         endcase
     else if (dist_run && opt_command == TWO)
         case(dist_count)
-            0:                                distance_com = {KN , ZERO};
-            1:                                distance_com = {KM , MNS};
-            2:                                distance_com = {LM , PLS};
-            3:                                distance_com = {LN , MNS};
-            4:                                distance_com = {KN , PLS};
-            default:                          distance_com = {KN , DNOP};
+            0:                                distance_com <= {KN , ZERO};
+            1:                                distance_com <= {KM , MNS};
+            2:                                distance_com <= {LM , PLS};
+            3:                                distance_com <= {LN , MNS};
+            4:                                distance_com <= {KN , PLS};
+            default:                          distance_com <= {KN , DNOP};
         endcase
-    else                                      distance_com = {KN , DNOP};
+    else                                      distance_com <= {KN , DNOP};
 end
 
 always_ff @(posedge clk)begin

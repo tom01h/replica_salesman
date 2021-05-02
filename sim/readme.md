@@ -1,21 +1,17 @@
-- [x] レプリカテストの結果を受け取って、ordering メモリの or-opt と 2-opt とレプリカ交換
-- [x] Δ距離の計算
-- [x] メトロポリステストの結果を受け取って、合計距離の計算
-- [x] 合成できない計算を使って全体を動かす
-- [x] 合成できる
-- [ ] インタフェースをつけて FPGA で実行
+- [x] インタフェースをつける
+- [ ]  FPGA で実行
 - [ ] 4段パイプライン化
 - [ ] 50node・200レプリカ
 
 ## RTL シミュレーションを実行する
 
-### Verilator ← 今は動かない
+### Verilator
 
 Verilator の出力した C++ のコードを使って Python の C++ モジュールを作成して検証します。
 
 まずは、RTL から Python モジュールをコンパイルします。
 
-コンパイルには Python3 と Verilator が必要です。
+WSL版の Python3 と Verilator が必要です。
 
 ```
 replica_salesman/sim$ make
@@ -26,6 +22,12 @@ replica_salesman/sim$ make
 ```
 replica_salesman/sim$ python3 replica_salesman_sim.py
 ```
+
+テストベンチを構成するファイル
+
+- top.cpp
+
+Verilator のバージョンは Verilator 4.202 2021-04-24 rev v4.202
 
 ### MidelSim (Windows 版)
 
@@ -45,3 +47,8 @@ RUN のみ
 replica_salesman/sim$ ./run.sh
 ```
 
+テストベンチを構成するファイル
+
+- tb.sv
+- tb.cpp
+- replica_salesman_sim.py

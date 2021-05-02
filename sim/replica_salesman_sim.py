@@ -1,5 +1,3 @@
-#    top.get_ordering(ncity+1)
-#    top.get_total(nbeta)
 #    address = 0x00000  # run
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
@@ -128,7 +126,6 @@ def py_tb():
     address = 0x02000  # total distance
     for ibeta in reversed(range(0, nbeta)):
         address += 8
-        #print(top.read64(address))
         rtl_distance_i[ibeta] = top.read64(address)
 
     # Main loop #
@@ -240,3 +237,4 @@ def py_tb():
 
 if __name__ == '__main__':
     py_tb()
+    top.fin()

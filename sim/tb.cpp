@@ -5,8 +5,6 @@
 #include <Python.h>
 
 #define nbeta (32)
-#define dbeta (5)
-#define ncity (30)
 
 unsigned long long x[nbeta];
 
