@@ -52,29 +52,40 @@ always_comb begin
 end
 
 /*
-logic signed [31:0] xx;     // .17
-logic signed [17:0] z;      // .14
-logic signed [16:0] recip;  // .15
-logic               nega;
+int m_y;      // .23
+int m_xx;     // .17
+int m_z;      // .14
+int m_recip;  // .15
+logic m_nega;
+int cnt = 20;
+logic fin;
 
-always_comb begin
-    nega = 'b0;
-    xx = $signed(x * nbeta);
-    if(xx < -(8<<17)) nega = 'b1;
+always_ff @(posedge clk) begin
+    if(init) begin
+        m_nega = 'b0;
+        m_xx = $signed(x * nbeta);
+        if(m_xx < -(8<<17)) m_nega = 'b1;
 
-    recip = (1<<15) / 15;
-    y = 1<<23;
-    z = $signed(38'( $signed(xx[20:0]) * recip )) >>> 18;
+        m_recip = (1<<15) / 15;
+        m_y = 1<<23;
+        m_z = $signed(64'( $signed(m_xx[20:0]) * m_recip )) >>> 18;
 
-    for(int i = 15; i > 0; i--)begin
-        recip = (1<<15) / (i-1);
+        for(int i = 15; i > 0; i--)begin
+            m_recip = (1<<15) / (i-1);
 
-        y = $signed((43'b1<<(14+23)) + 43'(z * $signed(y[24:0]))) >>> 14;
-        z = $signed(38'( $signed(xx[20:0]) * recip )) >>> 18;
+            m_y = $signed((43'b1<<(14+23)) + 64'(m_z * $signed(m_y[24:0]))) >>> 14;
+            m_z = $signed(64'( $signed(m_xx[20:0]) * m_recip )) >>> 18;
 
-        if(y < 0)  nega = 'b1;
+            if(m_y < 0)  m_nega = 'b1;
+        end
+
+        if(m_nega) m_y = 0;
+        cnt = 0;
     end
+    if(cnt<=20)
+        cnt = cnt + 1;
+    fin = (cnt==19);
+    if(fin && m_y != y) $display("error %m",x,y,m_y);
 
-    if(nega) y = 0;
-end*/
+end/**/
 endmodule

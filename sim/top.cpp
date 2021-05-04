@@ -149,6 +149,21 @@ c_run_random(PyObject *self, PyObject *args) {
 }
 
 static PyObject*
+c_save_random(PyObject *self, PyObject *args) {
+  PyObject *list;
+  unsigned long long val;
+
+  list = PyList_New(0);
+
+  for(int i = 0; i < nbeta; i++){
+    val = x[i];
+    PyList_Append(list, Py_BuildValue("K", val));
+  }
+  
+  return list;
+}
+
+static PyObject*
 c_exp(PyObject *self, PyObject *args) {
   int32_t x, y, z;
   int l;
@@ -186,7 +201,8 @@ static PyMethodDef TopMethods[] = {
   {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top4: vwait"},
   {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top5: c_init_random"},
   {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top6: c_run_random"},
-  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top7: c_exp"},
+  {"c_save_random",   (PyCFunction)c_save_random,   METH_VARARGS, "top7: c_save_random"},
+  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top8: c_exp"},
   // 終了を示す
   {NULL, NULL, 0, NULL}
 };
