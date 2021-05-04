@@ -38,20 +38,14 @@ def py_tb():
     minimum_distance = 100e0
     ordering = np.arange(0, ncity+1, 1)
     ordering = np.tile(ordering, (nbeta, 1))
-    beta = np.arange(1, nbeta+1, 1, dtype = np.float32) * dbeta
+    beta = np.arange(1, nbeta+1, 1, dtype = np.int32) * dbeta
     distance_list = []
     distance_i = np.zeros(nbeta, dtype = np.int32)
     distance_2 = np.zeros((ncity+1, ncity+1), dtype = np.int32)
 
-    top.init()
-
     seeds = [random.randrange(1<<64) for i in range(nbeta)]
     top.c_init_random(seeds)
-    address = 0x01000  # random seeds
-    for data in seeds:
-        top.write64(address, data)
-        address += 8
-        
+
     if ninit == 0:
         with open("salesman.pickle", "rb") as f:
             x, _, _, _, _ = pickle.load(f)
@@ -63,6 +57,25 @@ def py_tb():
         x = x.astype(np.float32)
         x = np.insert(x, ncity, x[0], axis=0)
 
+    for icity in range(0, ncity+1):
+        r = x[icity] - x
+        r = r * r
+        r = np.sum(r, axis=1)
+        r = np.sqrt(r)
+        distance_2[icity] = r*(2**17)
+
+    for ibeta in range(0, nbeta):
+        distance_i[ibeta] = calc_distance_i(ordering[ibeta])
+
+########### RTL Sim ###########
+
+    top.init()
+
+    address = 0x01000  # random seeds
+    for data in seeds:
+        top.write64(address, data)
+        address += 8
+        
     address = 0x08000  # ordering
     for ibeta in reversed(range(0, nbeta)):
         i = 0
@@ -80,27 +93,18 @@ def py_tb():
             top.write64(address, int(data))
             address += 8
 
-    for icity in range(0, ncity+1):
-        r = x[icity] - x
-        r = r * r
-        r = np.sum(r, axis=1)
-        r = np.sqrt(r)
-        distance_2[icity] = r*(2**17)
     address = 0x10000  # two point distance
     for i in range(1, ncity+1):
         for j in range(0, i):
-            data = int(distance_2[i][j])
-            top.write64(address, data)
+            data = distance_2[i][j]
+            top.write64(address, int(data))
             address += 8
 
     address = 0x02000  # total distance
-    for ibeta in range(0, nbeta):
-        data = int(calc_distance_i(ordering[ibeta]))
+    for data in reversed(distance_i):
         top.write64(address, int(data))
         address += 8
-        distance_i[ibeta] = data
 
-    # Main loop #
     address = 0x00000  # run
     data = niter
     top.write64(address, data)
@@ -127,6 +131,8 @@ def py_tb():
     for ibeta in reversed(range(0, nbeta)):
         address += 8
         rtl_distance_i[ibeta] = top.read64(address)
+
+########### RTL Sim ###########
 
     # Main loop #
     for iter in range(1, niter+1):
