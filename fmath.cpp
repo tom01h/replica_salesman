@@ -12,7 +12,7 @@ exp(PyObject *self, PyObject *args) {
     
     recip = int32_t((1.0/l) * (1<<15));
     y = 1<<23;
-    z = ((int64_t)x * recip) >> 15;
+    z = ((int64_t)x * recip) >> 18;
 
     for(int i = l; i > 0; i--){
         recip = int32_t(1.0 / (i-1) * (1<<15));
@@ -20,7 +20,7 @@ exp(PyObject *self, PyObject *args) {
 
         y = (one + (int64_t)z * y) >> 14;
         if(i != 1){
-            z = ((int64_t)x * recip) >> 15;
+            z = ((int64_t)x * recip) >> 18;
         }
         if(y < 0){
             return Py_BuildValue("i", 0);

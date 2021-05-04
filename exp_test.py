@@ -14,8 +14,8 @@ y = e**x
 
 idx = 0
 for i in l:
-    y9[idx] = fmath.exp(int(i/10*(2**14)), 9)  / (2**23)
-    yf[idx] = fmath.exp(int(i/10*(2**14)), 15) / (2**23)
+    y9[idx] = fmath.exp(int(i/10*(2**17)), 9)  / (2**23)
+    yf[idx] = fmath.exp(int(i/10*(2**17)), 15) / (2**23)
     idx += 1
 
 fig = plt.figure()

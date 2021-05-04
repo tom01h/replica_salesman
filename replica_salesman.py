@@ -93,7 +93,7 @@ for iter in range(1, niter+1):
         delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
         # Metropolis test #
         metropolis = random.random()
-        if delta_distance < 0 or fmath.exp(int(-delta_distance * beta[ibeta])>>(17-14), 15) > metropolis * (1<<23):
+        if delta_distance < 0 or fmath.exp(int(-delta_distance * beta[ibeta]), 15) > metropolis * (1<<23):
             distance_i[ibeta] += delta_distance
             ordering[ibeta] = ordering_fin.copy()
     # Exchange replicas #
@@ -102,7 +102,7 @@ for iter in range(1, niter+1):
             action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
             # Metropolis test #
             metropolis = random.random()
-            if action >=0 or fmath.exp(action>>(17-14), 15) > metropolis * (1<<23):
+            if action >=0 or fmath.exp(action, 15) > metropolis * (1<<23):
                 ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                 distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
     else:
@@ -110,7 +110,7 @@ for iter in range(1, niter+1):
             action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
             # Metropolis test #
             metropolis = random.random()
-            if action >=0 or fmath.exp(action>>(17-14), 15) > metropolis * (1<<23):
+            if action >=0 or fmath.exp(action, 15) > metropolis * (1<<23):
                 ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                 distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
     # data output #
