@@ -178,7 +178,7 @@ def py_tb():
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta])>>(17-14), 15) > metropolis:
+            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
 
@@ -188,7 +188,7 @@ def py_tb():
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action>>(17-14), 15) > metropolis:
+                if action >=0 or top.c_exp(action, 15) > metropolis:
                     ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                     distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
         else:
@@ -197,7 +197,7 @@ def py_tb():
                 action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action>>(17-14), 15) > metropolis:
+                if action >=0 or top.c_exp(action, 15) > metropolis:
                     ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                     distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
         for ibeta in range(1, nbeta, 2):
