@@ -50,6 +50,7 @@ typedef struct packed {
 } opt_t;
 
 typedef logic [7:0][6:0] replica_data_t;
+parameter replica_data_bit = 56;
 typedef logic        [17:0] distance_data_t; // 1.17
 typedef logic signed [20:0] delata_data_t;   // 3.17
 typedef logic        [22:0] total_data_t;    // 6.17

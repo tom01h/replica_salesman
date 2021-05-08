@@ -46,12 +46,12 @@ always_ff @(posedge clk) begin
 end
 assign ordering_data = out_data_r[ordering_sel];
 
-replica_data_t [1:0][city_div-1:0]  ram;
+logic [replica_data_bit-1:0] ram [0:2*city_div-1];
 always_ff @(posedge clk) begin
     if (write_valid) begin
-        ram[wbank_d3][wcount] <= write_data;
+        ram[wbank_d3*city_div + wcount] <= write_data;  // wbank は 1bit
     end
-    out_data_r <= ram[rbank_i][raddr_i];
+    out_data_r <= ram[rbank_i*city_div + raddr_i];      // rbank は 1bit
 end
 
 always_ff @(posedge clk) begin

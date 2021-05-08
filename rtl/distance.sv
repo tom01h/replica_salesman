@@ -97,7 +97,7 @@ always_ff @(posedge clk) begin
     endcase
 end
 
-distance_data_t [(city_num+1)*city_num/2-1:0] ram;
+distance_data_t ram [0:(city_num+1)*city_num/2-1];
 logic [city_num_log*2-1:0] distance_addr;
 assign distance_addr = (tp_dis_write) ? tp_dis_waddr : distance_r_addr;
 
