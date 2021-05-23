@@ -28,7 +28,7 @@ VERILATOR_MAKE_OPTS = OPT_FAST="-O2"
 
 DESIGN_SRCS = \
 ../rtl/replica_pkg.sv \
-top.sv \
+../rtl/top.sv \
 ../bus_if/bus_if.sv \
 ../rtl/exp.sv\
 ../rtl/node.sv \
