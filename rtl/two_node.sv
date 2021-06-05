@@ -1,4 +1,4 @@
-module or-node
+module two_node
     import replica_pkg::*;
 #(
     parameter id = 0,
@@ -27,6 +27,7 @@ module or-node
     input  logic                      exchange_bank,
 
     input  total_data_t               prev_dis_data,     // for replica exchange test
+    input  total_data_t               self_dis_data,
     input  total_data_t               folw_dis_data,
     output total_data_t               out_dis_data,
     input  logic                      prev_exchange,     // for delta distance
@@ -34,10 +35,20 @@ module or-node
     output logic                      out_exchange,
     input  logic                      prev_ord_valid,    // for exchange ordering
     input  replica_data_t             prev_ord_data,
+    input  logic                      self_ord_valid,
+    input  replica_data_t             self_ord_data,
     input  logic                      folw_ord_valid,
     input  replica_data_t             folw_ord_data,
     output logic                      out_ord_valid,
     output replica_data_t             out_ord_data,
+
+    output exchange_command_t         out_ex_com,
+    input  exchange_command_t         in_ex_com,
+
+input logic [6:0]                K,
+input logic [6:0]                L,
+input logic [31:0]               r_metropolis,
+input logic [31:0]               r_exchange,
 
     input  logic                      exp_init,
     input  logic                      exp_run,
@@ -48,10 +59,6 @@ opt_t                      opt;
 opt_t                      opt_ex;
 exchange_command_t         exchange_ex;
 exchange_command_t         exchange_mtr;
-logic [6:0]                K;
-logic [6:0]                L;
-logic [31:0]               r_metropolis;
-logic [31:0]               r_exchange;
 assign opt.command = opt_command;
 assign opt.K       = K;
 assign opt.L       = L;
@@ -62,7 +69,7 @@ logic [city_num_log-1:0]   ordering_data;
 
 delata_data_t              delta_distance;
 
-random random
+/*random random
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
@@ -75,7 +82,7 @@ random random
     .L               ( L               ),
     .r_metropolis    ( r_metropolis    ),
     .r_exchange      ( r_exchange      )
-);
+);*/
 
 distance distance
 (
@@ -109,6 +116,7 @@ metropolis #(.id(id)) metropolis
 
     .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
+    .self_data       ( self_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .out_data        ( out_dis_data    ),
 
@@ -171,23 +179,26 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
 );
 endgenerate
 
-exchange #(.or-node('b1)) exchange
+exchange exchange
 (
     .clk             ( clk              ),
     .reset           ( reset            ),
     .command         ( exchange_ex      ), // このコマンドで動く コマンドは replica で exchange_run から生成
     .opt             ( opt_ex           ), // ordering 変更規則 動作開始は command 入力の時
-    .exchange_bank   ( exchange_bank    ),
     .prev_valid      ( prev_ord_valid   ),
     .prev_data       ( prev_ord_data    ),
+    .self_valid      ( self_ord_valid   ),
+    .self_data       ( self_ord_data    ),
     .folw_valid      ( folw_ord_valid   ),
     .folw_data       ( folw_ord_data    ),
     .out_valid       ( out_ord_valid    ),
     .out_data        ( out_ord_data     ),
     .ordering_read   ( ordering_read    ), // delta distance 計算用の IF
     .ordering_addr   ( ordering_addr    ),
-    .ordering_data   ( ordering_data    )
+    .ordering_data   ( ordering_data    ),
 
+    .out_ex_com      ( out_ex_com       ),
+    .in_ex_com       ( in_ex_com        )
 );
 
 endmodule

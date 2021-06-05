@@ -17,6 +17,7 @@ module metropolis
     
     input  exchange_command_t       command,
     input  total_data_t             prev_data,
+    input  total_data_t             self_data,
     input  total_data_t             folw_data,
     output total_data_t             out_data,
 
@@ -46,7 +47,8 @@ assign delta = $signed(delta_distance);
 assign write_data  = ( distance_shift) ?        prev_data :
                      (command == PREV) ?        prev_data :
                      (command == FOLW) ?        folw_data :
-                     (metropolis_run && test) ? out_data + delta : 
+                     (metropolis_run && test) ? self_data + delta : 
+                     (metropolis_run) ?         self_data : 
                                                 out_data;
 
 always_ff @(posedge clk) begin

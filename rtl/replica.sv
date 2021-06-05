@@ -58,7 +58,7 @@ end
 
 always_ff @(posedge clk) begin
     if(replica_run)
-        test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > r_exchange[22:0]));
+        test <= '0;
         
     if(exchange_run) begin
         if(opt_command == OR1)

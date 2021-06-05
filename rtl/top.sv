@@ -101,17 +101,41 @@ bus_if #(.replica_num(replica_num)) busif
 logic                                exchange_shift;
 logic                                exchange_shift_d;
 
-logic             [replica_num+1:0]  ordering_valid;
-replica_data_t    [replica_num+1:0]  ordering_data;
+logic             [replica_num+1:0]  or_ordering_valid;
+replica_data_t    [replica_num+1:0]  or_ordering_data;
+logic             [replica_num+1:0]  tw_ordering_valid;
+replica_data_t    [replica_num+1:0]  tw_ordering_data;
+
 logic                                ordering_out_valid;
 replica_data_t                       ordering_out_data;
 logic                                ordering_reg_valid;
 replica_data_t                       ordering_reg_data;
 
-assign ordering_valid[0]  = ordering_reg_valid;
-assign ordering_data[0]   = ordering_reg_data;
-assign ordering_out_valid = ordering_valid[replica_num];
-assign ordering_out_data  = ordering_data[replica_num];
+total_data_t      [replica_num+1:0]  or_dis_data;
+total_data_t      [replica_num+1:0]  tw_dis_data;
+
+assign or_ordering_valid[0]  = ordering_reg_valid;
+assign or_ordering_data[0]   = ordering_reg_data;
+assign tw_ordering_valid[0]  = ordering_reg_valid;
+assign tw_ordering_data[0]   = ordering_reg_data;
+
+assign or_dis_data[0] = distance_wdata;
+assign tw_dis_data[0] = distance_wdata;
+
+logic [2:0] ord_rd_num;
+always_ff @(posedge clk) begin
+    if(reset)              ord_rd_num <= '0;
+    else if(ordering_read) ord_rd_num <= ord_rd_num + 1;
+end
+assign ordering_out_valid = (ord_rd_num[2]) ? tw_ordering_valid[replica_num] : or_ordering_valid[replica_num];
+assign ordering_out_data  = (ord_rd_num[2]) ? tw_ordering_data[replica_num]  : or_ordering_data[replica_num];
+
+logic dis_rd_num;
+always_ff @(posedge clk) begin
+    if(reset)               dis_rd_num <= 'b0;
+    else if(distance_shift) dis_rd_num <= ~dis_rd_num;
+end
+assign distance_rdata = (dis_rd_num) ? or_dis_data[replica_num] : tw_dis_data[replica_num];
 
 node_reg node_reg
 (
@@ -136,10 +160,17 @@ node_reg node_reg
 );
 
 logic                 random_run;
-distance_command_t    distance_com;
-logic                 metropolis_run;
-logic                 replica_run;
-logic                 exchange_run;
+
+distance_command_t    or_distance_com;
+logic                 or_metropolis_run;
+logic                 or_replica_run;
+logic                 or_exchange_run;
+
+distance_command_t    tw_distance_com;
+logic                 tw_metropolis_run;
+logic                 tw_replica_run;
+logic                 tw_exchange_run;
+
 logic                 exchange_bank;
 logic                 exp_init;
 logic                 exp_run;
@@ -155,10 +186,17 @@ node_control node_control
     .running        ( running        ),
     .opt_command    ( opt_command    ),
     .random_run     ( random_run     ),
-    .distance_com   ( distance_com   ),
-    .metropolis_run ( metropolis_run ),
-    .replica_run    ( replica_run    ),
-    .exchange_run   ( exchange_run   ),
+    
+    .or_distance_com   ( or_distance_com   ),
+    .or_metropolis_run ( or_metropolis_run ),
+    .or_replica_run    ( or_replica_run    ),
+    .or_exchange_run   ( or_exchange_run   ),
+
+    .tw_distance_com   ( tw_distance_com   ),
+    .tw_metropolis_run ( tw_metropolis_run ),
+    .tw_replica_run    ( tw_replica_run    ),
+    .tw_exchange_run   ( tw_exchange_run   ),
+    
     .exchange_bank  ( exchange_bank  ),
     .exchange_shift ( exchange_shift ),
     .exp_init       ( exp_init       ),
@@ -166,13 +204,15 @@ node_control node_control
     .exp_recip      ( exp_recip      )
 );
 
-total_data_t      [replica_num+1:0]  dis_data;
-logic             [replica_num+1:0]  t_exchange;
+logic             [replica_num+1:0]  or_exchange;
 
-assign dis_data[0] = distance_wdata;
-assign distance_rdata = dis_data[replica_num];
-assign t_exchange[0] = 'b0;
-assign t_exchange[replica_num+1] = 'b0;
+assign or_exchange[0] = 'b0;
+assign or_exchange[replica_num+1] = 'b0;
+
+logic             [replica_num+1:0]  tw_exchange;
+
+assign tw_exchange[0] = 'b0;
+assign tw_exchange[replica_num+1] = 'b0;
 
 for (genvar g = 0; g < replica_num; g += 1) begin
     node #(.id(g), .replica_num(replica_num)) node
@@ -191,32 +231,53 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .opt_command      ( opt_command         ), // opt mode
         
         .random_run       ( random_run          ), // random
-        .distance_com     ( distance_com        ), // delta distance
-        .metropolis_run   ( metropolis_run      ), // metropolis test
-        .replica_run      ( replica_run         ), // replica exchange test
-        .exchange_run     ( exchange_run        ), // chenge ordering & replica exchange
+
+        .or_distance_com     ( or_distance_com        ), // delta distance
+        .or_metropolis_run   ( or_metropolis_run      ), // metropolis test
+        .or_replica_run      ( or_replica_run         ), // replica exchange test
+        .or_exchange_run     ( or_exchange_run        ), // chenge ordering & replica exchange
+
+        .tw_distance_com     ( tw_distance_com        ), // delta distance
+        .tw_metropolis_run   ( tw_metropolis_run      ), // metropolis test
+        .tw_replica_run      ( tw_replica_run         ), // replica exchange test
+        .tw_exchange_run     ( tw_exchange_run        ), // chenge ordering & replica exchange
 
         .exchange_bank    ( exchange_bank       ),
 
-        .prev_dis_data    ( dis_data[g]         ),
-        .folw_dis_data    ( dis_data[g+2]       ),
-        .out_dis_data     ( dis_data[g+1]       ),
+        .or_prev_dis_data    ( or_dis_data[g]         ),
+        .or_folw_dis_data    ( or_dis_data[g+2]       ),
+        .or_out_dis_data     ( or_dis_data[g+1]       ),
         
-        .prev_exchange    ( t_exchange[g]       ),
-        .folw_exchange    ( t_exchange[g+2]     ),
-        .out_exchange     ( t_exchange[g+1]     ),
+        .or_prev_exchange    ( or_exchange[g]       ),
+        .or_folw_exchange    ( or_exchange[g+2]     ),
+        .or_out_exchange     ( or_exchange[g+1]     ),
 
-        .prev_ord_valid   ( ordering_valid[g]   ),
-        .prev_ord_data    ( ordering_data[g]    ),
-        .folw_ord_valid   ( ordering_valid[g+2] ),
-        .folw_ord_data    ( ordering_data[g+2]  ),
-        .out_ord_valid    ( ordering_valid[g+1] ),
-        .out_ord_data     ( ordering_data[g+1]  ),
+        .or_prev_ord_valid   ( or_ordering_valid[g]   ),
+        .or_prev_ord_data    ( or_ordering_data[g]    ),
+        .or_folw_ord_valid   ( or_ordering_valid[g+2] ),
+        .or_folw_ord_data    ( or_ordering_data[g+2]  ),
+        .or_out_ord_valid    ( or_ordering_valid[g+1] ),
+        .or_out_ord_data     ( or_ordering_data[g+1]  ),
+
+        .tw_prev_dis_data    ( tw_dis_data[g]         ),
+        .tw_folw_dis_data    ( tw_dis_data[g+2]       ),
+        .tw_out_dis_data     ( tw_dis_data[g+1]       ),
+        
+        .tw_prev_exchange    ( tw_exchange[g]       ),
+        .tw_folw_exchange    ( tw_exchange[g+2]     ),
+        .tw_out_exchange     ( tw_exchange[g+1]     ),
+
+        .tw_prev_ord_valid   ( tw_ordering_valid[g]   ),
+        .tw_prev_ord_data    ( tw_ordering_data[g]    ),
+        .tw_folw_ord_valid   ( tw_ordering_valid[g+2] ),
+        .tw_folw_ord_data    ( tw_ordering_data[g+2]  ),
+        .tw_out_ord_valid    ( tw_ordering_valid[g+1] ),
+        .tw_out_ord_data     ( tw_ordering_data[g+1]  ),
 
         .exp_init         ( exp_init            ),
         .exp_run          ( exp_run             ),
         .exp_recip        ( exp_recip           )
-);
+    );
 end
 
 endmodule

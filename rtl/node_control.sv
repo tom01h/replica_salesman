@@ -12,10 +12,17 @@ module node_control
     output logic                    running,
     output opt_command_t            opt_command,
     output logic                    random_run,
-    output distance_command_t       distance_com,
-    output logic                    metropolis_run,
-    output logic                    replica_run,
-    output logic                    exchange_run,
+    
+    output distance_command_t       or_distance_com,
+    output logic                    or_metropolis_run,
+    output logic                    or_replica_run,
+    output logic                    or_exchange_run,
+
+    output distance_command_t       tw_distance_com,
+    output logic                    tw_metropolis_run,
+    output logic                    tw_replica_run,
+    output logic                    tw_exchange_run,
+    
     output logic                    exchange_bank,
     input  logic                    exchange_shift,
     output logic                    exp_init,
@@ -53,13 +60,19 @@ always_ff @(posedge clk) begin
         run <= 'b0;
 end
 
-logic [6:0]  cycle_cnt;
+logic [6:0] cycle_cnt;
+logic       exchange_run;
 
 assign random_run     = run;
 assign distance_run   = (cycle_cnt == 20);
-assign metropolis_run = (cycle_cnt == 58);
-assign replica_run    = (cycle_cnt == 78);
-assign exchange_run   = (cycle_cnt == 80);
+assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60);
+assign or_metropolis_run = (cycle_cnt == 58) && (opt_command == OR1);
+assign tw_metropolis_run = (cycle_cnt == 58) && (opt_command == TWO);
+assign or_replica_run    = (cycle_cnt == 78) && (opt_command == OR1);
+assign tw_replica_run    = (cycle_cnt == 78) && (opt_command == TWO);
+assign or_exchange_run   = (cycle_cnt == 80) && (opt_command == OR1);
+assign tw_exchange_run   = (cycle_cnt == 80) && (opt_command == TWO);
+assign    exchange_run   = or_exchange_run || tw_exchange_run;
 assign cycle_finish   = (cycle_cnt == 100);
 
 always_ff @(posedge clk) begin
@@ -87,25 +100,26 @@ end
 always_ff @(posedge clk)begin
     if (dist_run && opt_command == OR1)
         case(dist_count)
-            0:                                distance_com <= {KN , ZERO};
-            1:                                distance_com <= {KM , MNS};
-            2:                                distance_com <= {KP , PLS};
-            3:                                distance_com <= {KN , MNS};
-            4:                                distance_com <= {LN , PLS};
-            5:                                distance_com <= {LP , MNS};
-            6:                                distance_com <= {KN , PLS};
-            default:                          distance_com <= {KN , DNOP};
+            0:                                or_distance_com <= {KN , ZERO};
+            1:                                or_distance_com <= {KM , MNS};
+            2:                                or_distance_com <= {KP , PLS};
+            3:                                or_distance_com <= {KN , MNS};
+            4:                                or_distance_com <= {LN , PLS};
+            5:                                or_distance_com <= {LP , MNS};
+            6:                                or_distance_com <= {KN , PLS};
+            default:                          or_distance_com <= {KN , DNOP};
         endcase
-    else if (dist_run && opt_command == TWO)
+    else                                      or_distance_com <= {KN , DNOP};
+    if (dist_run && opt_command == TWO)
         case(dist_count)
-            0:                                distance_com <= {KN , ZERO};
-            1:                                distance_com <= {KM , MNS};
-            2:                                distance_com <= {LM , PLS};
-            3:                                distance_com <= {LN , MNS};
-            4:                                distance_com <= {KN , PLS};
-            default:                          distance_com <= {KN , DNOP};
+            0:                                tw_distance_com <= {KN , ZERO};
+            1:                                tw_distance_com <= {KM , MNS};
+            2:                                tw_distance_com <= {LM , PLS};
+            3:                                tw_distance_com <= {LN , MNS};
+            4:                                tw_distance_com <= {KN , PLS};
+            default:                          tw_distance_com <= {KN , DNOP};
         endcase
-    else                                      distance_com <= {KN , DNOP};
+    else                                      tw_distance_com <= {KN , DNOP};
 end
 
 always_ff @(posedge clk)begin
@@ -114,7 +128,6 @@ always_ff @(posedge clk)begin
     else if(exchange_shift)  exchange_bank <= ~exchange_bank;
 end
 
-assign exp_init = (cycle_cnt == 40) || (cycle_cnt == 60);
 logic [3:0]        exp_count;
 logic [3:0]        rom_addr;
 assign rom_addr = exp_count - 1;
