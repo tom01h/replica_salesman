@@ -47,6 +47,8 @@ typedef struct packed {
     opt_command_t command;
     logic [6:0]   K;
     logic [6:0]   L;
+    logic [31:0]  r_metropolis;
+    logic [31:0]  r_exchange;
 } opt_t;
 
 typedef logic [7:0][6:0] replica_data_t;

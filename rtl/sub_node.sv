@@ -1,4 +1,4 @@
-module or_node
+module sub_node
     import replica_pkg::*;
 #(
     parameter id = 0,
@@ -16,7 +16,7 @@ module or_node
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
-    input  opt_command_t              opt_command,       // opt mode
+    input  opt_t                      opt,               // opt mode
 
     input  logic                      random_run,        // random
     input  distance_command_t         distance_com,      // delta distance
@@ -45,44 +45,20 @@ module or_node
     output exchange_command_t         out_ex_com,
     input  exchange_command_t         in_ex_com,
 
-output logic [6:0]                K,
-output logic [6:0]                L,
-output logic [31:0]               r_metropolis,
-output logic [31:0]               r_exchange,
-
     input  logic                      exp_init,
     input  logic                      exp_run,
     input  logic [16:0]               exp_recip
 );
 
-opt_t                      opt;
 opt_t                      opt_ex;
 exchange_command_t         exchange_ex;
 exchange_command_t         exchange_mtr;
-assign opt.command = opt_command;
-assign opt.K       = K;
-assign opt.L       = L;
 
 logic                      ordering_read;
 logic [city_num_log-1:0]   ordering_addr;
 logic [city_num_log-1:0]   ordering_data;
 
 delata_data_t              delta_distance;
-
-random random
-(
-    .clk             ( clk             ),
-    .reset           ( reset           ),
-    .cmd             ( opt.command     ),
-    .init            ( random_init     ),
-    .i_seed          ( random_seed     ),
-    .run             ( random_run      ),
-    .ready           (                 ),
-    .K               ( K               ),
-    .L               ( L               ),
-    .r_metropolis    ( r_metropolis    ),
-    .r_exchange      ( r_exchange      )
-);
 
 distance distance
 (
@@ -112,7 +88,6 @@ metropolis #(.id(id)) metropolis
     .in_opt          ( opt             ),
     .out_opt         ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
-    .r_metropolis    ( r_metropolis    ), // test 用のランダムデータ
 
     .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
@@ -133,8 +108,7 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .reset           ( reset           ),
     
     .replica_run     ( replica_run     ),
-    .opt_command     ( opt_command     ),
-    .r_exchange      ( r_exchange      ), // test 用のランダムデータ
+    .opt             ( opt             ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
@@ -158,8 +132,7 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
     .reset           ( reset           ),
 
     .replica_run     ( replica_run     ),
-    .opt_command     ( opt_command     ),
-    .r_exchange      ( r_exchange      ),
+    .opt             ( opt             ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),

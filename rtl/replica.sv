@@ -9,8 +9,7 @@ module replica
     input  logic                    reset,
 
     input  logic                    replica_run,
-    input  opt_command_t            opt_command,
-    input  logic [31:0]             r_exchange,       // test 用のランダムデータ
+    input  opt_t                    opt,
     input  total_data_t             prev_data,
     input  total_data_t             folw_data,
     input  total_data_t             self_data,
@@ -49,7 +48,7 @@ exp #(
 );
 
 always_comb begin
-    if(opt_command == OR1) begin
+    if(opt.command == OR1) begin
         action = $signed(self_data - prev_data);
     end else begin
         action = $signed(folw_data - self_data);
@@ -59,9 +58,10 @@ end
 always_ff @(posedge clk) begin
     if(replica_run)
         test <= '0;
+        //test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
         
     if(exchange_run) begin
-        if(opt_command == OR1)
+        if(opt.command == OR1)
             if((id == 0) || (id == replica_num-1))  exchange_l <= SELF;
             else if(~test)                          exchange_l <= SELF;
             else                                    exchange_l <= PREV;

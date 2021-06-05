@@ -3,16 +3,24 @@ module random
 (
     input  logic                    clk,
     input  logic                    reset,
-    input  opt_command_t            cmd,
+    input  opt_command_t            opt_command,
     input  logic                    init,
     input  logic [63:0]             i_seed,
     input  logic                    run,
-    output logic                    ready,
-    output logic [6:0]              K,
-    output logic [6:0]              L,
-    output logic [31:0]             r_metropolis,
-    output logic [31:0]             r_exchange
+    output opt_t                    opt,
+    output logic                    ready
 );
+
+logic [6:0]              K;
+logic [6:0]              L;
+logic [31:0]             r_metropolis;
+logic [31:0]             r_exchange;
+
+assign opt.command      = opt_command;
+assign opt.K            = K;
+assign opt.L            = L;
+assign opt.r_metropolis = r_metropolis;
+assign opt.r_exchange   = r_exchange;
 
 logic [63:0]             seed, n_seed;
 logic [63:0]             x0, x1, x2, x3;
@@ -51,7 +59,7 @@ always_ff @(posedge clk) begin
         s_run <= 'b1;
         state <= s_K;
         ready <= 'b0;
-        if(cmd == TWO) begin     // 2-opt
+        if(opt_command == TWO) begin     // 2-opt
             msk <= {($clog2(city_num  )){1'b1}};
         end else begin           // or-opt
             msk <= {($clog2(city_num-1)){1'b1}};
@@ -59,7 +67,7 @@ always_ff @(posedge clk) begin
     end else if(s_run) begin
         case(state)
             s_K :
-                if(cmd == TWO) begin
+                if(opt_command == TWO) begin
                     if(1 <= val && val <= city_num) begin
                         K <= val;
                         state <= s_L;
@@ -71,7 +79,7 @@ always_ff @(posedge clk) begin
                     end
                 end 
             s_L :
-                if(cmd == TWO) begin
+                if(opt_command == TWO) begin
                     if(1 <= val && val <= city_num) begin
                         if(K>val) begin K <= val; L <= K;   end
                         else      begin           L <= val; end

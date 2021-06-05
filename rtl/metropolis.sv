@@ -13,7 +13,6 @@ module metropolis
     input  opt_t                    in_opt,
     output opt_t                    out_opt,
     input  delata_data_t            delta_distance,
-    input  logic [31:0]             r_metropolis,
     
     input  exchange_command_t       command,
     input  total_data_t             prev_data,
@@ -39,7 +38,7 @@ exp #(
     .recip   ( exp_recip       )
 );
 
-assign test = (-delta_distance >= 0) || (n_metropolis > r_metropolis[22:0]);
+assign test = (-delta_distance >= 0) || (n_metropolis > in_opt.r_metropolis[22:0]);
 
 total_data_t                        write_data;
 logic signed [$bits(out_data):0]    delta;
@@ -55,6 +54,8 @@ always_ff @(posedge clk) begin
     out_data  <= write_data;
     out_opt.K <= in_opt.K;
     out_opt.L <= in_opt.L;
+    out_opt.r_metropolis <= in_opt.r_metropolis;
+    out_opt.r_exchange <= in_opt.r_exchange;
     if(in_opt.command == THR) begin
         out_opt.command <= THR;
     end else if(metropolis_run) begin

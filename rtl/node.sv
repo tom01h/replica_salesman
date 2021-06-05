@@ -84,12 +84,21 @@ assign tw_out_ord_data  = tw_self_ord_data;
 exchange_command_t         or_ex_com;
 exchange_command_t         tw_ex_com;
     
-logic [6:0]                K;
-logic [6:0]                L;
-logic [31:0]               r_metropolis;
-logic [31:0]               r_exchange;
+opt_t                      opt;
 
-or_node #(.id(id), .replica_num(replica_num)) or_node
+random random
+(
+    .clk             ( clk             ),
+    .reset           ( reset           ),
+    .opt_command     ( opt_command     ),
+    .init            ( random_init     ),
+    .i_seed          ( random_seed     ),
+    .run             ( random_run      ),
+    .opt             ( opt             ),
+    .ready           (                 )
+);
+
+sub_node #(.id(id), .replica_num(replica_num)) or_node
 (
     .clk              ( clk                 ),
     .reset            ( reset               ),
@@ -102,7 +111,7 @@ or_node #(.id(id), .replica_num(replica_num)) or_node
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     
-    .opt_command      ( opt_command         ), // opt mode
+    .opt              ( opt                 ), // opt mode
     
     .random_run       ( random_run          ), // random
     .distance_com     ( or_distance_com     ), // delta distance
@@ -133,17 +142,12 @@ or_node #(.id(id), .replica_num(replica_num)) or_node
     .out_ex_com      ( or_ex_com            ),
     .in_ex_com       ( tw_ex_com            ),
 
-.K            ( K            ),
-.L            ( L            ),
-.r_metropolis ( r_metropolis ),
-.r_exchange   ( r_exchange   ),
-
     .exp_init         ( exp_init            ),
     .exp_run          ( exp_run             ),
     .exp_recip        ( exp_recip           )
 );
 
-two_node #(.id(id), .replica_num(replica_num)) two_node
+sub_node #(.id(id), .replica_num(replica_num)) two_node
 (
     .clk              ( clk                 ),
     .reset            ( reset               ),
@@ -156,7 +160,7 @@ two_node #(.id(id), .replica_num(replica_num)) two_node
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     
-    .opt_command      ( opt_command         ), // opt mode
+    .opt              ( opt                 ), // opt mode
     
     .random_run       ( 1'b0      ), // random
     .distance_com     ( tw_distance_com     ), // delta distance
@@ -186,11 +190,6 @@ two_node #(.id(id), .replica_num(replica_num)) two_node
 
     .out_ex_com      ( tw_ex_com            ),
     .in_ex_com       ( or_ex_com            ),
-
-.K            ( K            ),
-.L            ( L            ),
-.r_metropolis ( r_metropolis ),
-.r_exchange   ( r_exchange   ),
 
     .exp_init         ( exp_init            ),
     .exp_run          ( exp_run             ),

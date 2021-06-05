@@ -9,8 +9,7 @@ module replica_d
     input  logic                    reset,
 
     input  logic                    replica_run,
-    input  opt_command_t            opt_command,
-    input  logic [31:0]             r_exchange,       // test 用のランダムデータ
+    input  opt_t                    opt,
     input  total_data_t             prev_data,
     input  total_data_t             folw_data,
     input  total_data_t             self_data,
@@ -36,7 +35,7 @@ assign exchange_mtr = exchange_l;
 
 always_ff @(posedge clk) begin
     if(exchange_run) begin
-        if(opt_command == OR1)
+        if(opt.command == OR1)
             if((id == 0) || (id == replica_num-1))  exchange_l <= SELF;
             else if(~folw_exchange)                 exchange_l <= SELF;
             else                                    exchange_l <= FOLW;
