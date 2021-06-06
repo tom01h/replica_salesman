@@ -10,9 +10,11 @@ module node_control
     input  logic                    run_write,
     input  logic [23:0]             run_times,
     output logic                    running,
+
+    output logic                    opt_run,
+    output opt_command_t            opt_com,
     output opt_command_t            opt_command,
-    output logic                    random_run,
-    
+
     output distance_command_t       or_distance_com,
     output logic                    or_metropolis_run,
     output logic                    or_replica_run,
@@ -23,10 +25,10 @@ module node_control
     output logic                    tw_replica_run,
     output logic                    tw_exchange_run,
     
-    output logic                    exchange_bank,
     input  logic                    exchange_shift,
     output logic                    exp_init,
     output logic                    exp_run,
+    output logic                    exp_fin,
     output logic [16:0]             exp_recip
 );
 
@@ -34,46 +36,57 @@ logic        run;
 logic [23:0] run_times_reg;
 logic [23:0] run_cnt;
 logic        cycle_finish;
+logic  [7:0] cycle_cnt;
+
+logic     fin_tmp;
 
 always_ff @(posedge clk) begin
+    fin_tmp <= 'b0;
     if(reset) begin
         run <= 'b0;
         running <= 'b0;
         run_cnt <= 'b0;
+        opt_com <= THR;
         opt_command <= THR;
     end else if (run_write) begin
         run <= 'b1;
         running <= 'b1;
         run_times_reg <= run_times;
+        opt_com <= OR1;
         opt_command <= OR1;
+    end else if((cycle_cnt == 19) || (cycle_cnt == 119)) begin
+        opt_com <= THR;
+    end else if(cycle_cnt == 99) begin
+        opt_com <= TWO;
+        opt_command <= TWO;
     end else if(cycle_finish) begin
-        if((run_cnt + 1) != run_times_reg) begin
+        if((run_cnt + 2) != run_times_reg) begin
             run <= 'b1;
-            run_cnt <= run_cnt + 1;
-            if(opt_command == OR1) opt_command <= TWO;
-            else                   opt_command <= OR1;
+            run_cnt <= run_cnt + 2;
+            opt_com <= OR1;
+            opt_command <= OR1;
         end else begin
+            fin_tmp <= 'b1;
             running <= 'b0;
+            opt_com <= THR;
             opt_command <= THR;
         end
     end else
         run <= 'b0;
 end
 
-logic [6:0] cycle_cnt;
-logic       exchange_run;
+assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0);// || fin_tmp;
+assign exp_fin        = cycle_cnt % 20 == 18;
 
-assign random_run     = run;
-assign distance_run   = (cycle_cnt == 20);
-assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60);
-assign or_metropolis_run = (cycle_cnt == 58) && (opt_command == OR1);
-assign tw_metropolis_run = (cycle_cnt == 58) && (opt_command == TWO);
-assign or_replica_run    = (cycle_cnt == 78) && (opt_command == OR1);
-assign tw_replica_run    = (cycle_cnt == 78) && (opt_command == TWO);
-assign or_exchange_run   = (cycle_cnt == 80) && (opt_command == OR1);
-assign tw_exchange_run   = (cycle_cnt == 80) && (opt_command == TWO);
-assign    exchange_run   = or_exchange_run || tw_exchange_run;
-assign cycle_finish   = (cycle_cnt == 100);
+assign distance_run   = (cycle_cnt == 20) || (cycle_cnt == 120);
+assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60) || (cycle_cnt == 140) || (cycle_cnt == 160);
+assign or_metropolis_run = (cycle_cnt ==  58);
+assign tw_metropolis_run = (cycle_cnt == 158);
+assign or_replica_run    = (cycle_cnt ==  78);
+assign tw_replica_run    = (cycle_cnt == 178);
+assign or_exchange_run   = (cycle_cnt ==  80);
+assign tw_exchange_run   = (cycle_cnt == 180);
+assign cycle_finish   = (cycle_cnt == 199);
 
 always_ff @(posedge clk) begin
     if(reset)               cycle_cnt <= 'b0;
@@ -120,12 +133,6 @@ always_ff @(posedge clk)begin
             default:                          tw_distance_com <= {KN , DNOP};
         endcase
     else                                      tw_distance_com <= {KN , DNOP};
-end
-
-always_ff @(posedge clk)begin
-    if(reset)                exchange_bank <= '0;
-    else if(exchange_run)    exchange_bank <= ~exchange_bank;
-    else if(exchange_shift)  exchange_bank <= ~exchange_bank;
 end
 
 logic [3:0]        exp_count;

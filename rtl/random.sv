@@ -3,24 +3,41 @@ module random
 (
     input  logic                    clk,
     input  logic                    reset,
+    input  logic                    run,
     input  opt_command_t            opt_command,
+    input  opt_command_t            opt_com,
     input  logic                    init,
     input  logic [63:0]             i_seed,
-    input  logic                    run,
-    output opt_t                    opt,
+    output opt_t                    or_opt,
+    output opt_t                    tw_opt,
     output logic                    ready
 );
 
-logic [6:0]              K;
-logic [6:0]              L;
-logic [31:0]             r_metropolis;
-logic [31:0]             r_exchange;
+always_ff @(posedge clk)begin
+    if(reset)               or_opt.com      = THR;
+    else if(run)
+        if(opt_com == OR1)  or_opt.com      = OR1;
+        else                or_opt.com      = THR;
+    if(reset)               tw_opt.com      = THR;
+    else if(run)
+        if(opt_com == TWO)  tw_opt.com      = TWO;
+        else                tw_opt.com      = THR;
+end
 
-assign opt.command      = opt_command;
-assign opt.K            = K;
-assign opt.L            = L;
-assign opt.r_metropolis = r_metropolis;
-assign opt.r_exchange   = r_exchange;
+opt_t                    opt;
+
+assign or_opt.command      = opt_command;
+assign tw_opt.command      = opt_command;
+assign or_opt.K = opt.K;
+assign tw_opt.K = opt.K;
+assign or_opt.L = opt.L;
+assign tw_opt.L = opt.L;
+assign or_opt.r_metropolis = opt.r_metropolis;
+assign tw_opt.r_metropolis = opt.r_metropolis;
+assign or_opt.r_exchange = opt.r_exchange;
+assign tw_opt.r_exchange = opt.r_exchange;
+
+
 
 logic [63:0]             seed, n_seed;
 logic [63:0]             x0, x1, x2, x3;
@@ -53,9 +70,10 @@ typedef enum logic [1:0] {
 state_t state;
 
 always_ff @(posedge clk) begin
+ opt.command      <= opt_command;
     if(reset) begin
         s_run <= 'b0;
-    end else if(run) begin
+    end else if(run && (opt_com != THR)) begin
         s_run <= 'b1;
         state <= s_K;
         ready <= 'b0;
@@ -67,34 +85,34 @@ always_ff @(posedge clk) begin
     end else if(s_run) begin
         case(state)
             s_K :
-                if(opt_command == TWO) begin
+                if(opt.command == TWO) begin
                     if(1 <= val && val <= city_num) begin
-                        K <= val;
+                        opt.K <= val;
                         state <= s_L;
                     end
                 end else begin
                     if(1 <= val && val <= city_num-1) begin
-                        K <= val;
+                        opt.K <= val;
                         state <= s_L;
                     end
                 end 
             s_L :
-                if(opt_command == TWO) begin
+                if(opt.command == TWO) begin
                     if(1 <= val && val <= city_num) begin
-                        if(K>val) begin K <= val; L <= K;   end
-                        else      begin           L <= val; end
-                        if(K != val) begin state <= s_metropolis; msk <= '1; end
-                        else         state <= s_K;
+                        if(opt.K>val) begin  opt.K <= val; opt.L <= opt.K;   end
+                        else          begin                opt.L <= val; end
+                        if(opt.K != val) begin state <= s_metropolis; msk <= '1; end
+                        else                   state <= s_K;
                     end
                 end else begin
                     if(0 <= val && val <= city_num-1) begin
-                        L <= val;
-                        if(K != val && K != val+1) begin state <= s_metropolis; msk <= '1; end
-                        else                       state <= s_K;
+                        opt.L <= val;
+                        if(opt.K != val && opt.K != val+1) begin state <= s_metropolis; msk <= '1; end
+                        else                                     state <= s_K;
                     end
                 end
-            s_metropolis : begin r_metropolis <= val; state <= s_exchange; end
-            s_exchange :   begin r_exchange   <= val; s_run <= 'b0; ready <= 'b1; end
+            s_metropolis : begin opt.r_metropolis <= val; state <= s_exchange; end
+            s_exchange :   begin opt.r_exchange   <= val; s_run <= 'b0; ready <= 'b1; end
             default : ;
         endcase
     end    

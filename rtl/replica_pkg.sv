@@ -44,6 +44,7 @@ typedef enum logic [1:0] { // K, L の対象関係は以下のみサポート
 } opt_command_t;
 
 typedef struct packed {
+    opt_command_t com;
     opt_command_t command;
     logic [6:0]   K;
     logic [6:0]   L;

@@ -16,15 +16,14 @@ module sub_node
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
+
+    input  logic                      opt_run,           // opt run
     input  opt_t                      opt,               // opt mode
 
-    input  logic                      random_run,        // random
     input  distance_command_t         distance_com,      // delta distance
     input  logic                      metropolis_run,    // metropolis test
     input  logic                      replica_run,       // replica exchange test
     input  logic                      exchange_run,      // chenge ordering & replica exchange
-
-    input  logic                      exchange_bank,
 
     input  total_data_t               prev_dis_data,     // for replica exchange test
     input  total_data_t               self_dis_data,
@@ -51,6 +50,7 @@ module sub_node
 );
 
 opt_t                      opt_ex;
+
 exchange_command_t         exchange_ex;
 exchange_command_t         exchange_mtr;
 

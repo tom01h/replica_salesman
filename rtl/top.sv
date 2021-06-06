@@ -159,8 +159,6 @@ node_reg node_reg
     .exchange_shift_d   ( exchange_shift_d   )
 );
 
-logic                 random_run;
-
 distance_command_t    or_distance_com;
 logic                 or_metropolis_run;
 logic                 or_replica_run;
@@ -171,11 +169,13 @@ logic                 tw_metropolis_run;
 logic                 tw_replica_run;
 logic                 tw_exchange_run;
 
-logic                 exchange_bank;
 logic                 exp_init;
 logic                 exp_run;
 logic [16:0]          exp_recip;
+
+logic                 opt_run;
 opt_command_t         opt_command;
+opt_command_t         opt_com;
 
 node_control node_control
 (
@@ -184,8 +184,10 @@ node_control node_control
     .run_write      ( run_write      ),
     .run_times      ( run_times      ),
     .running        ( running        ),
+
+    .opt_run        ( opt_run        ),
     .opt_command    ( opt_command    ),
-    .random_run     ( random_run     ),
+    .opt_com        ( opt_com        ),
     
     .or_distance_com   ( or_distance_com   ),
     .or_metropolis_run ( or_metropolis_run ),
@@ -197,7 +199,6 @@ node_control node_control
     .tw_replica_run    ( tw_replica_run    ),
     .tw_exchange_run   ( tw_exchange_run   ),
     
-    .exchange_bank  ( exchange_bank  ),
     .exchange_shift ( exchange_shift ),
     .exp_init       ( exp_init       ),
     .exp_run        ( exp_run        ),
@@ -228,9 +229,9 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .distance_shift   ( distance_shift      ), // total distance read/write
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
+        .opt_run          ( opt_run             ), // opt run
         .opt_command      ( opt_command         ), // opt mode
-        
-        .random_run       ( random_run          ), // random
+        .opt_com          ( opt_com             ), // opt mode
 
         .or_distance_com     ( or_distance_com        ), // delta distance
         .or_metropolis_run   ( or_metropolis_run      ), // metropolis test
@@ -241,8 +242,6 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .tw_metropolis_run   ( tw_metropolis_run      ), // metropolis test
         .tw_replica_run      ( tw_replica_run         ), // replica exchange test
         .tw_exchange_run     ( tw_exchange_run        ), // chenge ordering & replica exchange
-
-        .exchange_bank    ( exchange_bank       ),
 
         .or_prev_dis_data    ( or_dis_data[g]         ),
         .or_folw_dis_data    ( or_dis_data[g+2]       ),

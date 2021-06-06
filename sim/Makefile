@@ -32,8 +32,7 @@ DESIGN_SRCS = \
 ../bus_if/bus_if.sv \
 ../rtl/exp.sv\
 ../rtl/node.sv \
-../rtl/or_node.sv \
-../rtl/two_node.sv \
+../rtl/sub_node.sv \
 ../rtl/node_control.sv \
 ../rtl/node_reg.sv \
 ../rtl/random.sv \

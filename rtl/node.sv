@@ -16,9 +16,9 @@ module node
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
+    input  logic                      opt_run,           // opt run
+    input  opt_command_t              opt_com,           // opt mode
     input  opt_command_t              opt_command,       // opt mode
-
-    input  logic                      random_run,        // random
 
     input  distance_command_t         or_distance_com,      // delta distance
     input  logic                      or_metropolis_run,    // metropolis test
@@ -29,8 +29,6 @@ module node
     input  logic                      tw_metropolis_run,    // metropolis test
     input  logic                      tw_replica_run,       // replica exchange test
     input  logic                      tw_exchange_run,      // chenge ordering & replica exchange
-
-    input  logic                      exchange_bank,
 
     input  total_data_t               or_prev_dis_data,     // for replica exchange test
     input  total_data_t               or_folw_dis_data,
@@ -84,17 +82,20 @@ assign tw_out_ord_data  = tw_self_ord_data;
 exchange_command_t         or_ex_com;
 exchange_command_t         tw_ex_com;
     
-opt_t                      opt;
+opt_t                      or_opt;
+opt_t                      tw_opt;
 
 random random
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
+    .opt_com         ( opt_com         ),
     .opt_command     ( opt_command     ),
     .init            ( random_init     ),
     .i_seed          ( random_seed     ),
-    .run             ( random_run      ),
-    .opt             ( opt             ),
+    .run             ( opt_run         ),
+    .or_opt          ( or_opt          ),
+    .tw_opt          ( tw_opt          ),
     .ready           (                 )
 );
 
@@ -111,15 +112,13 @@ sub_node #(.id(id), .replica_num(replica_num)) or_node
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     
-    .opt              ( opt                 ), // opt mode
+    .opt_run          ( opt_run             ), // opt run
+    .opt              ( or_opt              ), // opt mode
     
-    .random_run       ( random_run          ), // random
     .distance_com     ( or_distance_com     ), // delta distance
     .metropolis_run   ( or_metropolis_run   ), // metropolis test
     .replica_run      ( or_replica_run      ), // replica exchange test
     .exchange_run     ( or_exchange_run     ), // chenge ordering & replica exchange
-
-    .exchange_bank    ( exchange_bank       ),
 
     .prev_dis_data    ( tw_prev_dis_data    ),
     .self_dis_data    ( tw_self_dis_data    ),
@@ -160,15 +159,13 @@ sub_node #(.id(id), .replica_num(replica_num)) two_node
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     
-    .opt              ( opt                 ), // opt mode
+    .opt_run          ( opt_run             ), // opt run
+    .opt              ( tw_opt              ), // opt mode
     
-    .random_run       ( 1'b0      ), // random
     .distance_com     ( tw_distance_com     ), // delta distance
     .metropolis_run   ( tw_metropolis_run   ), // metropolis test
     .replica_run      ( tw_replica_run      ), // replica exchange test
     .exchange_run     ( tw_exchange_run     ), // chenge ordering & replica exchange
-
-    .exchange_bank    ( exchange_bank       ),
 
     .prev_dis_data    ( or_prev_dis_data    ),
     .self_dis_data    ( or_self_dis_data    ),
