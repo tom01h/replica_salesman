@@ -49,6 +49,7 @@ module sub_node
     input  logic [16:0]               exp_recip
 );
 
+opt_t                      opt_dis;
 opt_t                      opt_ex;
 
 exchange_command_t         exchange_ex;
@@ -69,8 +70,11 @@ distance distance
     .tp_dis_waddr    ( tp_dis_waddr    ),
     .tp_dis_wdata    ( tp_dis_wdata    ),
 
+    .opt_run         ( opt_run         ),
+    .in_opt          ( opt             ),
+    .out_opt         ( opt_dis         ),
     .command         ( distance_com    ),
-    .opt             ( opt             ),
+
     .delta_distance  ( delta_distance  ),
     .ordering_read   ( ordering_read   ), // ordering メモリを読む
     .ordering_addr   ( ordering_addr   ),

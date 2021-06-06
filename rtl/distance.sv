@@ -8,26 +8,35 @@ module distance
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
     input  distance_data_t            tp_dis_wdata,
 
+    input  logic                      opt_run,
+    input  opt_t                      in_opt,
+    output opt_t                      out_opt,
     input  distance_command_t         command,
-    input  opt_t                      opt,
+
     output delata_data_t              delta_distance,
     output logic                      ordering_read,
     output logic [city_num_log-1:0]   ordering_addr,
     input  logic [city_num_log-1:0]   ordering_data
 );
 
+always_ff @(posedge clk)begin
+    if(reset)        out_opt.com <= THR;
+    else if(opt_run) out_opt     <= in_opt;
+end
+
 distance_op_t            command_op_i;
 always_ff @(posedge clk) begin
-    ordering_read <= (command.op != DNOP);
-    command_op_i <= command.op;
+    ordering_read <= (command.op != DNOP) && (out_opt.com != THR);
+    if(out_opt.com == THR) command_op_i <= DNOP;
+    else                   command_op_i <= command.op;
     case(command.select)
-        KN : ordering_addr <= opt.K;
-        KP : ordering_addr <= opt.K + 1;
-        KM : ordering_addr <= opt.K - 1;
-        LN : ordering_addr <= opt.L;
-        LP : ordering_addr <= opt.L + 1;
-        LM : ordering_addr <= opt.L - 1;
-        default : ordering_addr <= opt.K;
+        KN : ordering_addr <= out_opt.K;
+        KP : ordering_addr <= out_opt.K + 1;
+        KM : ordering_addr <= out_opt.K - 1;
+        LN : ordering_addr <= out_opt.L;
+        LP : ordering_addr <= out_opt.L + 1;
+        LM : ordering_addr <= out_opt.L - 1;
+        default : ordering_addr <= out_opt.K;
     endcase
 end
 

@@ -78,7 +78,6 @@ end
 assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0);// || fin_tmp;
 assign exp_fin        = cycle_cnt % 20 == 18;
 
-assign distance_run   = (cycle_cnt == 20) || (cycle_cnt == 120);
 assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60) || (cycle_cnt == 140) || (cycle_cnt == 160);
 assign or_metropolis_run = (cycle_cnt ==  58);
 assign tw_metropolis_run = (cycle_cnt == 158);
@@ -95,44 +94,32 @@ always_ff @(posedge clk) begin
     else if(cycle_cnt != 0) cycle_cnt <= cycle_cnt + 1;
 end
 
-logic       dist_run;
-logic [4:0] dist_count;
+logic [4:0] stage_count;
 
 always_ff @(posedge clk) begin
-    if(distance_run)begin
-        dist_run                <= 1;
-        dist_count              <= 0;
-    end else if(dist_run)begin
-        dist_count              <= dist_count + 1;
-        if(dist_count == 20) begin
-            dist_run           <= 0;
-        end
-    end
+    if(opt_run)  stage_count   <= 0;
+    else         stage_count   <= stage_count + 1;
 end
 
 always_ff @(posedge clk)begin
-    if (dist_run && opt_command == OR1)
-        case(dist_count)
-            0:                                or_distance_com <= {KN , ZERO};
-            1:                                or_distance_com <= {KM , MNS};
-            2:                                or_distance_com <= {KP , PLS};
-            3:                                or_distance_com <= {KN , MNS};
-            4:                                or_distance_com <= {LN , PLS};
-            5:                                or_distance_com <= {LP , MNS};
-            6:                                or_distance_com <= {KN , PLS};
-            default:                          or_distance_com <= {KN , DNOP};
-        endcase
-    else                                      or_distance_com <= {KN , DNOP};
-    if (dist_run && opt_command == TWO)
-        case(dist_count)
-            0:                                tw_distance_com <= {KN , ZERO};
-            1:                                tw_distance_com <= {KM , MNS};
-            2:                                tw_distance_com <= {LM , PLS};
-            3:                                tw_distance_com <= {LN , MNS};
-            4:                                tw_distance_com <= {KN , PLS};
-            default:                          tw_distance_com <= {KN , DNOP};
-        endcase
-    else                                      tw_distance_com <= {KN , DNOP};
+    case(stage_count)
+        0:        or_distance_com <= {KN , ZERO};
+        1:        or_distance_com <= {KM , MNS};
+        2:        or_distance_com <= {KP , PLS};
+        3:        or_distance_com <= {KN , MNS};
+        4:        or_distance_com <= {LN , PLS};
+        5:        or_distance_com <= {LP , MNS};
+        6:        or_distance_com <= {KN , PLS};
+        default:  or_distance_com <= {KN , DNOP};
+    endcase
+    case(stage_count)
+        0:        tw_distance_com <= {KN , ZERO};
+        1:        tw_distance_com <= {KM , MNS};
+        2:        tw_distance_com <= {LM , PLS};
+        3:        tw_distance_com <= {LN , MNS};
+        4:        tw_distance_com <= {KN , PLS};
+        default:  tw_distance_com <= {KN , DNOP};
+    endcase
 end
 
 logic [3:0]        exp_count;
