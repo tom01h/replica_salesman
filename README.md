@@ -27,7 +27,8 @@ python3 setup.py build_ext -I/usr/local/share/verilator/include -i
 python3 replica_salesman.py
 ```
 
-RTL で作成中の部品は sim/ 下で Python の結果と比較しながら検証できます。
+RTL シミュレーションは sim/ 下に説明があります。  
+Python の動作モデルの結果と比較しながら検証できます。
 
 ### アルゴリズムを簡単に説明
 
