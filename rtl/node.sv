@@ -21,12 +21,8 @@ module node
     input  opt_command_t              opt_command,       // opt mode
 
     input  distance_command_t         or_distance_com,      // delta distance
-    input  logic                      or_replica_run,       // replica exchange test
-    input  logic                      or_exchange_run,      // chenge ordering & replica exchange
 
     input  distance_command_t         tw_distance_com,      // delta distance
-    input  logic                      tw_replica_run,       // replica exchange test
-    input  logic                      tw_exchange_run,      // chenge ordering & replica exchange
 
     input  total_data_t               or_prev_dis_data,     // for replica exchange test
     input  total_data_t               or_folw_dis_data,
@@ -115,8 +111,6 @@ sub_node #(.id(id), .replica_num(replica_num)) or_node
     .opt              ( or_opt              ), // opt mode
     
     .distance_com     ( or_distance_com     ), // delta distance
-    .replica_run      ( or_replica_run      ), // replica exchange test
-    .exchange_run     ( or_exchange_run     ), // chenge ordering & replica exchange
 
     .prev_dis_data    ( tw_prev_dis_data    ),
     .self_dis_data    ( tw_self_dis_data    ),
@@ -162,8 +156,6 @@ sub_node #(.id(id), .replica_num(replica_num)) two_node
     .opt              ( tw_opt              ), // opt mode
     
     .distance_com     ( tw_distance_com     ), // delta distance
-    .replica_run      ( tw_replica_run      ), // replica exchange test
-    .exchange_run     ( tw_exchange_run     ), // chenge ordering & replica exchange
 
     .prev_dis_data    ( or_prev_dis_data    ),
     .self_dis_data    ( or_self_dis_data    ),

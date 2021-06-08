@@ -8,15 +8,14 @@ module replica
     input  logic                    clk,
     input  logic                    reset,
 
-    input  logic                    replica_run,
+    input  logic                    opt_run,
     input  opt_t                    opt,
     input  total_data_t             prev_data,
     input  total_data_t             folw_data,
     input  total_data_t             self_data,
 
     input  logic                    exchange_shift_d, //   exchange_ex に ordering read/write コマンドを乗せる
-    input  logic                    exchange_run,     // このタイミングで exchange と metropolis 向けに
-    output exchange_command_t       exchange_ex,      // このコマンドを作る replica exchange test の結果を乗せる
+    output exchange_command_t       exchange_ex,      // replica exchange test の結果を乗せる
     output exchange_command_t       exchange_mtr,     //   ordering read/write コマンドが乗ってない
     input  logic                    prev_exchange,    // 隣の test 結果を受け取る (replica_d)
     input  logic                    folw_exchange,    // 隣の test 結果を受け取る (replica_d)
@@ -24,6 +23,7 @@ module replica
 
     input  logic                    exp_init,
     input  logic                    exp_run,
+    input  logic                    exp_fin,
     input  logic [16:0]             exp_recip
 );
 
@@ -48,26 +48,29 @@ exp #(
 );
 
 always_comb begin
-    if(opt.command == OR1) begin
+    if(opt.com == OR1) begin
         action = $signed(self_data - prev_data);
     end else begin
         action = $signed(folw_data - self_data);
     end
 end
 
+logic  replica_run;
+assign replica_run = exp_fin && (opt.com != THR);
 always_ff @(posedge clk) begin
     if(replica_run)
         test <= '0;
         //test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
         
-    if(exchange_run) begin
-        if(opt.command == OR1)
+    if(opt_run) begin
+        if(opt.com == OR1)
             if((id == 0) || (id == replica_num-1))  exchange_l <= SELF;
             else if(~test)                          exchange_l <= SELF;
             else                                    exchange_l <= PREV;
-        else
+        else if(opt.com == TWO)
             if(~test)                               exchange_l <= SELF;
             else                                    exchange_l <= FOLW;
+        else                                        exchange_l <= NOP;
     end else                                        exchange_l <= NOP;
 end
     

@@ -160,12 +160,7 @@ node_reg node_reg
 );
 
 distance_command_t    or_distance_com;
-logic                 or_replica_run;
-logic                 or_exchange_run;
-
 distance_command_t    tw_distance_com;
-logic                 tw_replica_run;
-logic                 tw_exchange_run;
 
 logic                 exp_init;
 logic                 exp_run;
@@ -189,12 +184,7 @@ node_control node_control
     .opt_com        ( opt_com        ),
     
     .or_distance_com   ( or_distance_com   ),
-    .or_replica_run    ( or_replica_run    ),
-    .or_exchange_run   ( or_exchange_run   ),
-
     .tw_distance_com   ( tw_distance_com   ),
-    .tw_replica_run    ( tw_replica_run    ),
-    .tw_exchange_run   ( tw_exchange_run   ),
     
     .exchange_shift ( exchange_shift ),
     .exp_init       ( exp_init       ),
@@ -232,12 +222,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .opt_com          ( opt_com             ), // opt mode
 
         .or_distance_com     ( or_distance_com        ), // delta distance
-        .or_replica_run      ( or_replica_run         ), // replica exchange test
-        .or_exchange_run     ( or_exchange_run        ), // chenge ordering & replica exchange
-
         .tw_distance_com     ( tw_distance_com        ), // delta distance
-        .tw_replica_run      ( tw_replica_run         ), // replica exchange test
-        .tw_exchange_run     ( tw_exchange_run        ), // chenge ordering & replica exchange
 
         .or_prev_dis_data    ( or_dis_data[g]         ),
         .or_folw_dis_data    ( or_dis_data[g+2]       ),

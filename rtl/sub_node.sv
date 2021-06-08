@@ -20,8 +20,6 @@ module sub_node
     input  opt_t                      opt,               // opt mode
 
     input  distance_command_t         distance_com,      // delta distance
-    input  logic                      replica_run,       // replica exchange test
-    input  logic                      exchange_run,      // chenge ordering & replica exchange
 
     input  total_data_t               prev_dis_data,     // for replica exchange test
     input  total_data_t               self_dis_data,
@@ -113,15 +111,14 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .clk             ( clk             ),
     .reset           ( reset           ),
     
-    .replica_run     ( replica_run     ),
-    .opt             ( opt             ),
+    .opt_run         ( opt_run         ),
+    .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
     
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
-    .exchange_run    ( exchange_run    ), // このタイミングで exchange と metropolis 向けに
-    .exchange_ex     ( exchange_ex     ), // このコマンドを作る replica exchange test の結果を乗せる
+    .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
     .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
@@ -129,6 +126,7 @@ replica #(.id(id), .replica_num(replica_num)) replica
 
     .exp_init        ( exp_init        ),
     .exp_run         ( exp_run         ),
+    .exp_fin         ( exp_fin         ),
     .exp_recip       ( exp_recip       )
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
@@ -137,15 +135,14 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
     .clk             ( clk             ),
     .reset           ( reset           ),
 
-    .replica_run     ( replica_run     ),
-    .opt             ( opt             ),
+    .opt_run         ( opt_run         ),
+    .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
 
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
-    .exchange_run    ( exchange_run    ), // このタイミングで exchange と metropolis 向けに
-    .exchange_ex     ( exchange_ex     ), // このコマンドを作る replica exchange test の結果を乗せる
+    .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
     .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
@@ -153,6 +150,7 @@ replica_d #(.id(id), .replica_num(replica_num)) replica
 
     .exp_init        ( exp_init        ),
     .exp_run         ( exp_run         ),
+    .exp_fin         ( exp_fin         ),
     .exp_recip       ( exp_recip       )
 
 );

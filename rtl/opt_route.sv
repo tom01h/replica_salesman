@@ -6,7 +6,6 @@ module opt_route
     input  exchange_command_t       command,
     input  logic                    command_nop_d,
     input  opt_t                    opt,
-    input  opt_t                    opt_d,
     output logic [city_div_log-1:0] rcount,
     input  replica_data_t           out_data_i,
     output logic                    out_valid_o,
@@ -15,12 +14,12 @@ module opt_route
 
 logic [6:0]   K, L;
 logic [2:0]   K8, L8;
-assign K = opt_d.K;
-assign L = opt_d.L;
+assign K = opt.K;
+assign L = opt.L;
 assign K8 = K % 8;
-assign L8 = (opt_d.com == OR0)? L % 8 :
-            (opt_d.com == OR1)? (L+1) % 8 :
-            (opt_d.com == TWO)? (L-1) % 8 : L % 8 ;
+assign L8 = (opt.com == OR0)? L % 8 :
+            (opt.com == OR1)? (L+1) % 8 :
+            (opt.com == TWO)? (L-1) % 8 : L % 8 ;
 
 logic                    out_valid_r;
 logic [city_div_log-1:0] dcount;
@@ -39,11 +38,11 @@ always_ff @(posedge clk) begin
     set_p <= '0;
     use_p <= '0;
     for(int i = 0; i < 8; i += 1) begin
-        if (command_nop_d && dcount == 0 && ~or1_ini && ~(set_p & opt_d.com == OR1) && ~(rev_d & opt_d.com == TWO)) begin
+        if (command_nop_d && dcount == 0 && ~or1_ini && ~(set_p & opt.com == OR1) && ~(rev_d & opt.com == TWO)) begin
                                                   sel[i] <= i;    hold[i] <= '0;
-        end else if (opt_d.com == THR) begin
+        end else if (opt.com == THR) begin
                                                   sel[i] <= i;    hold[i] <= '0;
-        end else if (opt_d.com == OR0) begin
+        end else if (opt.com == OR0) begin
             if (dcount < K/8) begin
                                                   sel[i] <= i;    hold[i] <= '0;
             end else if (dcount == K/8) begin
@@ -68,7 +67,7 @@ always_ff @(posedge clk) begin
             end else begin
                                                   sel[i] <= i;    hold[i] <= '1;
             end
-        end else if (opt_d.com == OR1) begin
+        end else if (opt.com == OR1) begin
             if (~command_nop_d) begin
             end else if (or1_ini) begin
                 set_p <= '1;
@@ -95,7 +94,7 @@ always_ff @(posedge clk) begin
             end else begin
                                                   sel[i] <= i;    hold[i] <= '0;
             end
-        end else if (opt_d.com == TWO) begin
+        end else if (opt.com == TWO) begin
             if (dcount < K/8) begin
                                                   sel[i] <= i;    hold[i] <= '0;
             end else if (dcount == K/8) begin
@@ -149,7 +148,7 @@ always_comb begin
         else            out_data_o[i] = out_data_i[sel[i]];
     end
     if(hold_d1[7])             out_data_o[7] = out_data_hold[7];
-    else if (opt_d.com == TWO) out_data_o[7] = out_data_i[sel[7]];
+    else if (opt.com == TWO)   out_data_o[7] = out_data_i[sel[7]];
     else if(hold_d1 == 8'h7f)  out_data_o[7] = out_data_i[0];
     else                       out_data_o[7] = out_data_i[sel[7]];
 end
@@ -158,18 +157,18 @@ always_ff @(posedge clk) begin
     if(set_p) p <= out_data_i[K8];
     hold_d1 <= hold[7:0];
     if(command == NOP) begin
-        if((dcount == (L+1)/8) && (opt_d.com == OR1)) hold_d1[L8] <= '1;
-        if(                        rev_d && K8 + L8 <  7 && (opt_d.com == TWO)) hold_d1 <= hold_d1 | hold;
-        if((dcount == (L-1)/8) && ~rev_d && K8 + L8 >= 7 && (opt_d.com == TWO)) hold_d1 <= hold_d1 | hold;
+        if((dcount == (L+1)/8) && (opt.com == OR1)) hold_d1[L8] <= '1;
+        if(                        rev_d && K8 + L8 <  7 && (opt.com == TWO)) hold_d1 <= hold_d1 | hold;
+        if((dcount == (L-1)/8) && ~rev_d && K8 + L8 >= 7 && (opt.com == TWO)) hold_d1 <= hold_d1 | hold;
     end        
     for(int i = 0; i < 8; i += 1) begin
-        if (opt_d.com == OR0) begin
+        if (opt.com == OR0) begin
             if(~set_p & use_p & i == L8)  out_data_hold[i] <= p;
             else                          out_data_hold[i] <= out_data_i[sel[i]];
-        end else if (opt_d.com == OR1) begin
+        end else if (opt.com == OR1) begin
             if(set_p)                     out_data_hold[i] <= out_data_i[K8];
             else if(hold[0])              out_data_hold[i] <= out_data_i[7];
-        end else if (opt_d.com == TWO) begin
+        end else if (opt.com == TWO) begin
             if(hold[i])                   out_data_hold[i] <= out_data_i[sel[i]];
         end
     end
@@ -179,13 +178,13 @@ always_ff @(posedge clk) begin
     if (reset) begin
         out_valid_r <= '0;
     end else if (hold != 0) begin
-        out_valid_r <= ~(   (opt_d.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 ||
-                            (opt_d.com == TWO) && rev_d && (dcount == K/8)     && L8 + K8 >= 7   );
+        out_valid_r <= ~(   (opt.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 ||
+                            (opt.com == TWO) && rev_d && (dcount == K/8)     && L8 + K8 >= 7   );
     end else if (~command_nop_d || dcount != '0 || set_p) begin
-        out_valid_r <= ~(   (opt_d.com == OR0) && (dcount == K/8) ||
+        out_valid_r <= ~(   (opt.com == OR0) && (dcount == K/8) ||
                             or1_ini ||
-                            (opt_d.com == TWO) && (dcount == K/8) && (dcount != (L-1)/8) ||
-                            (opt_d.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 );
+                            (opt.com == TWO) && (dcount == K/8) && (dcount != (L-1)/8) ||
+                            (opt.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 );
     end else begin
         out_valid_r <= '0;
     end

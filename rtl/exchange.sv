@@ -86,7 +86,6 @@ opt_route opt_route
     .command       ( command       ),
     .command_nop_d ( command_nop_d ),
     .opt           ( opt           ),
-    .opt_d         ( opt_d1        ),
     .rcount        ( rcount        ),
     .out_data_i    ( out_data_d    ),
     .out_valid_o   ( out_valid_x   ),
