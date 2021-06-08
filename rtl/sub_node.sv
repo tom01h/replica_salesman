@@ -16,12 +16,10 @@ module sub_node
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
-
     input  logic                      opt_run,           // opt run
     input  opt_t                      opt,               // opt mode
 
     input  distance_command_t         distance_com,      // delta distance
-    input  logic                      metropolis_run,    // metropolis test
     input  logic                      replica_run,       // replica exchange test
     input  logic                      exchange_run,      // chenge ordering & replica exchange
 
@@ -46,11 +44,13 @@ module sub_node
 
     input  logic                      exp_init,
     input  logic                      exp_run,
+    input  logic                      exp_fin,
     input  logic [16:0]               exp_recip
 );
 
 opt_t                      opt_dis;
 opt_t                      opt_ex;
+opt_t                      opt_rep;
 
 exchange_command_t         exchange_ex;
 exchange_command_t         exchange_mtr;
@@ -88,9 +88,10 @@ metropolis #(.id(id)) metropolis
 
     .distance_shift  ( distance_shift  ),
 
-    .metropolis_run  ( metropolis_run  ),
-    .in_opt          ( opt             ),
-    .out_opt         ( opt_ex          ),
+    .opt_run         ( opt_run         ),
+    .in_opt          ( opt_dis         ),
+    .opt_rep         ( opt_rep         ),
+    .opt_ex          ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
 
     .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
@@ -101,6 +102,7 @@ metropolis #(.id(id)) metropolis
 
     .exp_init        ( exp_init        ),
     .exp_run         ( exp_run         ),
+    .exp_fin         ( exp_fin         ),
     .exp_recip       ( exp_recip       )
 );
 

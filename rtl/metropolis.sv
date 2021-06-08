@@ -9,9 +9,10 @@ module metropolis
 
     input  logic                    distance_shift,
 
-    input  logic                    metropolis_run,
+    input  logic                    opt_run,
     input  opt_t                    in_opt,
-    output opt_t                    out_opt,
+    output opt_t                    opt_rep,
+    output opt_t                    opt_ex,
     input  delata_data_t            delta_distance,
     
     input  exchange_command_t       command,
@@ -22,8 +23,20 @@ module metropolis
 
     input  logic                    exp_init,
     input  logic                    exp_run,
+    input  logic                    exp_fin,
     input  logic [16:0]             exp_recip
 );
+
+opt_t                    opt_metro;
+always_ff @(posedge clk)begin
+    if(reset)        opt_metro.com <= THR;
+    else if(opt_run) opt_metro     <= in_opt;
+    if(reset)        opt_rep.com   <= THR;
+    else if(opt_run) opt_rep       <= opt_metro;
+end
+
+logic                    metropolis_run;
+assign metropolis_run = exp_fin && (opt_metro.com != THR);
 
 logic               test;
 logic signed [26:0] n_metropolis;
@@ -38,7 +51,7 @@ exp #(
     .recip   ( exp_recip       )
 );
 
-assign test = (-delta_distance >= 0) || (n_metropolis > in_opt.r_metropolis[22:0]);
+assign test = (-delta_distance >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
 
 total_data_t                        write_data;
 logic signed [$bits(out_data):0]    delta;
@@ -50,26 +63,38 @@ assign write_data  = ( distance_shift) ?        prev_data :
                      (metropolis_run) ?         self_data : 
                                                 out_data;
 
+opt_command_t com1, com2;
+
 always_ff @(posedge clk) begin
-    out_data  <= write_data;
-    out_opt.K <= in_opt.K;
-    out_opt.L <= in_opt.L;
-    out_opt.r_metropolis <= in_opt.r_metropolis;
-    out_opt.r_exchange <= in_opt.r_exchange;
-    if(in_opt.command == THR) begin
-        out_opt.command <= THR;
+    out_data <= write_data;
+    opt_ex.K <= opt_rep.K;
+    opt_ex.L <= opt_rep.L;
+    opt_ex.r_metropolis <= opt_rep.r_metropolis;
+    opt_ex.r_exchange   <= opt_rep.r_exchange;
+
+    if(reset)begin
+        com1 <= THR;
+    end else if(opt_metro.com == THR) begin
+        com1 <= THR;
     end else if(metropolis_run) begin
         if(test) begin
-            if(in_opt.command == TWO) begin
-                out_opt.command <= TWO;
+            if(opt_metro.com == TWO) begin
+                com1 <= TWO;
             end else begin
-                if(in_opt.K < in_opt.L) out_opt.command <= OR0;
-                else                    out_opt.command <= OR1;
+                if(opt_metro.K < opt_metro.L) com1 <= OR0;
+                else                          com1 <= OR1;
             end
         end else begin
-            out_opt.command <= THR;
+            com1 <= THR;
         end
-    end    
+    end
+    if(reset)begin
+       com2 <= THR;
+       opt_ex.com <= THR;
+    end else if(opt_run)begin
+       com2 <= com1;
+       opt_ex.com <= com2;
+    end
 end
 
 endmodule

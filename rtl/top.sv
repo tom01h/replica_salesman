@@ -160,17 +160,16 @@ node_reg node_reg
 );
 
 distance_command_t    or_distance_com;
-logic                 or_metropolis_run;
 logic                 or_replica_run;
 logic                 or_exchange_run;
 
 distance_command_t    tw_distance_com;
-logic                 tw_metropolis_run;
 logic                 tw_replica_run;
 logic                 tw_exchange_run;
 
 logic                 exp_init;
 logic                 exp_run;
+logic                 exp_fin;
 logic [16:0]          exp_recip;
 
 logic                 opt_run;
@@ -190,18 +189,17 @@ node_control node_control
     .opt_com        ( opt_com        ),
     
     .or_distance_com   ( or_distance_com   ),
-    .or_metropolis_run ( or_metropolis_run ),
     .or_replica_run    ( or_replica_run    ),
     .or_exchange_run   ( or_exchange_run   ),
 
     .tw_distance_com   ( tw_distance_com   ),
-    .tw_metropolis_run ( tw_metropolis_run ),
     .tw_replica_run    ( tw_replica_run    ),
     .tw_exchange_run   ( tw_exchange_run   ),
     
     .exchange_shift ( exchange_shift ),
     .exp_init       ( exp_init       ),
     .exp_run        ( exp_run        ),
+    .exp_fin        ( exp_fin        ),
     .exp_recip      ( exp_recip      )
 );
 
@@ -234,12 +232,10 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .opt_com          ( opt_com             ), // opt mode
 
         .or_distance_com     ( or_distance_com        ), // delta distance
-        .or_metropolis_run   ( or_metropolis_run      ), // metropolis test
         .or_replica_run      ( or_replica_run         ), // replica exchange test
         .or_exchange_run     ( or_exchange_run        ), // chenge ordering & replica exchange
 
         .tw_distance_com     ( tw_distance_com        ), // delta distance
-        .tw_metropolis_run   ( tw_metropolis_run      ), // metropolis test
         .tw_replica_run      ( tw_replica_run         ), // replica exchange test
         .tw_exchange_run     ( tw_exchange_run        ), // chenge ordering & replica exchange
 
@@ -275,6 +271,7 @@ for (genvar g = 0; g < replica_num; g += 1) begin
 
         .exp_init         ( exp_init            ),
         .exp_run          ( exp_run             ),
+        .exp_fin          ( exp_fin             ),
         .exp_recip        ( exp_recip           )
     );
 end

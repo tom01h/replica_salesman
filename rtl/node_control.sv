@@ -16,12 +16,10 @@ module node_control
     output opt_command_t            opt_command,
 
     output distance_command_t       or_distance_com,
-    output logic                    or_metropolis_run,
     output logic                    or_replica_run,
     output logic                    or_exchange_run,
 
     output distance_command_t       tw_distance_com,
-    output logic                    tw_metropolis_run,
     output logic                    tw_replica_run,
     output logic                    tw_exchange_run,
     
@@ -75,12 +73,10 @@ always_ff @(posedge clk) begin
         run <= 'b0;
 end
 
-assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0);// || fin_tmp;
+assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0) || fin_tmp;
 assign exp_fin        = cycle_cnt % 20 == 18;
 
 assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60) || (cycle_cnt == 140) || (cycle_cnt == 160);
-assign or_metropolis_run = (cycle_cnt ==  58);
-assign tw_metropolis_run = (cycle_cnt == 158);
 assign or_replica_run    = (cycle_cnt ==  78);
 assign tw_replica_run    = (cycle_cnt == 178);
 assign or_exchange_run   = (cycle_cnt ==  80);
