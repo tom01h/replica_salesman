@@ -4,7 +4,6 @@ module random
     input  logic                    clk,
     input  logic                    reset,
     input  logic                    run,
-    input  opt_command_t            opt_command,
     input  opt_command_t            opt_com,
     input  logic                    init,
     input  logic [63:0]             i_seed,
@@ -30,8 +29,6 @@ opt_t                    opt;
 
 assign or_opt.com = or_com;
 assign tw_opt.com = tw_com;
-assign or_opt.command = opt_command;
-assign tw_opt.command = opt_command;
 assign or_opt.K = opt.K;
 assign tw_opt.K = opt.K;
 assign or_opt.L = opt.L;
@@ -74,14 +71,14 @@ typedef enum logic [1:0] {
 state_t state;
 
 always_ff @(posedge clk) begin
- opt.command      <= opt_command;
+    opt.com      <= opt_com;
     if(reset) begin
         s_run <= 'b0;
     end else if(run && (opt_com != THR)) begin
         s_run <= 'b1;
         state <= s_K;
         ready <= 'b0;
-        if(opt_command == TWO) begin     // 2-opt
+        if(opt_com == TWO) begin     // 2-opt
             msk <= {($clog2(city_num  )){1'b1}};
         end else begin           // or-opt
             msk <= {($clog2(city_num-1)){1'b1}};
@@ -89,7 +86,7 @@ always_ff @(posedge clk) begin
     end else if(s_run) begin
         case(state)
             s_K :
-                if(opt.command == TWO) begin
+                if(opt.com == TWO) begin
                     if(1 <= val && val <= city_num) begin
                         opt.K <= val;
                         state <= s_L;
@@ -101,7 +98,7 @@ always_ff @(posedge clk) begin
                     end
                 end 
             s_L :
-                if(opt.command == TWO) begin
+                if(opt.com == TWO) begin
                     if(1 <= val && val <= city_num) begin
                         if(opt.K>val) begin  opt.K <= val; opt.L <= opt.K;   end
                         else          begin                opt.L <= val; end

@@ -8,8 +8,6 @@ module sub_node
     input  logic                      clk,
     input  logic                      reset,
     
-    input  logic                      random_init,       // set random seed
-    input  logic [63:0]               random_seed,
     input  logic                      tp_dis_write,      // set 2点間距離
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
     input  distance_data_t            tp_dis_wdata,

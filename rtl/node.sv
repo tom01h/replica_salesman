@@ -18,7 +18,6 @@ module node
 
     input  logic                      opt_run,           // opt run
     input  opt_command_t              opt_com,           // opt mode
-    input  opt_command_t              opt_command,       // opt mode
 
     input  distance_command_t         or_distance_com,      // delta distance
 
@@ -85,7 +84,6 @@ random random
     .clk             ( clk             ),
     .reset           ( reset           ),
     .opt_com         ( opt_com         ),
-    .opt_command     ( opt_command     ),
     .init            ( random_init     ),
     .i_seed          ( random_seed     ),
     .run             ( opt_run         ),
@@ -99,8 +97,6 @@ sub_node #(.id(id), .replica_num(replica_num)) or_node
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
-    .random_init      ( random_init         ), // set random seed
-    .random_seed      ( random_seed         ),
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
     .tp_dis_wdata     ( tp_dis_wdata        ),
@@ -144,8 +140,6 @@ sub_node #(.id(id), .replica_num(replica_num)) two_node
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
-    .random_init      ( 1'b0       ), // set random seed
-    .random_seed      ( 64'b0      ),
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
     .tp_dis_wdata     ( tp_dis_wdata        ),

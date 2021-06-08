@@ -168,7 +168,6 @@ logic                 exp_fin;
 logic [16:0]          exp_recip;
 
 logic                 opt_run;
-opt_command_t         opt_command;
 opt_command_t         opt_com;
 
 node_control node_control
@@ -180,7 +179,6 @@ node_control node_control
     .running        ( running        ),
 
     .opt_run        ( opt_run        ),
-    .opt_command    ( opt_command    ),
     .opt_com        ( opt_com        ),
     
     .or_distance_com   ( or_distance_com   ),
@@ -218,7 +216,6 @@ for (genvar g = 0; g < replica_num; g += 1) begin
         .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
         
         .opt_run          ( opt_run             ), // opt run
-        .opt_command      ( opt_command         ), // opt mode
         .opt_com          ( opt_com             ), // opt mode
 
         .or_distance_com     ( or_distance_com        ), // delta distance

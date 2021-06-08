@@ -13,7 +13,6 @@ module node_control
 
     output logic                    opt_run,
     output opt_command_t            opt_com,
-    output opt_command_t            opt_command,
 
     output distance_command_t       or_distance_com,
     output distance_command_t       tw_distance_com,
@@ -40,29 +39,24 @@ always_ff @(posedge clk) begin
         running <= 'b0;
         run_cnt <= 'b0;
         opt_com <= THR;
-        opt_command <= THR;
     end else if (run_write) begin
         run <= 'b1;
         running <= 'b1;
         run_times_reg <= run_times;
         opt_com <= OR1;
-        opt_command <= OR1;
     end else if((cycle_cnt == 19) || (cycle_cnt == 119)) begin
         opt_com <= THR;
     end else if(cycle_cnt == 99) begin
         opt_com <= TWO;
-        opt_command <= TWO;
     end else if(cycle_finish) begin
         if((run_cnt + 2) != run_times_reg) begin
             run <= 'b1;
             run_cnt <= run_cnt + 2;
             opt_com <= OR1;
-            opt_command <= OR1;
         end else begin
             fin_tmp <= 'b1;
             running <= 'b0;
             opt_com <= THR;
-            opt_command <= THR;
         end
     end else
         run <= 'b0;
