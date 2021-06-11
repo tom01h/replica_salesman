@@ -17,7 +17,6 @@ module node_control
     output distance_command_t       or_distance_com,
     output distance_command_t       tw_distance_com,
     
-    input  logic                    exchange_shift,
     output logic                    exp_init,
     output logic                    exp_run,
     output logic                    exp_fin,

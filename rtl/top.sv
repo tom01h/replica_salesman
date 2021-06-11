@@ -98,7 +98,6 @@ bus_if #(.replica_num(replica_num)) busif
     .running         ( running        )
 );
    
-logic                                exchange_shift;
 logic                                exchange_shift_d;
 
 logic             [replica_num+1:0]  or_ordering_valid;
@@ -155,7 +154,6 @@ node_reg node_reg
     
     .ordering_ready     ( ordering_ready     ),
     
-    .exchange_shift     ( exchange_shift     ),
     .exchange_shift_d   ( exchange_shift_d   )
 );
 
@@ -184,7 +182,6 @@ node_control node_control
     .or_distance_com   ( or_distance_com   ),
     .tw_distance_com   ( tw_distance_com   ),
     
-    .exchange_shift ( exchange_shift ),
     .exp_init       ( exp_init       ),
     .exp_run        ( exp_run        ),
     .exp_fin        ( exp_fin        ),

@@ -18,7 +18,6 @@ module node_reg
 
     output logic                    ordering_ready,
 
-    output logic                    exchange_shift,
     output logic                    exchange_shift_d
 );
 
@@ -28,9 +27,13 @@ logic          [city_div_log:0]   ordering_radder;
 logic                             ordering_wready;
 logic                             ordering_rready;
 logic                             ordering_read_en;
+logic          [city_div_log-1:0] ordering_cnt;
 
 assign ordering_ready   = ordering_wready & ordering_rready;
 assign ordering_read_en = ordering_wadder != ordering_radder;
+
+logic                    exchange_shift;
+assign exchange_shift = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
 
 always_ff @(posedge clk) begin
     if(reset)                   ordering_rready <= 'b1;
@@ -43,10 +46,6 @@ always_ff @(posedge clk) begin
                                 ordering_wadder <= ordering_wadder + 1;
     if(ordering_out_valid)      ordering_data[ordering_wadder] <= ordering_out_data;
 end
-
-logic          [city_div_log-1:0] ordering_cnt;
-
-assign exchange_shift = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
 
 always_ff @(posedge clk)
     for(int i=0; i<8; i++) ordering_rdata[i] = {1'b0, ordering_data[ordering_radder][7-i]};
