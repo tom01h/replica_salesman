@@ -3,6 +3,7 @@ module random
 (
     input  logic                    clk,
     input  logic                    reset,
+    input  logic [base_log-1:0]     base_id,
     input  logic                    run,
     input  opt_command_t            opt_com,
     input  logic                    init,
@@ -40,14 +41,15 @@ assign tw_opt.r_exchange = opt.r_exchange;
 
 
 
-logic [63:0]             seed, n_seed;
+logic [63:0]             seed [0:base_num-1];
+logic [63:0]             n_seed;
 logic [63:0]             x0, x1, x2, x3;
 logic [31:0]             val;
 logic [31:0]             msk;
 logic                    s_run;
 
 always_comb begin
-    x0 = seed;
+    x0 = seed[base_id];
     x1 = x0 ^ (x0 << 13);
     x2 = x1 ^ (x1 >> 7);
     x3 = x2 ^ (x2 << 17);
@@ -56,9 +58,8 @@ always_comb begin
 end    
 
 always_ff @(posedge clk) begin
-    if(reset)        seed <= 'b0;
-    else if(init)    seed <= i_seed;
-    else if(s_run)   seed <= n_seed;
+    if(init)       seed[base_id] <= i_seed;
+    else if(s_run) seed[base_id] <= n_seed;
 end
 
 typedef enum logic [1:0] {

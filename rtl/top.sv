@@ -1,8 +1,5 @@
 module top
     import replica_pkg::*;
-#(
-    parameter replica_num = 32
-)
 (
     input  logic                      clk,
     input  logic                      reset,
@@ -27,7 +24,7 @@ module top
     input  logic                      S_AXI_RREADY
 );
 
-logic [replica_num-1:0]    random_init;
+logic [node_num-1:0]       random_init;
 logic [63:0]               random_seed;
 
 logic                      tp_dis_write;
@@ -42,6 +39,7 @@ logic [7:0][7:0]           ordering_rdata;
 logic                      ordering_ready;
 
 logic                      distance_shift;
+logic                      distance_shift_n;
 total_data_t               distance_wdata;
 total_data_t               distance_rdata;
 
@@ -50,68 +48,78 @@ logic [23:0]               run_times;
 
 logic                      running;
 
-bus_if #(.replica_num(replica_num)) busif
+logic                      exchange_shift_d;
+logic                      exchange_shift_n;
+
+logic [base_log-1:0] base_id;
+always_ff @(posedge clk) begin
+    if(reset)                       base_id <= '0;
+    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n)
+        if(base_id != base_num - 1) base_id <= base_id +1;
+        else                        base_id <= '0;
+end
+
+bus_if busif
 (
-    .S_AXI_ACLK      ( clk            ),
-    .S_AXI_ARESETN   ( ~reset         ),
+    .S_AXI_ACLK       ( clk              ),
+    .S_AXI_ARESETN    ( ~reset           ),
 
-    .S_AXI_AWADDR    ( S_AXI_AWADDR   ),
-    .S_AXI_AWVALID   ( S_AXI_AWVALID  ),
-    .S_AXI_AWREADY   ( S_AXI_AWREADY  ),
-    .S_AXI_WDATA     ( S_AXI_WDATA    ),
-    .S_AXI_WSTRB     ( S_AXI_WSTRB    ),
-    .S_AXI_WVALID    ( S_AXI_WVALID   ),
-    .S_AXI_WREADY    ( S_AXI_WREADY   ),
-    .S_AXI_BRESP     ( S_AXI_BRESP    ),
-    .S_AXI_BVALID    ( S_AXI_BVALID   ),
-    .S_AXI_BREADY    ( S_AXI_BREADY   ),
+    .S_AXI_AWADDR     ( S_AXI_AWADDR     ),
+    .S_AXI_AWVALID    ( S_AXI_AWVALID    ),
+    .S_AXI_AWREADY    ( S_AXI_AWREADY    ),
+    .S_AXI_WDATA      ( S_AXI_WDATA      ),
+    .S_AXI_WSTRB      ( S_AXI_WSTRB      ),
+    .S_AXI_WVALID     ( S_AXI_WVALID     ),
+    .S_AXI_WREADY     ( S_AXI_WREADY     ),
+    .S_AXI_BRESP      ( S_AXI_BRESP      ),
+    .S_AXI_BVALID     ( S_AXI_BVALID     ),
+    .S_AXI_BREADY     ( S_AXI_BREADY     ),
 
-    .S_AXI_ARADDR    ( S_AXI_ARADDR   ),
-    .S_AXI_ARVALID   ( S_AXI_ARVALID  ),
-    .S_AXI_ARREADY   ( S_AXI_ARREADY  ),
-    .S_AXI_RDATA     ( S_AXI_RDATA    ),
-    .S_AXI_RRESP     ( S_AXI_RRESP    ),
-    .S_AXI_RVALID    ( S_AXI_RVALID   ),
-    .S_AXI_RREADY    ( S_AXI_RREADY   ),
+    .S_AXI_ARADDR     ( S_AXI_ARADDR     ),
+    .S_AXI_ARVALID    ( S_AXI_ARVALID    ),
+    .S_AXI_ARREADY    ( S_AXI_ARREADY    ),
+    .S_AXI_RDATA      ( S_AXI_RDATA      ),
+    .S_AXI_RRESP      ( S_AXI_RRESP      ),
+    .S_AXI_RVALID     ( S_AXI_RVALID     ),
+    .S_AXI_RREADY     ( S_AXI_RREADY     ),
 
-    .random_init     ( random_init    ),
-    .random_seed     ( random_seed    ),
+    .random_init      ( random_init      ),
+    .random_seed      ( random_seed      ),
 
-    .tp_dis_write    ( tp_dis_write   ),
-    .tp_dis_waddr    ( tp_dis_waddr   ),
-    .tp_dis_wdata    ( tp_dis_wdata   ),
+    .tp_dis_write     ( tp_dis_write     ),
+    .tp_dis_waddr     ( tp_dis_waddr     ),
+    .tp_dis_wdata     ( tp_dis_wdata     ),
 
-    .ordering_write  ( ordering_write ),
-    .ordering_wdata  ( ordering_wdata ),
+    .ordering_write   ( ordering_write   ),
+    .ordering_wdata   ( ordering_wdata   ),
 
-    .ordering_read   ( ordering_read  ),
-    .ordering_rdata  ( ordering_rdata ),
-    .ordering_ready  ( ordering_ready ),
+    .ordering_read    ( ordering_read    ),
+    .ordering_rdata   ( ordering_rdata   ),
+    .ordering_ready   ( ordering_ready   ),
 
-    .distance_shift  ( distance_shift ),
-    .distance_wdata  ( distance_wdata ),
-    .distance_rdata  ( distance_rdata ),
+    .distance_shift   ( distance_shift   ),
+    .distance_shift_n ( distance_shift_n ),
+    .distance_wdata   ( distance_wdata   ),
+    .distance_rdata   ( distance_rdata   ),
 
-    .run_write       ( run_write      ),
-    .run_times       ( run_times      ),
+    .run_write        ( run_write        ),
+    .run_times        ( run_times        ),
 
-    .running         ( running        )
+    .running          ( running          )
 );
    
-logic                                exchange_shift_d;
+logic             [node_num+1:0]  or_ordering_valid;
+replica_data_t    [node_num+1:0]  or_ordering_data;
+logic             [node_num+1:0]  tw_ordering_valid;
+replica_data_t    [node_num+1:0]  tw_ordering_data;
 
-logic             [replica_num+1:0]  or_ordering_valid;
-replica_data_t    [replica_num+1:0]  or_ordering_data;
-logic             [replica_num+1:0]  tw_ordering_valid;
-replica_data_t    [replica_num+1:0]  tw_ordering_data;
+logic                             ordering_out_valid;
+replica_data_t                    ordering_out_data;
+logic                             ordering_reg_valid;
+replica_data_t                    ordering_reg_data;
 
-logic                                ordering_out_valid;
-replica_data_t                       ordering_out_data;
-logic                                ordering_reg_valid;
-replica_data_t                       ordering_reg_data;
-
-total_data_t      [replica_num+1:0]  or_dis_data;
-total_data_t      [replica_num+1:0]  tw_dis_data;
+total_data_t      [node_num+1:0]  or_dis_data;
+total_data_t      [node_num+1:0]  tw_dis_data;
 
 assign or_ordering_valid[0]  = ordering_reg_valid;
 assign or_ordering_data[0]   = ordering_reg_data;
@@ -126,15 +134,15 @@ always_ff @(posedge clk) begin
     if(reset)              ord_rd_num <= '0;
     else if(ordering_read) ord_rd_num <= ord_rd_num + 1;
 end
-assign ordering_out_valid = (ord_rd_num[2]) ? tw_ordering_valid[replica_num] : or_ordering_valid[replica_num];
-assign ordering_out_data  = (ord_rd_num[2]) ? tw_ordering_data[replica_num]  : or_ordering_data[replica_num];
+assign ordering_out_valid = (ord_rd_num[2]) ? tw_ordering_valid[node_num] : or_ordering_valid[node_num];
+assign ordering_out_data  = (ord_rd_num[2]) ? tw_ordering_data[node_num]  : or_ordering_data[node_num];
 
 logic dis_rd_num;
 always_ff @(posedge clk) begin
     if(reset)               dis_rd_num <= 'b0;
     else if(distance_shift) dis_rd_num <= ~dis_rd_num;
 end
-assign distance_rdata = (dis_rd_num) ? or_dis_data[replica_num] : tw_dis_data[replica_num];
+assign distance_rdata = (dis_rd_num) ? or_dis_data[node_num] : tw_dis_data[node_num];
 
 node_reg node_reg
 (
@@ -154,7 +162,8 @@ node_reg node_reg
     
     .ordering_ready     ( ordering_ready     ),
     
-    .exchange_shift_d   ( exchange_shift_d   )
+    .exchange_shift_d   ( exchange_shift_d   ),
+    .exchange_shift_n   ( exchange_shift_n   )
 );
 
 distance_command_t    or_distance_com;
@@ -188,21 +197,23 @@ node_control node_control
     .exp_recip      ( exp_recip      )
 );
 
-logic             [replica_num+1:0]  or_exchange;
+logic             [node_num+1:0]  or_exchange;
 
 assign or_exchange[0] = 'b0;
-assign or_exchange[replica_num+1] = 'b0;
+assign or_exchange[node_num+1] = 'b0;
 
-logic             [replica_num+1:0]  tw_exchange;
+logic             [node_num+1:0]  tw_exchange;
 
 assign tw_exchange[0] = 'b0;
-assign tw_exchange[replica_num+1] = 'b0;
+assign tw_exchange[node_num+1] = 'b0;
 
-for (genvar g = 0; g < replica_num; g += 1) begin
-    node #(.id(g), .replica_num(replica_num)) node
+for (genvar g = 0; g < node_num; g += 1) begin
+    node #(.id(g)) node
     (
         .clk              ( clk                 ),
         .reset            ( reset               ),
+        
+        .base_id          ( base_id             ),
         
         .random_init      ( random_init[g]      ), // set random seed
         .random_seed      ( random_seed         ),

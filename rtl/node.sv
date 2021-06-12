@@ -1,12 +1,13 @@
 module node
     import replica_pkg::*;
 #(
-    parameter id = 0,
-    parameter replica_num = 32
+    parameter id = 0
 )
 (
     input  logic                      clk,
     input  logic                      reset,
+    
+    input  logic [base_log-1:0]       base_id,
     
     input  logic                      random_init,       // set random seed
     input  logic [63:0]               random_seed,
@@ -83,20 +84,22 @@ random random
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
+    .base_id         ( base_id         ),
+    .run             ( opt_run         ),
     .opt_com         ( opt_com         ),
     .init            ( random_init     ),
     .i_seed          ( random_seed     ),
-    .run             ( opt_run         ),
     .or_opt          ( or_opt          ),
     .tw_opt          ( tw_opt          ),
     .ready           (                 )
 );
 
-sub_node #(.id(id), .replica_num(replica_num)) or_node
-(
+sub_node #(.id(id)) or_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
+    .base_id          ( base_id             ),
+
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
     .tp_dis_wdata     ( tp_dis_wdata        ),
@@ -135,11 +138,12 @@ sub_node #(.id(id), .replica_num(replica_num)) or_node
     .exp_recip        ( exp_recip           )
 );
 
-sub_node #(.id(id), .replica_num(replica_num)) two_node
-(
+sub_node #(.id(id)) two_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
+    .base_id          ( base_id             ),
+
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
     .tp_dis_wdata     ( tp_dis_wdata        ),

@@ -18,7 +18,8 @@ module node_reg
 
     output logic                    ordering_ready,
 
-    output logic                    exchange_shift_d
+    output logic                    exchange_shift_d,
+    output logic                    exchange_shift_n
 );
 
 replica_data_t [city_div-1:0]     ordering_data;
@@ -28,12 +29,14 @@ logic                             ordering_wready;
 logic                             ordering_rready;
 logic                             ordering_read_en;
 logic          [city_div_log-1:0] ordering_cnt;
+logic          [node_log-1:0]     ordering_node;
 
 assign ordering_ready   = ordering_wready & ordering_rready;
 assign ordering_read_en = ordering_wadder != ordering_radder;
 
 logic                    exchange_shift;
-assign exchange_shift = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
+assign exchange_shift   = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
+assign exchange_shift_n = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == ordering_num) && (ordering_node == node_num-1);
 
 always_ff @(posedge clk) begin
     if(reset)                   ordering_rready <= 'b1;
@@ -55,17 +58,22 @@ always_ff @(posedge clk) begin
     ordering_wready  <= 1'b1;
     if(reset) begin
         ordering_cnt   <= 'b0;
+        ordering_node  <= 'b0;
         ordering_radder <= '1;
     end else if(ordering_write) begin
         ordering_radder <= '1;
-        if(ordering_cnt == ordering_num)                           ordering_cnt <= 'b0;
-        else if(ordering_ready)begin
+        if(ordering_cnt == ordering_num) begin                     ordering_cnt <= 'b0;
+            if(ordering_node == node_num-1) ordering_node <= '0;
+            else                            ordering_node <= ordering_node +1;
+        end else if(ordering_ready) begin
             if(ordering_cnt == 'b0) begin ordering_wready <= 1'b0; ordering_cnt <= ordering_cnt + 1; end
             else                                                   ordering_cnt <= ordering_cnt + 1;
         end
     end else if(ordering_read) begin
-        if(ordering_cnt == ordering_num)                           ordering_cnt <= 'b0;
-        else if(ordering_read_en)                                  ordering_cnt <= ordering_cnt + 1;
+        if(ordering_cnt == ordering_num) begin                     ordering_cnt <= 'b0;
+            if(ordering_node == node_num-1) ordering_node <= '0;
+            else                            ordering_node <= ordering_node +1;
+        end else if(ordering_read_en)                              ordering_cnt <= ordering_cnt + 1;
         if(ordering_read_en)              ordering_radder <= ordering_cnt;
     end
 end

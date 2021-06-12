@@ -7,6 +7,7 @@ module metropolis
     input  logic                    clk,
     input  logic                    reset,
 
+    input  logic [base_log-1:0]     base_id,
     input  logic                    distance_shift,
 
     input  logic                    opt_run,
@@ -65,8 +66,10 @@ assign write_data  = ( distance_shift) ?        prev_data :
 
 opt_command_t com1, com2;
 
+total_data_t total_distance [0:base_num-1];
+assign out_data = total_distance[base_id];
 always_ff @(posedge clk) begin
-    out_data <= write_data;
+    total_distance[base_id] <= write_data;
     opt_ex.K <= opt_rep.K;
     opt_ex.L <= opt_rep.L;
     opt_ex.r_metropolis <= opt_rep.r_metropolis;

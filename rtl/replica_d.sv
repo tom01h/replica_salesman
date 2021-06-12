@@ -1,8 +1,7 @@
 module replica_d
     import replica_pkg::*;
 #(
-    parameter id = 0,
-    parameter replica_num = 32
+    parameter id = 0
 )
 (
     input  logic                    clk,

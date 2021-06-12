@@ -1,8 +1,5 @@
 module bus_if
     import replica_pkg::*;
-#(
-    parameter replica_num = 32
-)
 (
     input  logic                      S_AXI_ACLK,
     input  logic                      S_AXI_ARESETN,
@@ -28,7 +25,7 @@ module bus_if
     output logic                      S_AXI_RVALID,
     input  logic                      S_AXI_RREADY,
 
-    output logic [replica_num-1:0]    random_init,
+    output logic [node_num-1:0]       random_init,
     output logic [63:0]               random_seed,
 
     output logic                      tp_dis_write,
@@ -43,6 +40,7 @@ module bus_if
     input  logic                      ordering_ready,
 
     output logic                      distance_shift,
+    output logic                      distance_shift_n,
     output total_data_t               distance_wdata,
     input  total_data_t               distance_rdata,
 
@@ -66,8 +64,8 @@ module bus_if
     assign S_AXI_RVALID  = (axist == 4'b1000) & ordering_ready;
     
     always_comb begin
-        for(int i = 0; i < replica_num; i++) begin
-            random_init[i] = S_AXI_BVALID && (wb_adr_i[11:3] == i) && (wb_adr_i[19:12] == 8'h01);
+        for(int i = 0; i < node_num; i++) begin
+            random_init[i] = S_AXI_BVALID && (wb_adr_i[3 +: node_log] == i) && (wb_adr_i[19:12] == 8'h01);
         end
         random_seed = wb_dat_i;
 
@@ -79,11 +77,13 @@ module bus_if
         for(int j = 0; j < 8; j++)
             ordering_wdata[j] = wb_dat_i[j*8 +:8];
 
-        ordering_read = S_AXI_ARVALID && S_AXI_ARREADY && ({S_AXI_ARADDR[19:15],3'b000} == 8'h08);
+        ordering_read    = S_AXI_ARVALID && S_AXI_ARREADY && ({S_AXI_ARADDR[19:15],3'b000} == 8'h08);
 
-        distance_shift = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) ||
-                        S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02);
-        distance_wdata = wb_dat_i[$bits(distance_wdata)-1:0];
+        distance_shift   = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) ||
+                           S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02);
+        distance_shift_n = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) && (wb_adr_i[3 +:node_log] == node_num-1) ||
+                           S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02) && (S_AXI_ARADDR[3 +:node_log] == node_num);
+        distance_wdata   = wb_dat_i[$bits(distance_wdata)-1:0];
 
         run_write = (S_AXI_BVALID && (wb_adr_i[19:2] == 'h0));
         run_times = wb_dat_i[$bits(run_times)-1  :0];

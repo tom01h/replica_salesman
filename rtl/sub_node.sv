@@ -1,12 +1,13 @@
 module sub_node
     import replica_pkg::*;
 #(
-    parameter id = 0,
-    parameter replica_num = 32
+    parameter id = 0
 )
 (
     input  logic                      clk,
     input  logic                      reset,
+    
+    input  logic [base_log-1:0]       base_id,
     
     input  logic                      tp_dis_write,      // set 2点間距離
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
@@ -82,6 +83,7 @@ metropolis #(.id(id)) metropolis
     .clk             ( clk             ),
     .reset           ( reset           ),
 
+    .base_id         ( base_id         ),
     .distance_shift  ( distance_shift  ),
 
     .opt_run         ( opt_run         ),
@@ -104,8 +106,7 @@ metropolis #(.id(id)) metropolis
 
 generate
 if(id[0] == 0)
-replica #(.id(id), .replica_num(replica_num)) replica
-(
+replica #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
     
@@ -128,8 +129,7 @@ replica #(.id(id), .replica_num(replica_num)) replica
     .exp_recip       ( exp_recip       )
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
-replica_d #(.id(id), .replica_num(replica_num)) replica
-(
+replica_d #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
 
@@ -158,6 +158,7 @@ exchange exchange
 (
     .clk             ( clk              ),
     .reset           ( reset            ),
+    .base_id         ( base_id          ),
     .command         ( exchange_ex      ), // このコマンドで動く コマンドは replica で exchange_run から生成
     .opt             ( opt_ex           ), // ordering 変更規則 動作開始は command 入力の時
     .prev_valid      ( prev_ord_valid   ),

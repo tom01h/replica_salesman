@@ -3,6 +3,7 @@ module exchange
 (
     input  logic                    clk,
     input  logic                    reset,
+    input  logic [base_log-1:0]     base_id,
     input  exchange_command_t       command,
     input  opt_t                    opt,
     input  logic                    prev_valid,
@@ -48,12 +49,13 @@ always_ff @(posedge clk) begin
 end
 assign ordering_data = out_data_r[ordering_sel];
 
-logic [replica_data_bit-1:0] ram [0:city_div-1];
+logic [base_log-1:0]         base_id_d;
+logic [replica_data_bit-1:0] ram [0:2**(city_div_log+base_log) -1];
 always_ff @(posedge clk) begin
     if (write_valid) begin
-        ram[wcount] <= write_data;
+        ram[{base_id_d, wcount}] <= write_data;
     end
-    out_data_r <= ram[raddr_i];
+    out_data_r <= ram[{base_id_d, raddr_i}];
 end
 
 always_ff @(posedge clk) begin
@@ -64,8 +66,13 @@ end
 logic command_nop_d;
 always_ff @(posedge clk) begin
     out_data_d <= out_data_r;
-    if (command != NOP)
+    if(reset) begin
+        base_id_d  <= 0;
+        command_d1 <= NOP;
+    end else if (command != NOP)begin
+        base_id_d  <= base_id;
         command_d1 <= command;
+    end
     command_d2 <= command_d1;
     command_d3 <= command_d2;
     command_nop_d <= (command == NOP);
