@@ -82,7 +82,7 @@ module bus_if
         distance_shift   = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) ||
                            S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02);
         distance_shift_n = S_AXI_BVALID && (wb_adr_i[19:12] == 8'h02) && (wb_adr_i[3 +:node_log] == node_num-1) ||
-                           S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02) && (S_AXI_ARADDR[3 +:node_log] == node_num);
+                           S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[19:12] == 8'h02) && (S_AXI_ARADDR[3 +:node_log] == node_num-1);
         distance_wdata   = wb_dat_i[$bits(distance_wdata)-1:0];
 
         run_write = (S_AXI_BVALID && (wb_adr_i[19:2] == 'h0));

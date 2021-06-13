@@ -42,9 +42,11 @@ assign metropolis_run = exp_fin && (opt_metro.com != THR);
 logic               test;
 logic signed [26:0] n_metropolis;
 exp #(
-    .nbeta(dbeta * (id+1))
+    .nbeta(dbeta * (id+1)),
+    .step(dbeta * node_num)
 ) exp (
     .clk     ( clk             ),
+    .base_id ( base_id         ),
     .x       ( -delta_distance ),
     .y       ( n_metropolis    ),
     .init    ( exp_init        ),

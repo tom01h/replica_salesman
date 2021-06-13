@@ -47,6 +47,7 @@ logic                      run_write;
 logic [23:0]               run_times;
 
 logic                      running;
+logic                      cycle_finish;
 
 logic                      exchange_shift_d;
 logic                      exchange_shift_n;
@@ -54,7 +55,7 @@ logic                      exchange_shift_n;
 logic [base_log-1:0] base_id;
 always_ff @(posedge clk) begin
     if(reset)                       base_id <= '0;
-    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n)
+    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
         if(base_id != base_num - 1) base_id <= base_id +1;
         else                        base_id <= '0;
 end
@@ -184,6 +185,7 @@ node_control node_control
     .run_write      ( run_write      ),
     .run_times      ( run_times      ),
     .running        ( running        ),
+    .cycle_finish   ( cycle_finish   ),
 
     .opt_run        ( opt_run        ),
     .opt_com        ( opt_com        ),

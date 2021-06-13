@@ -7,6 +7,7 @@ module replica
     input  logic                    clk,
     input  logic                    reset,
 
+    input  logic [base_log-1:0]     base_id,
     input  logic                    opt_run,
     input  opt_t                    opt,
     input  total_data_t             prev_data,
@@ -36,9 +37,11 @@ assign exchange_ex  = (exchange_shift_d) ? PREV : exchange_l;
 assign exchange_mtr = exchange_l;
 
 exp #(
-    .nbeta(dbeta)
+    .nbeta(dbeta),
+    .step(0)
 ) exp (
     .clk     ( clk             ),
+    .base_id ( base_id         ),
     .x       ( action[20:0]    ),
     .y       ( n_exchange      ),
     .init    ( exp_init        ),

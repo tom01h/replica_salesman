@@ -1,14 +1,17 @@
 module exp
+    import replica_pkg::*;
 #(
-    parameter nbeta
+    parameter nbeta,
+    parameter step
 )
 (
-    input  logic               clk,
-    input  logic signed [20:0] x,   // .17
-    output logic signed [26:0] y,   // .23
-    input  logic               init,
-    input  logic               run,
-    input  logic [16:0]        recip
+    input  logic                clk,
+    input  logic [base_log-1:0] base_id,
+    input  logic signed [20:0]  x,   // .17
+    output logic signed [26:0]  y,   // .23
+    input  logic                init,
+    input  logic                run,
+    input  logic [16:0]         recip
 );
 
 logic               init_l;
@@ -27,7 +30,7 @@ always_ff @(posedge clk) begin
 
     if(init) begin
         a0 <= $signed(x);
-        b0 <= $signed(nbeta);
+        b0 <= $signed(nbeta+step*base_id);
         nega <= 'b0;
     end else if (run || run_l) begin
         a1 <= $signed(yy[24:0]);

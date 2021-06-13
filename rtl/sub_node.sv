@@ -110,6 +110,7 @@ replica #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
     
+    .base_id         ( base_id         ),
     .opt_run         ( opt_run         ),
     .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),
@@ -133,6 +134,7 @@ replica_d #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
 
+    .base_id         ( base_id         ),
     .opt_run         ( opt_run         ),
     .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),

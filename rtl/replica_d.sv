@@ -7,6 +7,7 @@ module replica_d
     input  logic                    clk,
     input  logic                    reset,
 
+    input  logic [base_log-1:0]     base_id,
     input  logic                    opt_run,
     input  opt_t                    opt,
     input  total_data_t             prev_data,

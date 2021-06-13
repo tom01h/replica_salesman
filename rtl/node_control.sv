@@ -9,7 +9,9 @@ module node_control
     input  logic                    reset,
     input  logic                    run_write,
     input  logic [23:0]             run_times,
+
     output logic                    running,
+    output logic                    cycle_finish,
 
     output logic                    opt_run,
     output opt_command_t            opt_com,
@@ -26,7 +28,6 @@ module node_control
 logic        run;
 logic [23:0] run_times_reg;
 logic [23:0] run_cnt;
-logic        cycle_finish;
 logic  [7:0] cycle_cnt;
 
 logic     fin_tmp;
@@ -41,7 +42,7 @@ always_ff @(posedge clk) begin
     end else if (run_write) begin
         run <= 'b1;
         running <= 'b1;
-        run_times_reg <= run_times;
+        run_times_reg <= run_times * base_num;
         opt_com <= OR1;
     end else if((cycle_cnt == 19) || (cycle_cnt == 119)) begin
         opt_com <= THR;
