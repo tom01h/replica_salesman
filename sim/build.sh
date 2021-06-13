@@ -11,7 +11,8 @@ vlog.exe -sv -dpiheader dpiheader.h ../rtl/replica_pkg.sv tb.sv \
     ../rtl/top.sv ../bus_if/bus_if.sv ../rtl/exp.sv ../rtl/node.sv \
     ../rtl/sub_node.sv ../rtl/node_control.sv ../rtl/node_reg.sv \
     ../rtl/random.sv  ../rtl/distance.sv ../rtl/metropolis.sv \
-    ../rtl/replica.sv ../rtl/replica_d.sv ../rtl/exchange.sv ../rtl/opt_route.sv
+    ../rtl/replica.sv ../rtl/replica_d.sv ../rtl/exchange.sv \
+    ../rtl/opt_route_or.sv ../rtl/opt_route_two.sv
 vsim.exe tb -dpiexportobj cexports -c
 
 #/mnt/c/intelFPGA_pro/20.3/modelsim_ase/gcc-4.2.1-mingw32vc12/bin/

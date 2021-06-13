@@ -94,7 +94,7 @@ random random
     .ready           (                 )
 );
 
-sub_node #(.id(id)) or_node (
+sub_node #(.id(id), .two_opt_node(0)) or_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
@@ -138,7 +138,7 @@ sub_node #(.id(id)) or_node (
     .exp_recip        ( exp_recip           )
 );
 
-sub_node #(.id(id)) two_node (
+sub_node #(.id(id), .two_opt_node(1)) two_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     

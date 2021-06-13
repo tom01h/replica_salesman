@@ -1,5 +1,5 @@
 - [x] インタフェースをつける
-- [ ] or_node と two_node を分離
+- [x] or_node と two_node を分離
 - [x] 8回の時分割
 - [ ] 8段パイプライン化
 - [ ]  FPGA で実行

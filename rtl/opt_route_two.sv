@@ -1,4 +1,4 @@
-module opt_route
+module opt_route_two
     import replica_pkg::*;
 (
     input  logic                    clk,
@@ -17,9 +17,7 @@ logic [2:0]   K8, L8;
 assign K = opt.K;
 assign L = opt.L;
 assign K8 = K % 8;
-assign L8 = (opt.com == OR0)? L % 8 :
-            (opt.com == OR1)? (L+1) % 8 :
-            (opt.com == TWO)? (L-1) % 8 : L % 8 ;
+assign L8 = (opt.com == TWO)? (L-1) % 8 : L % 8 ;
 
 logic                    out_valid_r;
 logic [city_div_log-1:0] dcount;
@@ -38,62 +36,10 @@ always_ff @(posedge clk) begin
     set_p <= '0;
     use_p <= '0;
     for(int i = 0; i < 8; i += 1) begin
-        if (command_nop_d && dcount == 0 && ~or1_ini && ~(set_p & opt.com == OR1) && ~(rev_d & opt.com == TWO)) begin
+        if (command_nop_d && dcount == 0 && ~(rev_d & opt.com == TWO)) begin
                                                   sel[i] <= i;    hold[i] <= '0;
         end else if (opt.com == THR) begin
                                                   sel[i] <= i;    hold[i] <= '0;
-        end else if (opt.com == OR0) begin
-            if (dcount < K/8) begin
-                                                  sel[i] <= i;    hold[i] <= '0;
-            end else if (dcount == K/8) begin
-                set_p <= '1;
-                if (dcount == L/8) begin
-                    use_p <= '1;
-                    if(i < K8)              begin sel[i] <= i;    hold[i] <= '1; end
-                    if(K8 <= i && i < L8)   begin sel[i] <= i+1;  hold[i] <= '1; end
-                    if(i == L8)             begin sel[i] <= K8;   hold[i] <= '1; end
-                    if(L8+1 <= i)           begin sel[i] <= i;    hold[i] <= '1; end
-                end else begin
-                    if(i < K8)              begin sel[i] <= i;    hold[i] <= '1; end
-                    if(K8 <= i)             begin sel[i] <= i+1;  hold[i] <= (i != 7); end
-                end
-            end else if (dcount < L/8) begin
-                                                  sel[i] <= i+1;  hold[i] <= (i != 7);
-            end else if (dcount == L/8) begin
-                use_p <= '1;
-                if(i < L8)                  begin sel[i] <= i+1;  hold[i] <= '1; end
-                if(i == L8)                 begin sel[i] <= 0;    hold[i] <= '1; end
-                if(L8+1 <= i)               begin sel[i] <= i;    hold[i] <= '1; end
-            end else begin
-                                                  sel[i] <= i;    hold[i] <= '1;
-            end
-        end else if (opt.com == OR1) begin
-            if (~command_nop_d) begin
-            end else if (or1_ini) begin
-                set_p <= '1;
-            end else if (dcount < (L+1)/8) begin
-                                                  sel[i] <= i;    hold[i] <= '0;
-            end else if (dcount == (L+1)/8) begin
-                use_p <= '1;
-                if (dcount == K/8) begin
-                    if(i < L8)              begin sel[i] <= i;    hold[i] <= '0; end
-                    if(L8 <= i && i < K8+1) begin sel[i] <= i-1;  hold[i] <= '0; end
-                    if(K8+1 <= i)           begin sel[i] <= i;    hold[i] <= '0; end
-                end else begin
-                    if(i == 0)              begin sel[i] <= i;    hold[i] <= '1; end
-                    if(1 <= i && i < L8)    begin sel[i] <= i;    hold[i] <= '0; end
-                    if(i == L8 && L8 != 0)  begin sel[i] <= 0;    hold[i] <= '0; end
-                    if(L8+1 <= i)           begin sel[i] <= i-1;  hold[i] <= '0; end
-                end
-            end else if (dcount < K/8) begin
-                if(i == 0)                  begin sel[i] <= 7;    hold[i] <= '1; end
-                if(1 <= i)                  begin sel[i] <= i-1;  hold[i] <= '0; end
-            end else if (dcount == K/8) begin
-                if(i < K8+1)                begin sel[i] <= i-1;  hold[i] <= '0; end
-                if(K8+1 <= i)               begin sel[i] <= i;    hold[i] <= '0; end
-            end else begin
-                                                  sel[i] <= i;    hold[i] <= '0;
-            end
         end else if (opt.com == TWO) begin
             if (dcount < K/8) begin
                                                   sel[i] <= i;    hold[i] <= '0;
@@ -138,7 +84,7 @@ always_ff @(posedge clk) begin
             end
         end
     end
-end    
+end
 
 logic [7:0]          hold_d1;
 replica_data_t       out_data_hold;
@@ -157,23 +103,16 @@ always_ff @(posedge clk) begin
     if(set_p) p <= out_data_i[K8];
     hold_d1 <= hold[7:0];
     if(command == NOP) begin
-        if((dcount == (L+1)/8) && (opt.com == OR1)) hold_d1[L8] <= '1;
         if(                        rev_d && K8 + L8 <  7 && (opt.com == TWO)) hold_d1 <= hold_d1 | hold;
         if((dcount == (L-1)/8) && ~rev_d && K8 + L8 >= 7 && (opt.com == TWO)) hold_d1 <= hold_d1 | hold;
     end        
     for(int i = 0; i < 8; i += 1) begin
-        if (opt.com == OR0) begin
-            if(~set_p & use_p & i == L8)  out_data_hold[i] <= p;
-            else                          out_data_hold[i] <= out_data_i[sel[i]];
-        end else if (opt.com == OR1) begin
-            if(set_p)                     out_data_hold[i] <= out_data_i[K8];
-            else if(hold[0])              out_data_hold[i] <= out_data_i[7];
-        end else if (opt.com == TWO) begin
+        if (opt.com == TWO) begin
             if(hold[i])                   out_data_hold[i] <= out_data_i[sel[i]];
         end
     end
 end
-    
+
 always_ff @(posedge clk) begin
     if (reset) begin
         out_valid_r <= '0;
@@ -181,9 +120,7 @@ always_ff @(posedge clk) begin
         out_valid_r <= ~(   (opt.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 ||
                             (opt.com == TWO) && rev_d && (dcount == K/8)     && L8 + K8 >= 7   );
     end else if (~command_nop_d || dcount != '0 || set_p) begin
-        out_valid_r <= ~(   (opt.com == OR0) && (dcount == K/8) ||
-                            or1_ini ||
-                            (opt.com == TWO) && (dcount == K/8) && (dcount != (L-1)/8) ||
+        out_valid_r <= ~(   (opt.com == TWO) && (dcount == K/8) && (dcount != (L-1)/8) ||
                             (opt.com == TWO) && rev_d && (dcount == (L-1)/8) && L8 + K8 < 7 );
     end else begin
         out_valid_r <= '0;
@@ -196,10 +133,7 @@ always_ff @(posedge clk) begin
     else if (command != NOP)
         if (opt.com == TWO && rcount == opt.K/8  && rcount != (opt.L-1)/8 && ~rev) begin
                                              rcount <= (opt.L-1)/8;                 rev <= '1; end
-        else if(opt.com == OR1)  begin   rcount <= opt.K/8;      or1_ini <= '1; end
         else                                 rcount <= rcount + 1;
-    else if (or1_ini && ~command_nop_d)      rcount <= '0;
-    else if (or1_ini)                begin   rcount <= rcount + 1;   or1_ini <= '0; end
     else if (rcount != '0 || rev)
         if (opt.com == TWO && rcount == opt.K/8  && rcount != (opt.L-1)/8 && ~rev) begin
                                              rcount <= (opt.L-1)/8;                 rev <= '1; end

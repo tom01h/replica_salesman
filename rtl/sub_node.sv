@@ -1,7 +1,8 @@
 module sub_node
     import replica_pkg::*;
 #(
-    parameter id = 0
+    parameter id = 0,
+    parameter two_opt_node = 0
 )
 (
     input  logic                      clk,
@@ -156,7 +157,7 @@ replica_d #(.id(id)) replica (
 );
 endgenerate
 
-exchange exchange
+exchange #(.two_opt_node(two_opt_node)) exchange
 (
     .clk             ( clk              ),
     .reset           ( reset            ),

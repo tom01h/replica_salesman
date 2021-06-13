@@ -41,7 +41,8 @@ DESIGN_SRCS = \
 ../rtl/replica.sv \
 ../rtl/replica_d.sv \
 ../rtl/exchange.sv \
-../rtl/opt_route.sv \
+../rtl/opt_route_or.sv \
+../rtl/opt_route_two.sv \
 
 VERILATOR_CPP_TB = top.cpp
 

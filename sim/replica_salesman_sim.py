@@ -140,9 +140,10 @@ def py_tb():
     rtl_distance_i = np.zeros_like(distance_i)
 
     address = 0x02000  # total distance
-#    for ibeta in reversed(range(0, nbeta)):
+    #for ibeta in reversed(range(0, nbeta)):
     for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
         rtl_distance_i[ibeta] = top.read64(address)
+        address += 8
 
 ########### RTL Sim ###########
 

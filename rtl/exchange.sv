@@ -1,5 +1,8 @@
 module exchange
     import replica_pkg::*;
+#(
+    parameter two_opt_node=0
+)
 (
     input  logic                    clk,
     input  logic                    reset,
@@ -80,7 +83,9 @@ always_ff @(posedge clk) begin
         else                         wcount <= '0;
 end    
 
-opt_route opt_route
+generate
+if(two_opt_node == 0)
+opt_route_or opt_route
 (
     .clk           ( clk           ),
     .reset         ( reset         ),
@@ -92,5 +97,19 @@ opt_route opt_route
     .out_valid_o   ( out_valid_x   ),
     .out_data_o    ( out_data_x    )
 );
+else
+opt_route_two opt_route
+(
+    .clk           ( clk           ),
+    .reset         ( reset         ),
+    .command       ( command       ),
+    .command_nop_d ( command_nop_d ),
+    .opt           ( opt           ),
+    .rcount        ( rcount        ),
+    .out_data_i    ( out_data_d    ),
+    .out_valid_o   ( out_valid_x   ),
+    .out_data_o    ( out_data_x    )
+);
+endgenerate
 
 endmodule
