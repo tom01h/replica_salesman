@@ -39,6 +39,8 @@ module sub_node
 
     output exchange_command_t         out_ex_com,
     input  exchange_command_t         in_ex_com,
+    input  exchange_command_t         exchange_mtr_i,
+    output exchange_command_t         exchange_mtr_o,
 
     input  logic                      exp_init,
     input  logic                      exp_run,
@@ -51,7 +53,6 @@ opt_t                      opt_ex;
 opt_t                      opt_rep;
 
 exchange_command_t         exchange_ex;
-exchange_command_t         exchange_mtr;
 
 logic                      ordering_read;
 logic [city_num_log-1:0]   ordering_addr;
@@ -93,7 +94,7 @@ metropolis #(.id(id)) metropolis
     .opt_ex          ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
 
-    .command         ( exchange_mtr    ), // replica exchange test の結果を見て total distance を交換
+    .command         ( exchange_mtr_i  ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
     .self_data       ( self_dis_data   ),
     .folw_data       ( folw_dis_data   ),
@@ -120,7 +121,7 @@ replica #(.id(id)) replica (
     
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
     .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
-    .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
+    .exchange_mtr    ( exchange_mtr_o  ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .out_exchange    ( out_exchange    ), // 隣に test 結果を渡す     (replica)
@@ -144,7 +145,7 @@ replica_d #(.id(id)) replica (
 
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
     .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
-    .exchange_mtr    ( exchange_mtr    ), //   ordering read/write コマンドが乗ってない
+    .exchange_mtr    ( exchange_mtr_o  ), //   ordering read/write コマンドが乗ってない
     .prev_exchange   ( prev_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .folw_exchange   ( folw_exchange   ), // 隣の test 結果を受け取る (replica_d)
     .out_exchange    ( out_exchange    ), // 隣に test 結果を渡す     (replica)

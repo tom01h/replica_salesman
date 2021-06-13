@@ -76,7 +76,9 @@ assign tw_out_ord_data  = tw_self_ord_data;
 
 exchange_command_t         or_ex_com;
 exchange_command_t         tw_ex_com;
-    
+exchange_command_t         exchange_mtr_or;
+exchange_command_t         exchange_mtr_tw;
+
 opt_t                      or_opt;
 opt_t                      tw_opt;
 
@@ -129,8 +131,10 @@ sub_node #(.id(id), .two_opt_node(0)) or_node (
     .out_ord_valid    ( or_self_ord_valid   ),
     .out_ord_data     ( or_self_ord_data    ),
 
-    .out_ex_com      ( or_ex_com            ),
-    .in_ex_com       ( tw_ex_com            ),
+    .out_ex_com       ( or_ex_com           ),
+    .in_ex_com        ( tw_ex_com           ),
+    .exchange_mtr_i   ( exchange_mtr_tw     ),
+    .exchange_mtr_o   ( exchange_mtr_or     ),
 
     .exp_init         ( exp_init            ),
     .exp_run          ( exp_run             ),
@@ -173,8 +177,10 @@ sub_node #(.id(id), .two_opt_node(1)) two_node (
     .out_ord_valid    ( tw_self_ord_valid   ),
     .out_ord_data     ( tw_self_ord_data    ),
 
-    .out_ex_com      ( tw_ex_com            ),
-    .in_ex_com       ( or_ex_com            ),
+    .out_ex_com       ( tw_ex_com           ),
+    .in_ex_com        ( or_ex_com           ),
+    .exchange_mtr_i   ( exchange_mtr_or     ),
+    .exchange_mtr_o   ( exchange_mtr_tw     ),
 
     .exp_init         ( exp_init            ),
     .exp_run          ( exp_run             ),

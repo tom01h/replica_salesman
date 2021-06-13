@@ -62,8 +62,8 @@ assign delta = $signed(delta_distance);
 assign write_data  = ( distance_shift) ?        prev_data :
                      (command == PREV) ?        prev_data :
                      (command == FOLW) ?        folw_data :
-                     (metropolis_run && test) ? self_data + delta : 
-                     (metropolis_run) ?         self_data : 
+                     (command == SELF) ?        self_data :
+                     (metropolis_run && test) ? out_data + delta :
                                                 out_data;
 
 opt_command_t com1, com2;
