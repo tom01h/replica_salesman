@@ -8,7 +8,9 @@ module sub_node
     input  logic                      clk,
     input  logic                      reset,
     
-    input  logic [base_log-1:0]       base_id,
+    input  logic [base_log-1:0]       dd_base_id,
+    input  logic [base_log-1:0]       ex_base_id_r,
+    input  logic [base_log-1:0]       ex_base_id_w,
     
     input  logic                      tp_dis_write,      // set 2点間距離
     input  logic [city_num_log*2-1:0] tp_dis_waddr,
@@ -21,10 +23,12 @@ module sub_node
 
     input  distance_command_t         distance_com,      // delta distance
 
-    input  total_data_t               prev_dis_data,     // for replica exchange test
-    input  total_data_t               self_dis_data,
+    input  total_data_t               prev_dis_data,
     input  total_data_t               folw_dis_data,
     output total_data_t               out_dis_data,
+    input  total_data_t               replica_data_i,
+    output total_data_t               replica_data_o,
+
     input  logic                      prev_exchange,     // for delta distance
     input  logic                      folw_exchange,
     output logic                      out_exchange,
@@ -39,8 +43,8 @@ module sub_node
 
     output exchange_command_t         out_ex_com,
     input  exchange_command_t         in_ex_com,
-    input  exchange_command_t         exchange_mtr_i,
-    output exchange_command_t         exchange_mtr_o,
+    input  logic                      exchange_mtr_i,
+    output logic                      exchange_mtr_o,
 
     input  logic                      exp_init,
     input  logic                      exp_run,
@@ -85,7 +89,8 @@ metropolis #(.id(id)) metropolis
     .clk             ( clk             ),
     .reset           ( reset           ),
 
-    .base_id         ( base_id         ),
+    .ex_base_id_r    ( ex_base_id_r    ),
+    .ex_base_id_w    ( ex_base_id_w    ),
     .distance_shift  ( distance_shift  ),
 
     .opt_run         ( opt_run         ),
@@ -94,10 +99,9 @@ metropolis #(.id(id)) metropolis
     .opt_ex          ( opt_ex          ),
     .delta_distance  ( delta_distance  ),
 
-    .command         ( exchange_mtr_i  ), // replica exchange test の結果を見て total distance を交換
+    .exchange_mtr    ( exchange_mtr_i  ), // replica exchange test の結果を見て total distance を交換
     .prev_data       ( prev_dis_data   ),
-    .self_data       ( self_dis_data   ),
-    .folw_data       ( folw_dis_data   ),
+    .replica_data    ( replica_data_i  ),
     .out_data        ( out_dis_data    ),
 
     .exp_init        ( exp_init        ),
@@ -112,12 +116,12 @@ replica #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
     
-    .base_id         ( base_id         ),
     .opt_run         ( opt_run         ),
     .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
+    .out_data        ( replica_data_o  ),
     
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
     .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
@@ -136,12 +140,12 @@ replica_d #(.id(id)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
 
-    .base_id         ( base_id         ),
     .opt_run         ( opt_run         ),
     .opt             ( opt_rep         ),
     .prev_data       ( prev_dis_data   ),
     .folw_data       ( folw_dis_data   ),
     .self_data       ( out_dis_data    ),
+    .out_data        ( replica_data_o  ),
 
     .exchange_shift_d( exchange_shift_d), //   exchange_ex に ordering read/write コマンドを乗せる
     .exchange_ex     ( exchange_ex     ), // replica exchange test の結果を乗せる
@@ -162,7 +166,9 @@ exchange #(.two_opt_node(two_opt_node)) exchange
 (
     .clk             ( clk              ),
     .reset           ( reset            ),
-    .base_id         ( base_id          ),
+    .dd_base_id      ( dd_base_id       ),
+    .ex_base_id_r    ( ex_base_id_r     ),
+    .ex_base_id_w    ( ex_base_id_w     ),
     .command         ( exchange_ex      ), // このコマンドで動く コマンドは replica で exchange_run から生成
     .opt             ( opt_ex           ), // ordering 変更規則 動作開始は command 入力の時
     .prev_valid      ( prev_ord_valid   ),

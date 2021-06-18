@@ -6,7 +6,9 @@ module exchange
 (
     input  logic                    clk,
     input  logic                    reset,
-    input  logic [base_log-1:0]     base_id,
+    input  logic [base_log-1:0]     dd_base_id,
+    input  logic [base_log-1:0]     ex_base_id_r,
+    input  logic [base_log-1:0]     ex_base_id_w,
     input  exchange_command_t       command,
     input  opt_t                    opt,
     input  logic                    prev_valid,
@@ -33,6 +35,7 @@ assign out_ex_com = command_d3;
 
 logic                                   out_valid_x;
 replica_data_t                          out_data_r;
+replica_data_t                          out_data_r2;
 replica_data_t                          out_data_d;
 replica_data_t                          out_data_x;
 
@@ -50,14 +53,15 @@ assign raddr_i = (ordering_read) ? ordering_addr[city_num_log-1:3] : rcount;
 always_ff @(posedge clk) begin
     ordering_sel <= ordering_addr[2:0];
 end
-assign ordering_data = out_data_r[ordering_sel];
+assign ordering_data = out_data_r2[ordering_sel];
 
 logic [replica_data_bit-1:0] ram [0:2**(city_div_log+base_log) -1];
 always_ff @(posedge clk) begin
     if (write_valid) begin
-        ram[{base_id, wcount}] <= write_data;
+        ram[{ex_base_id_w, wcount}] <= write_data;
     end
-    out_data_r <= ram[{base_id, raddr_i}];
+    out_data_r <= ram[{ex_base_id_r, raddr_i}];
+    out_data_r2 <= ram[{dd_base_id, raddr_i}];  // TEMP for delta distance
 end
 
 always_ff @(posedge clk) begin

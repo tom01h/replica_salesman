@@ -7,7 +7,8 @@ module metropolis
     input  logic                    clk,
     input  logic                    reset,
 
-    input  logic [base_log-1:0]     base_id,
+    input  logic [base_log-1:0]     ex_base_id_r,
+    input  logic [base_log-1:0]     ex_base_id_w,
     input  logic                    distance_shift,
 
     input  logic                    opt_run,
@@ -16,10 +17,9 @@ module metropolis
     output opt_t                    opt_ex,
     input  delata_data_t            delta_distance,
     
-    input  exchange_command_t       command,
+    input  logic                    exchange_mtr,
     input  total_data_t             prev_data,
-    input  total_data_t             self_data,
-    input  total_data_t             folw_data,
+    input  total_data_t             replica_data,
     output total_data_t             out_data,
 
     input  logic                    exp_init,
@@ -36,17 +36,15 @@ always_ff @(posedge clk)begin
     else if(opt_run) opt_rep       <= opt_metro;
 end
 
-logic                    metropolis_run;
-assign metropolis_run = exp_fin && (opt_metro.com != THR);
+wire metropolis_run = exp_fin && (opt_metro.com != THR);
 
-logic               test;
 logic signed [26:0] n_metropolis;
 exp #(
     .nbeta(dbeta * (id+1)),
     .step(dbeta * node_num)
 ) exp (
     .clk     ( clk             ),
-    .base_id ( base_id         ),
+    .base_id ( in_opt.base_id  ), // @ init
     .x       ( -delta_distance ),
     .y       ( n_metropolis    ),
     .init    ( exp_init        ),
@@ -54,29 +52,19 @@ exp #(
     .recip   ( exp_recip       )
 );
 
-assign test = (-delta_distance >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
+wire test = (-delta_distance >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
 
-total_data_t                        write_data;
-logic signed [$bits(out_data):0]    delta;
-assign delta = $signed(delta_distance);
-assign write_data  = ( distance_shift) ?        prev_data :
-                     (command == PREV) ?        prev_data :
-                     (command == FOLW) ?        folw_data :
-                     (command == SELF) ?        self_data :
-                     (metropolis_run && test) ? out_data + delta :
-                                                out_data;
+wire signed [$bits(total_data_t):0] delta = $signed(delta_distance);
 
 opt_command_t com1, com2;
 
 total_data_t total_distance [0:base_num-1];
-assign out_data = total_distance[base_id];
+assign out_data = total_distance[ex_base_id_r];
 always_ff @(posedge clk) begin
-    total_distance[base_id] <= write_data;
-    opt_ex.K <= opt_rep.K;
-    opt_ex.L <= opt_rep.L;
-    opt_ex.r_metropolis <= opt_rep.r_metropolis;
-    opt_ex.r_exchange   <= opt_rep.r_exchange;
-
+    if(metropolis_run && test) total_distance[opt_metro.base_id] <= total_distance[opt_metro.base_id] + delta;
+    else if(exchange_mtr  )    total_distance[ex_base_id_w]      <= replica_data;
+    else if(distance_shift)    total_distance[ex_base_id_w]      <= prev_data;
+    
     if(reset)begin
         com1 <= THR;
     end else if(opt_metro.com == THR) begin
@@ -94,11 +82,17 @@ always_ff @(posedge clk) begin
         end
     end
     if(reset)begin
-       com2 <= THR;
-       opt_ex.com <= THR;
+        com2 <= THR;
+        opt_ex.com <= THR;
     end else if(opt_run)begin
-       com2 <= com1;
-       opt_ex.com <= com2;
+        com2 <= com1;
+        opt_ex.com <= com2;
+
+        opt_ex.base_id <= opt_rep.base_id;
+        opt_ex.K <= opt_rep.K;
+        opt_ex.L <= opt_rep.L;
+        opt_ex.r_metropolis <= opt_rep.r_metropolis;
+        opt_ex.r_exchange   <= opt_rep.r_exchange;
     end
 end
 

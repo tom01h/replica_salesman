@@ -52,14 +52,6 @@ logic                      cycle_finish;
 logic                      exchange_shift_d;
 logic                      exchange_shift_n;
 
-logic [base_log-1:0] base_id;
-always_ff @(posedge clk) begin
-    if(reset)                       base_id <= '0;
-    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
-        if(base_id != base_num - 1) base_id <= base_id +1;
-        else                        base_id <= '0;
-end
-
 bus_if busif
 (
     .S_AXI_ACLK       ( clk              ),
@@ -180,23 +172,23 @@ opt_command_t         opt_com;
 
 node_control node_control
 (
-    .clk            ( clk            ),
-    .reset          ( reset          ),
-    .run_write      ( run_write      ),
-    .run_times      ( run_times      ),
-    .running        ( running        ),
-    .cycle_finish   ( cycle_finish   ),
+    .clk               ( clk               ),
+    .reset             ( reset             ),
+    .run_write         ( run_write         ),
+    .run_times         ( run_times         ),
+    .running           ( running           ),
+    .cycle_finish      ( cycle_finish      ),
 
-    .opt_run        ( opt_run        ),
-    .opt_com        ( opt_com        ),
+    .opt_run           ( opt_run           ),
+    .opt_com           ( opt_com           ),
     
     .or_distance_com   ( or_distance_com   ),
     .tw_distance_com   ( tw_distance_com   ),
     
-    .exp_init       ( exp_init       ),
-    .exp_run        ( exp_run        ),
-    .exp_fin        ( exp_fin        ),
-    .exp_recip      ( exp_recip      )
+    .exp_init          ( exp_init          ),
+    .exp_run           ( exp_run           ),
+    .exp_fin           ( exp_fin           ),
+    .exp_recip         ( exp_recip         )
 );
 
 logic             [node_num+1:0]  or_exchange;
@@ -209,62 +201,98 @@ logic             [node_num+1:0]  tw_exchange;
 assign tw_exchange[0] = 'b0;
 assign tw_exchange[node_num+1] = 'b0;
 
+logic [9:0][base_log-1:0] base_id;
+logic      [base_log-1:0] or_dd_base_id;
+logic      [base_log-1:0] tw_dd_base_id;
+logic      [base_log-1:0] or_ex_base_id;
+logic      [base_log-1:0] tw_ex_base_id;
+always_ff @(posedge clk) begin
+    if(reset)                       base_id <= '0;
+    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
+        if(base_id[0] != base_num - 1) base_id[0] <= base_id[0] +1;
+        else                           base_id[0] <= '0;
+    if(opt_run)
+        for(int i=1; i<10; i+=1) base_id[i] <= base_id[i-1];
+    
+    if(reset) begin
+        or_dd_base_id <= 0;
+        tw_dd_base_id <= 0;
+        or_ex_base_id <= 0;
+        tw_ex_base_id <= 0;
+    end else if(running)begin
+        or_dd_base_id <= base_id[1];
+        tw_dd_base_id <= base_id[6];
+        or_ex_base_id <= base_id[4];
+        tw_ex_base_id <= base_id[9];
+    end else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
+        if(base_id[0] != base_num - 1) begin or_ex_base_id <= base_id[0] +1; tw_ex_base_id <= base_id[0] +1; end
+        else                           begin or_ex_base_id <= '0; tw_ex_base_id <= '0; end
+    else begin
+        or_ex_base_id <= base_id[0];
+        tw_ex_base_id <= base_id[0];
+    end
+end
+
 for (genvar g = 0; g < node_num; g += 1) begin
     node #(.id(g)) node
     (
-        .clk              ( clk                 ),
-        .reset            ( reset               ),
+        .clk               ( clk                   ),
+        .reset             ( reset                 ),
         
-        .base_id          ( base_id             ),
+        .base_id           ( base_id[0]            ),
+        .or_dd_base_id     ( or_dd_base_id         ),
+        .tw_dd_base_id     ( tw_dd_base_id         ),
+        .or_ex_base_id     ( or_ex_base_id         ),
+        .tw_ex_base_id     ( tw_ex_base_id         ),
         
-        .random_init      ( random_init[g]      ), // set random seed
-        .random_seed      ( random_seed         ),
-        .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
-        .tp_dis_waddr     ( tp_dis_waddr        ),
-        .tp_dis_wdata     ( tp_dis_wdata        ),
-        .distance_shift   ( distance_shift      ), // total distance read/write
-        .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
+        .random_init       ( random_init[g]        ), // set random seed
+        .random_seed       ( random_seed           ),
+        .tp_dis_write      ( tp_dis_write          ), // set 2点間距離
+        .tp_dis_waddr      ( tp_dis_waddr          ),
+        .tp_dis_wdata      ( tp_dis_wdata          ),
+        .distance_shift    ( distance_shift        ), // total distance read/write
+        .exchange_shift_d  ( exchange_shift_d      ), // ordering read/write
         
-        .opt_run          ( opt_run             ), // opt run
-        .opt_com          ( opt_com             ), // opt mode
+        .opt_run           ( opt_run               ), // opt run
+        .opt_com           ( opt_com               ), // opt mode
 
-        .or_distance_com     ( or_distance_com        ), // delta distance
-        .tw_distance_com     ( tw_distance_com        ), // delta distance
+        .or_distance_com   ( or_distance_com        ), // delta distance
+        .tw_distance_com   ( tw_distance_com        ), // delta distance
 
-        .or_prev_dis_data    ( or_dis_data[g]         ),
-        .or_folw_dis_data    ( or_dis_data[g+2]       ),
-        .or_out_dis_data     ( or_dis_data[g+1]       ),
+        .or_prev_dis_data  ( or_dis_data[g]         ),
+        .or_folw_dis_data  ( or_dis_data[g+2]       ),
+        .or_out_dis_data   ( or_dis_data[g+1]       ),
         
-        .or_prev_exchange    ( or_exchange[g]       ),
-        .or_folw_exchange    ( or_exchange[g+2]     ),
-        .or_out_exchange     ( or_exchange[g+1]     ),
+        .or_prev_exchange  ( or_exchange[g]         ),
+        .or_folw_exchange  ( or_exchange[g+2]       ),
+        .or_out_exchange   ( or_exchange[g+1]       ),
 
-        .or_prev_ord_valid   ( or_ordering_valid[g]   ),
-        .or_prev_ord_data    ( or_ordering_data[g]    ),
-        .or_folw_ord_valid   ( or_ordering_valid[g+2] ),
-        .or_folw_ord_data    ( or_ordering_data[g+2]  ),
-        .or_out_ord_valid    ( or_ordering_valid[g+1] ),
-        .or_out_ord_data     ( or_ordering_data[g+1]  ),
+        .or_prev_ord_valid ( or_ordering_valid[g]   ),
+        .or_prev_ord_data  ( or_ordering_data[g]    ),
+        .or_folw_ord_valid ( or_ordering_valid[g+2] ),
+        .or_folw_ord_data  ( or_ordering_data[g+2]  ),
+        .or_out_ord_valid  ( or_ordering_valid[g+1] ),
+        .or_out_ord_data   ( or_ordering_data[g+1]  ),
 
-        .tw_prev_dis_data    ( tw_dis_data[g]         ),
-        .tw_folw_dis_data    ( tw_dis_data[g+2]       ),
-        .tw_out_dis_data     ( tw_dis_data[g+1]       ),
+        .tw_prev_dis_data  ( tw_dis_data[g]         ),
+        .tw_folw_dis_data  ( tw_dis_data[g+2]       ),
+        .tw_out_dis_data   ( tw_dis_data[g+1]       ),
         
-        .tw_prev_exchange    ( tw_exchange[g]       ),
-        .tw_folw_exchange    ( tw_exchange[g+2]     ),
-        .tw_out_exchange     ( tw_exchange[g+1]     ),
+        .tw_prev_exchange  ( tw_exchange[g]         ),
+        .tw_folw_exchange  ( tw_exchange[g+2]       ),
+        .tw_out_exchange   ( tw_exchange[g+1]       ),
 
-        .tw_prev_ord_valid   ( tw_ordering_valid[g]   ),
-        .tw_prev_ord_data    ( tw_ordering_data[g]    ),
-        .tw_folw_ord_valid   ( tw_ordering_valid[g+2] ),
-        .tw_folw_ord_data    ( tw_ordering_data[g+2]  ),
-        .tw_out_ord_valid    ( tw_ordering_valid[g+1] ),
-        .tw_out_ord_data     ( tw_ordering_data[g+1]  ),
+        .tw_prev_ord_valid ( tw_ordering_valid[g]   ),
+        .tw_prev_ord_data  ( tw_ordering_data[g]    ),
+        .tw_folw_ord_valid ( tw_ordering_valid[g+2] ),
+        .tw_folw_ord_data  ( tw_ordering_data[g+2]  ),
+        .tw_out_ord_valid  ( tw_ordering_valid[g+1] ),
+        .tw_out_ord_data   ( tw_ordering_data[g+1]  ),
 
-        .exp_init         ( exp_init            ),
-        .exp_run          ( exp_run             ),
-        .exp_fin          ( exp_fin             ),
-        .exp_recip        ( exp_recip           )
+        .exp_init          ( exp_init               ),
+        .exp_run           ( exp_run                ),
+        .exp_fin           ( exp_fin                ),
+        .exp_recip         ( exp_recip              )
     );
 end
 

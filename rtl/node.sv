@@ -8,6 +8,10 @@ module node
     input  logic                      reset,
     
     input  logic [base_log-1:0]       base_id,
+    input  logic [base_log-1:0]       or_dd_base_id,
+    input  logic [base_log-1:0]       tw_dd_base_id,
+    input  logic [base_log-1:0]       or_ex_base_id,
+    input  logic [base_log-1:0]       tw_ex_base_id,
     
     input  logic                      random_init,       // set random seed
     input  logic [63:0]               random_seed,
@@ -57,10 +61,12 @@ module node
 );
 
 total_data_t              or_self_dis_data;
+total_data_t              or_replica_data;
 logic                     or_self_ord_valid;
 replica_data_t            or_self_ord_data;
 
 total_data_t              tw_self_dis_data;
+total_data_t              tw_replica_data;
 logic                     tw_self_ord_valid;
 replica_data_t            tw_self_ord_data;
 
@@ -76,8 +82,8 @@ assign tw_out_ord_data  = tw_self_ord_data;
 
 exchange_command_t         or_ex_com;
 exchange_command_t         tw_ex_com;
-exchange_command_t         exchange_mtr_or;
-exchange_command_t         exchange_mtr_tw;
+logic                      exchange_mtr_or;
+logic                      exchange_mtr_tw;
 
 opt_t                      or_opt;
 opt_t                      tw_opt;
@@ -100,7 +106,9 @@ sub_node #(.id(id), .two_opt_node(0)) or_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
-    .base_id          ( base_id             ),
+    .dd_base_id       ( or_dd_base_id       ),
+    .ex_base_id_r     ( or_ex_base_id       ),
+    .ex_base_id_w     ( tw_ex_base_id       ),
 
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
@@ -113,10 +121,11 @@ sub_node #(.id(id), .two_opt_node(0)) or_node (
     
     .distance_com     ( or_distance_com     ), // delta distance
 
-    .prev_dis_data    ( tw_prev_dis_data    ),
-    .self_dis_data    ( tw_self_dis_data    ),
-    .folw_dis_data    ( tw_folw_dis_data    ),
+    .prev_dis_data    ( or_prev_dis_data    ),
+    .folw_dis_data    ( or_folw_dis_data    ),
     .out_dis_data     ( or_self_dis_data    ),
+    .replica_data_i   ( tw_replica_data     ),
+    .replica_data_o   ( or_replica_data     ),
     
     .prev_exchange    ( or_prev_exchange    ),
     .folw_exchange    ( or_folw_exchange    ),
@@ -146,7 +155,9 @@ sub_node #(.id(id), .two_opt_node(1)) two_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
     
-    .base_id          ( base_id             ),
+    .dd_base_id       ( tw_dd_base_id       ),
+    .ex_base_id_r     ( tw_ex_base_id       ),
+    .ex_base_id_w     ( or_ex_base_id       ),
 
     .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
     .tp_dis_waddr     ( tp_dis_waddr        ),
@@ -159,10 +170,11 @@ sub_node #(.id(id), .two_opt_node(1)) two_node (
     
     .distance_com     ( tw_distance_com     ), // delta distance
 
-    .prev_dis_data    ( or_prev_dis_data    ),
-    .self_dis_data    ( or_self_dis_data    ),
-    .folw_dis_data    ( or_folw_dis_data    ),
+    .prev_dis_data    ( tw_prev_dis_data    ),
+    .folw_dis_data    ( tw_folw_dis_data    ),
     .out_dis_data     ( tw_self_dis_data    ),
+    .replica_data_i   ( or_replica_data     ),
+    .replica_data_o   ( tw_replica_data     ),
     
     .prev_exchange    ( tw_prev_exchange    ),
     .folw_exchange    ( tw_folw_exchange    ),

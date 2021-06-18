@@ -13,23 +13,35 @@ module random
     output logic                    ready
 );
 
-opt_command_t or_com, tw_com;
+opt_command_t         or_com, tw_com;
+logic [base_log-1:0]  or_id,  tw_id;
 
 always_ff @(posedge clk)begin
     if(reset)               or_com      <= THR;
     else if(run)
         if(opt_com == OR1)  or_com      <= OR1;
         else                or_com      <= THR;
+    
     if(reset)               tw_com      <= THR;
     else if(run)
         if(opt_com == TWO)  tw_com      <= TWO;
         else                tw_com      <= THR;
+    
+    if(reset)               or_id  <= base_id;
+    else if(run)
+        if(opt_com == OR1)  or_id  <= base_id;
+    
+    if(reset)               tw_id  <= base_id;
+    else if(run)
+        if(opt_com == TWO)  tw_id  <= base_id;
 end
 
 opt_t                    opt;
 
 assign or_opt.com = or_com;
 assign tw_opt.com = tw_com;
+assign or_opt.base_id = or_id;
+assign tw_opt.base_id = tw_id;
 assign or_opt.K = opt.K;
 assign tw_opt.K = opt.K;
 assign or_opt.L = opt.L;
