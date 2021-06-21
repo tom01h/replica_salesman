@@ -36,6 +36,8 @@ DESIGN_SRCS = \
 ../rtl/node_control.sv \
 ../rtl/node_reg.sv \
 ../rtl/random.sv \
+../rtl/or_rand.sv \
+../rtl/tw_rand.sv \
 ../rtl/distance.sv \
 ../rtl/metropolis.sv \
 ../rtl/replica.sv \

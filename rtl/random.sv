@@ -13,123 +13,45 @@ module random
     output logic                    ready
 );
 
-opt_command_t         or_com, tw_com;
-logic [base_log-1:0]  or_id,  tw_id;
-
-always_ff @(posedge clk)begin
-    if(reset)               or_com      <= THR;
-    else if(run)
-        if(opt_com == OR1)  or_com      <= OR1;
-        else                or_com      <= THR;
-    
-    if(reset)               tw_com      <= THR;
-    else if(run)
-        if(opt_com == TWO)  tw_com      <= TWO;
-        else                tw_com      <= THR;
-    
-    if(reset)               or_id  <= base_id;
-    else if(run)
-        if(opt_com == OR1)  or_id  <= base_id;
-    
-    if(reset)               tw_id  <= base_id;
-    else if(run)
-        if(opt_com == TWO)  tw_id  <= base_id;
-end
-
-opt_t                    opt;
-
-assign or_opt.com = or_com;
-assign tw_opt.com = tw_com;
-assign or_opt.base_id = or_id;
-assign tw_opt.base_id = tw_id;
-assign or_opt.K = opt.K;
-assign tw_opt.K = opt.K;
-assign or_opt.L = opt.L;
-assign tw_opt.L = opt.L;
-assign or_opt.r_metropolis = opt.r_metropolis;
-assign tw_opt.r_metropolis = opt.r_metropolis;
-assign or_opt.r_exchange = opt.r_exchange;
-assign tw_opt.r_exchange = opt.r_exchange;
-
-
-
 logic [63:0]             seed [0:base_num-1];
-logic [63:0]             n_seed;
-logic [63:0]             x0, x1, x2, x3;
-logic [31:0]             val;
-logic [31:0]             msk;
-logic                    s_run;
-
-always_comb begin
-    x0 = seed[base_id];
-    x1 = x0 ^ (x0 << 13);
-    x2 = x1 ^ (x1 >> 7);
-    x3 = x2 ^ (x2 << 17);
-    n_seed = x3;
-    val = x3 & msk;
-end    
+logic [63:0]             or_seed;
+logic [63:0]             tw_seed;
+logic                    or_run;
+logic                    tw_run;
 
 always_ff @(posedge clk) begin
-    if(init)       seed[base_id] <= i_seed;
-    else if(s_run) seed[base_id] <= n_seed;
+    if(init)        seed[base_id] <= i_seed;
+    else if(or_run) seed[base_id] <= or_seed;
+    else if(tw_run) seed[base_id] <= tw_seed;
 end
 
-typedef enum logic [1:0] {
-    s_K = 2'b00,
-    s_L = 2'b01,
-    s_metropolis = 2'b10,
-    s_exchange = 2'b11
-} state_t;
+logic or_ready, tw_ready;
+assign ready = or_ready & tw_ready;
 
-state_t state;
+or_rand or_rand (
+    .clk      ( clk           ),
+    .reset    ( reset         ),
+    .base_id  ( base_id       ),
+    .seed     ( seed[base_id] ),
+    .n_seed   ( or_seed       ),
+    .run_i    ( run           ),
+    .run_o    ( or_run        ),
+    .opt_com  ( opt_com       ),
+    .opt      ( or_opt        ),
+    .ready    ( or_ready      )
+);
 
-always_ff @(posedge clk) begin
-    opt.com      <= opt_com;
-    if(reset) begin
-        s_run <= 'b0;
-    end else if(run && (opt_com != THR)) begin
-        s_run <= 'b1;
-        state <= s_K;
-        ready <= 'b0;
-        if(opt_com == TWO) begin     // 2-opt
-            msk <= {($clog2(city_num  )){1'b1}};
-        end else begin           // or-opt
-            msk <= {($clog2(city_num-1)){1'b1}};
-        end
-    end else if(s_run) begin
-        case(state)
-            s_K :
-                if(opt.com == TWO) begin
-                    if(1 <= val && val <= city_num) begin
-                        opt.K <= val;
-                        state <= s_L;
-                    end
-                end else begin
-                    if(1 <= val && val <= city_num-1) begin
-                        opt.K <= val;
-                        state <= s_L;
-                    end
-                end 
-            s_L :
-                if(opt.com == TWO) begin
-                    if(1 <= val && val <= city_num) begin
-                        if(opt.K>val) begin  opt.K <= val; opt.L <= opt.K;   end
-                        else          begin                opt.L <= val; end
-                        if(opt.K != val) begin state <= s_metropolis; msk <= '1; end
-                        else                   state <= s_K;
-                    end
-                end else begin
-                    if(0 <= val && val <= city_num-1) begin
-                        opt.L <= val;
-                        if(opt.K != val && opt.K != val+1) begin state <= s_metropolis; msk <= '1; end
-                        else                                     state <= s_K;
-                    end
-                end
-            s_metropolis : begin opt.r_metropolis <= val; state <= s_exchange; end
-            s_exchange :   begin opt.r_exchange   <= val; s_run <= 'b0; ready <= 'b1; end
-            default : ;
-        endcase
-    end    
-end
+tw_rand tw_rand (
+    .clk      ( clk           ),
+    .reset    ( reset         ),
+    .base_id  ( base_id       ),
+    .seed     ( seed[base_id] ),
+    .n_seed   ( tw_seed       ),
+    .run_i    ( run           ),
+    .run_o    ( tw_run        ),
+    .opt_com  ( opt_com       ),
+    .opt      ( tw_opt        ),
+    .ready    ( tw_ready      )
+);
 
 endmodule
