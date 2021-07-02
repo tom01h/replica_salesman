@@ -32,58 +32,31 @@ module node_control
     output logic [16:0]             exp_recip
 );
 
-logic        run;
-logic [23:0] run_times_reg;
-logic [23:0] run_cnt;
-logic  [7:0] cycle_cnt;
+logic  [4:0] cycle_cnt;
 logic        cycle_finish;
-logic        opt_fin;
 
-logic     fin_tmp;
+assign opt_fin  = (cycle_cnt == 19);
+assign exp_fin  = (cycle_cnt == 18);
+assign exp_init = (cycle_cnt ==  0) && running;
+assign opt_run  = (cycle_cnt ==  0) && running;
 
 always_ff @(posedge clk) begin
-    fin_tmp <= 'b0;
+    if(reset)         cycle_cnt <= 'b0;
+    else if(opt_run)  cycle_cnt <= 'b1;
+    else if(opt_fin)  cycle_cnt <= 'b0;
+    else if(running)  cycle_cnt <= cycle_cnt + 1;
+    else              cycle_cnt <= 'b0;
+end
+
+always_ff @(posedge clk) begin
     if(reset) begin
-        run <= 'b0;
         running <= 'b0;
-        run_cnt <= 'b0;
     end else if (run_write) begin
-        run <= 'b1;
         running <= 'b1;
-        run_times_reg <= run_times * base_num;
-    end else if((cycle_cnt == 19) || (cycle_cnt == 99)) begin
-    end else if(cycle_cnt == 79) begin
-    end else if(cycle_finish) begin
-        if((run_cnt + 2) != run_times_reg) begin
-            run <= 'b1;
-            run_cnt <= run_cnt + 2;
-        end else begin
-            fin_tmp <= 'b1;
-            running <= 'b0;
-        end
-    end else
-        run <= 'b0;
-end
-
-assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0) || fin_tmp;
-assign opt_fin        = cycle_cnt % 20 == 19;
-assign exp_fin        = cycle_cnt % 20 == 18;
-
-assign exp_init       = (cycle_cnt % 20 == 0);
-assign cycle_finish   = (cycle_cnt == 179);
-
-always_ff @(posedge clk) begin
-    if(reset)               cycle_cnt <= 'b0;
-    else if(run)            cycle_cnt <= 'b1;
-    else if(cycle_finish)   cycle_cnt <= 'b0;
-    else if(cycle_cnt != 0) cycle_cnt <= cycle_cnt + 1;
-end
-
-logic [4:0] stage_count;
-
-always_ff @(posedge clk) begin
-    if(opt_run)  stage_count   <= 0;
-    else         stage_count   <= stage_count + 1;
+    end else if(~or_opt_en && ~tw_opt_en && tw_ex_base_id == 0) begin
+        running <= 'b0;
+        cycle_finish <= running;
+    end
 end
 
 logic [4:0][base_log-1:0] or_base_id, tw_base_id;
@@ -105,7 +78,9 @@ always_ff @(posedge clk) begin
     if(reset)                                                                          opt_cnt <= 0;
     else if (opt_fin && or_opt_en && (or_base_id[0]==3))                               opt_cnt <= opt_cnt + 1;
     else if (opt_fin && or_opt_en && (or_base_id[0]==7) && (opt_cnt + 1 != run_times)) opt_cnt <= opt_cnt + 1;
+end
 
+always_ff @(posedge clk) begin
     if(reset)                                         or_base_id <= '0;
     else if(change_base_id || opt_fin && or_opt_en)
         if(or_base_id[0] != base_num - 1)             or_base_id[0] <= or_base_id[0]+1;
@@ -132,30 +107,29 @@ always_ff @(posedge clk) begin
     end else                              begin or_ex_base_id <= or_base_id[0];     tw_ex_base_id <= tw_base_id[0]; end
 end
 
+
 always_ff @(posedge clk) begin
-    case(stage_count)
-        0:        or_distance_com <= {KN , ZERO};
-        1:        or_distance_com <= {KM , MNS};
-        2:        or_distance_com <= {KP , PLS};
-        3:        or_distance_com <= {KN , MNS};
-        4:        or_distance_com <= {LN , PLS};
-        5:        or_distance_com <= {LP , MNS};
-        6:        or_distance_com <= {KN , PLS};
+    case(cycle_cnt)
+        1:        or_distance_com <= {KN , ZERO};
+        2:        or_distance_com <= {KM , MNS};
+        3:        or_distance_com <= {KP , PLS};
+        4:        or_distance_com <= {KN , MNS};
+        5:        or_distance_com <= {LN , PLS};
+        6:        or_distance_com <= {LP , MNS};
+        7:        or_distance_com <= {KN , PLS};
         default:  or_distance_com <= {KN , DNOP};
     endcase
-    case(stage_count)
-        0:        tw_distance_com <= {KN , ZERO};
-        1:        tw_distance_com <= {KM , MNS};
-        2:        tw_distance_com <= {LM , PLS};
-        3:        tw_distance_com <= {LN , MNS};
-        4:        tw_distance_com <= {KN , PLS};
+    case(cycle_cnt)
+        1:        tw_distance_com <= {KN , ZERO};
+        2:        tw_distance_com <= {KM , MNS};
+        3:        tw_distance_com <= {LM , PLS};
+        4:        tw_distance_com <= {LN , MNS};
+        5:        tw_distance_com <= {KN , PLS};
         default:  tw_distance_com <= {KN , DNOP};
     endcase
 end
 
 logic [3:0]        exp_count;
-logic [3:0]        rom_addr;
-assign rom_addr = exp_count - 1;
 
 always_ff @(posedge clk)begin
     if(reset) begin
@@ -163,11 +137,11 @@ always_ff @(posedge clk)begin
         exp_count <= 'd0;
     end else if(exp_init) begin
         exp_run <= 'b1;
-        exp_count <= 'd15;
-    end else if(exp_count >= 2) begin
+        exp_count <= 'd14;
+    end else if(exp_count >= 1) begin
         exp_run <= 'b1;
         exp_count <= exp_count - 1;
-    end else if(exp_count == 1) begin
+    end else if(exp_count == 0) begin
         exp_run <= 'b0;
         exp_count <= 'd0;
     end
@@ -175,7 +149,7 @@ end
 
 always_ff @(posedge clk)
     if(exp_init || exp_run)
-        case(rom_addr)
+        case(exp_count)
             'd0  : exp_recip <= (1<<15) / 15;
             'd1  : exp_recip <= (1<<15) / 1;
             'd2  : exp_recip <= (1<<15) / 2;
