@@ -58,7 +58,6 @@ opt_t                      opt_rep;
 
 exchange_command_t         exchange_ex;
 
-logic                      ordering_read;
 logic [city_num_log-1:0]   ordering_addr;
 logic [city_num_log-1:0]   ordering_data;
 
@@ -79,8 +78,7 @@ distance distance
     .command         ( distance_com    ),
 
     .delta_distance  ( delta_distance  ),
-    .ordering_read   ( ordering_read   ), // ordering メモリを読む
-    .ordering_addr   ( ordering_addr   ),
+    .ordering_addr   ( ordering_addr   ), // ordering メモリを読む
     .ordering_data   ( ordering_data   )
 );    
 
@@ -179,8 +177,7 @@ exchange #(.two_opt_node(two_opt_node)) exchange
     .folw_data       ( folw_ord_data    ),
     .out_valid       ( out_ord_valid    ),
     .out_data        ( out_ord_data     ),
-    .ordering_read   ( ordering_read    ), // delta distance 計算用の IF
-    .ordering_addr   ( ordering_addr    ),
+    .ordering_addr   ( ordering_addr    ), // delta distance 計算用の IF
     .ordering_data   ( ordering_data    ),
 
     .out_ex_com      ( out_ex_com       ),

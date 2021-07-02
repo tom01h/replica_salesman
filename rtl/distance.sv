@@ -14,7 +14,6 @@ module distance
     input  distance_command_t         command,
 
     output delata_data_t              delta_distance,
-    output logic                      ordering_read,
     output logic [city_num_log-1:0]   ordering_addr,
     input  logic [city_num_log-1:0]   ordering_data
 );
@@ -26,7 +25,6 @@ end
 
 distance_op_t            command_op_i;
 always_ff @(posedge clk) begin
-    ordering_read <= (command.op != DNOP) && (out_opt.com != THR);
     if(out_opt.com == THR) command_op_i <= DNOP;
     else                   command_op_i <= command.op;
     case(command.select)

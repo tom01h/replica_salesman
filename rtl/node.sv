@@ -7,7 +7,8 @@ module node
     input  logic                      clk,
     input  logic                      reset,
     
-    input  logic [base_log-1:0]       base_id,
+    input  logic [base_log-1:0]       or_rn_base_id,
+    input  logic [base_log-1:0]       tw_rn_base_id,
     input  logic [base_log-1:0]       or_dd_base_id,
     input  logic [base_log-1:0]       tw_dd_base_id,
     input  logic [base_log-1:0]       or_ex_base_id,
@@ -22,7 +23,8 @@ module node
     input  logic                      exchange_shift_d,  // ordering read/write
 
     input  logic                      opt_run,           // opt run
-    input  opt_command_t              opt_com,           // opt mode
+    input  logic                      or_opt_en,         // opt en
+    input  logic                      tw_opt_en,         // opt en
 
     input  distance_command_t         or_distance_com,      // delta distance
 
@@ -92,9 +94,11 @@ random random
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
-    .base_id         ( base_id         ),
+    .or_base_id      ( or_rn_base_id   ),
+    .tw_base_id      ( tw_rn_base_id   ),
     .run             ( opt_run         ),
-    .opt_com         ( opt_com         ),
+    .or_opt_en       ( or_opt_en       ),
+    .tw_opt_en       ( tw_opt_en       ),
     .init            ( random_init     ),
     .i_seed          ( random_seed     ),
     .or_opt          ( or_opt          ),

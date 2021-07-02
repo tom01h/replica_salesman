@@ -10,7 +10,7 @@ module or_rand
 
     input  logic                    run_i,
     output logic                    run_o,
-    input  opt_command_t            opt_com,
+    input  logic                    opt_en,
     output opt_t                    opt,
     output logic                    ready
 );
@@ -18,14 +18,14 @@ module or_rand
 logic [31:0]             val;
 
 always_ff @(posedge clk)begin
-    if(reset)               opt.com     <= THR;
+    if(reset)       opt.com     <= THR;
     else if(run_i)
-        if(opt_com == OR1)  opt.com     <= OR1;
-        else                opt.com     <= THR;
+        if(opt_en)  opt.com     <= OR1;
+        else        opt.com     <= THR;
     
-    if(reset)               opt.base_id <= base_id;
+    if(reset)       opt.base_id <= base_id;
     else if(run_i)
-        if(opt_com == OR1)  opt.base_id <= base_id;
+        if(opt_en)  opt.base_id <= base_id;
 end
 
 logic [63:0]             x0, x1, x2, x3;
@@ -52,7 +52,7 @@ state_t state;
 always_ff @(posedge clk) begin
     if(reset) begin
         run_o <= 'b0;
-    end else if(run_i && (opt_com == OR1)) begin
+    end else if(run_i && opt_en) begin
         run_o <= 'b1;
         state <= s_K;
         ready <= 'b0;

@@ -29,11 +29,13 @@ module metropolis
 );
 
 opt_t                    opt_metro;
+delata_data_t            delta_distance_d;
 always_ff @(posedge clk)begin
     if(reset)        opt_metro.com <= THR;
     else if(opt_run) opt_metro     <= in_opt;
     if(reset)        opt_rep.com   <= THR;
     else if(opt_run) opt_rep       <= opt_metro;
+    if(opt_run) delta_distance_d <= delta_distance;
 end
 
 wire metropolis_run = exp_fin && (opt_metro.com != THR);
@@ -45,16 +47,16 @@ exp #(
 ) exp (
     .clk     ( clk             ),
     .base_id ( in_opt.base_id  ), // @ init
-    .x       ( -delta_distance ),
+    .x       ( -delta_distance ), // @ init
     .y       ( n_metropolis    ),
     .init    ( exp_init        ),
     .run     ( exp_run         ),
     .recip   ( exp_recip       )
 );
 
-wire test = (-delta_distance >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
+wire test = (-delta_distance_d >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
 
-wire signed [$bits(total_data_t):0] delta = $signed(delta_distance);
+wire signed [$bits(total_data_t):0] delta = $signed(delta_distance_d);
 
 opt_command_t com1, com2;
 

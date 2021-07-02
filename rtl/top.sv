@@ -45,9 +45,7 @@ total_data_t               distance_rdata;
 
 logic                      run_write;
 logic [23:0]               run_times;
-
 logic                      running;
-logic                      cycle_finish;
 
 logic                      exchange_shift_d;
 logic                      exchange_shift_n;
@@ -168,7 +166,16 @@ logic                 exp_fin;
 logic [16:0]          exp_recip;
 
 logic                 opt_run;
-opt_command_t         opt_com;
+logic                 or_opt_en;
+logic                 tw_opt_en;
+
+wire change_base_id = random_init[node_num-1] || exchange_shift_n || distance_shift_n;
+logic [base_log-1:0]     or_rn_base_id;
+logic [base_log-1:0]     tw_rn_base_id;
+logic [base_log-1:0]     or_dd_base_id;
+logic [base_log-1:0]     tw_dd_base_id;
+logic [base_log-1:0]     or_ex_base_id;
+logic [base_log-1:0]     tw_ex_base_id;
 
 node_control node_control
 (
@@ -177,10 +184,18 @@ node_control node_control
     .run_write         ( run_write         ),
     .run_times         ( run_times         ),
     .running           ( running           ),
-    .cycle_finish      ( cycle_finish      ),
+
+    .change_base_id    ( change_base_id    ),
+    .or_rn_base_id     ( or_rn_base_id     ),
+    .tw_rn_base_id     ( tw_rn_base_id     ),
+    .or_dd_base_id     ( or_dd_base_id     ),
+    .tw_dd_base_id     ( tw_dd_base_id     ),
+    .or_ex_base_id     ( or_ex_base_id     ),
+    .tw_ex_base_id     ( tw_ex_base_id     ),
 
     .opt_run           ( opt_run           ),
-    .opt_com           ( opt_com           ),
+    .or_opt_en         ( or_opt_en         ),
+    .tw_opt_en         ( tw_opt_en         ),
     
     .or_distance_com   ( or_distance_com   ),
     .tw_distance_com   ( tw_distance_com   ),
@@ -201,45 +216,14 @@ logic             [node_num+1:0]  tw_exchange;
 assign tw_exchange[0] = 'b0;
 assign tw_exchange[node_num+1] = 'b0;
 
-logic [9:0][base_log-1:0] base_id;
-logic      [base_log-1:0] or_dd_base_id;
-logic      [base_log-1:0] tw_dd_base_id;
-logic      [base_log-1:0] or_ex_base_id;
-logic      [base_log-1:0] tw_ex_base_id;
-always_ff @(posedge clk) begin
-    if(reset)                       base_id <= '0;
-    else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
-        if(base_id[0] != base_num - 1) base_id[0] <= base_id[0] +1;
-        else                           base_id[0] <= '0;
-    if(opt_run)
-        for(int i=1; i<10; i+=1) base_id[i] <= base_id[i-1];
-    
-    if(reset) begin
-        or_dd_base_id <= 0;
-        tw_dd_base_id <= 0;
-        or_ex_base_id <= 0;
-        tw_ex_base_id <= 0;
-    end else if(running)begin
-        or_dd_base_id <= base_id[1];
-        tw_dd_base_id <= base_id[6];
-        or_ex_base_id <= base_id[4];
-        tw_ex_base_id <= base_id[9];
-    end else if(random_init[node_num-1] || exchange_shift_n || distance_shift_n || cycle_finish)
-        if(base_id[0] != base_num - 1) begin or_ex_base_id <= base_id[0] +1; tw_ex_base_id <= base_id[0] +1; end
-        else                           begin or_ex_base_id <= '0; tw_ex_base_id <= '0; end
-    else begin
-        or_ex_base_id <= base_id[0];
-        tw_ex_base_id <= base_id[0];
-    end
-end
-
 for (genvar g = 0; g < node_num; g += 1) begin
     node #(.id(g)) node
     (
         .clk               ( clk                   ),
         .reset             ( reset                 ),
         
-        .base_id           ( base_id[0]            ),
+        .or_rn_base_id     ( or_rn_base_id         ),
+        .tw_rn_base_id     ( tw_rn_base_id         ),
         .or_dd_base_id     ( or_dd_base_id         ),
         .tw_dd_base_id     ( tw_dd_base_id         ),
         .or_ex_base_id     ( or_ex_base_id         ),
@@ -254,7 +238,8 @@ for (genvar g = 0; g < node_num; g += 1) begin
         .exchange_shift_d  ( exchange_shift_d      ), // ordering read/write
         
         .opt_run           ( opt_run               ), // opt run
-        .opt_com           ( opt_com               ), // opt mode
+        .or_opt_en         ( or_opt_en             ), // opt en
+        .tw_opt_en         ( tw_opt_en             ), // opt en
 
         .or_distance_com   ( or_distance_com        ), // delta distance
         .tw_distance_com   ( tw_distance_com        ), // delta distance

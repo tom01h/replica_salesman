@@ -9,12 +9,19 @@ module node_control
     input  logic                    reset,
     input  logic                    run_write,
     input  logic [23:0]             run_times,
-
     output logic                    running,
-    output logic                    cycle_finish,
+
+    input  logic                    change_base_id,
+    output logic [base_log-1:0]     or_rn_base_id,
+    output logic [base_log-1:0]     tw_rn_base_id,
+    output logic [base_log-1:0]     or_dd_base_id,
+    output logic [base_log-1:0]     tw_dd_base_id,
+    output logic [base_log-1:0]     or_ex_base_id,
+    output logic [base_log-1:0]     tw_ex_base_id,
 
     output logic                    opt_run,
-    output opt_command_t            opt_com,
+    output logic                    or_opt_en,
+    output logic                    tw_opt_en,
 
     output distance_command_t       or_distance_com,
     output distance_command_t       tw_distance_com,
@@ -29,6 +36,8 @@ logic        run;
 logic [23:0] run_times_reg;
 logic [23:0] run_cnt;
 logic  [7:0] cycle_cnt;
+logic        cycle_finish;
+logic        opt_fin;
 
 logic     fin_tmp;
 
@@ -38,35 +47,30 @@ always_ff @(posedge clk) begin
         run <= 'b0;
         running <= 'b0;
         run_cnt <= 'b0;
-        opt_com <= THR;
     end else if (run_write) begin
         run <= 'b1;
         running <= 'b1;
         run_times_reg <= run_times * base_num;
-        opt_com <= OR1;
-    end else if((cycle_cnt == 19) || (cycle_cnt == 119)) begin
-        opt_com <= THR;
-    end else if(cycle_cnt == 99) begin
-        opt_com <= TWO;
+    end else if((cycle_cnt == 19) || (cycle_cnt == 99)) begin
+    end else if(cycle_cnt == 79) begin
     end else if(cycle_finish) begin
         if((run_cnt + 2) != run_times_reg) begin
             run <= 'b1;
             run_cnt <= run_cnt + 2;
-            opt_com <= OR1;
         end else begin
             fin_tmp <= 'b1;
             running <= 'b0;
-            opt_com <= THR;
         end
     end else
         run <= 'b0;
 end
 
 assign opt_run        = run || (cycle_cnt % 20 == 0) && (cycle_cnt != 0) || fin_tmp;
+assign opt_fin        = cycle_cnt % 20 == 19;
 assign exp_fin        = cycle_cnt % 20 == 18;
 
-assign exp_init       = (cycle_cnt == 40) || (cycle_cnt == 60) || (cycle_cnt == 140) || (cycle_cnt == 160);
-assign cycle_finish   = (cycle_cnt == 199);
+assign exp_init       = (cycle_cnt % 20 == 0);
+assign cycle_finish   = (cycle_cnt == 179);
 
 always_ff @(posedge clk) begin
     if(reset)               cycle_cnt <= 'b0;
@@ -82,7 +86,53 @@ always_ff @(posedge clk) begin
     else         stage_count   <= stage_count + 1;
 end
 
-always_ff @(posedge clk)begin
+logic [4:0][base_log-1:0] or_base_id, tw_base_id;
+
+assign or_rn_base_id = or_base_id[0];
+assign tw_rn_base_id = tw_base_id[0];
+
+logic [23:0] opt_cnt;
+
+always_ff @(posedge clk) begin
+    if(reset)                                                                          or_opt_en <= 'b0;
+    else if (run_write)                                                                or_opt_en <= 'b1;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==7) && (opt_cnt + 1 == run_times)) or_opt_en <= 'b0;
+
+    if(reset)                                                                          tw_opt_en <= 'b0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==3))                               tw_opt_en <= 'b1;
+    else if (opt_fin && tw_opt_en && (tw_base_id[0]==7) && (opt_cnt + 1 == run_times)) tw_opt_en <= 'b0;
+
+    if(reset)                                                                          opt_cnt <= 0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==3))                               opt_cnt <= opt_cnt + 1;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==7) && (opt_cnt + 1 != run_times)) opt_cnt <= opt_cnt + 1;
+
+    if(reset)                                         or_base_id <= '0;
+    else if(change_base_id || opt_fin && or_opt_en)
+        if(or_base_id[0] != base_num - 1)             or_base_id[0] <= or_base_id[0]+1;
+        else                                          or_base_id[0] <= '0;
+
+    if(reset)                                         tw_base_id <= '0;
+    else if(change_base_id || opt_fin && tw_opt_en)
+        if(tw_base_id[0] != base_num - 1)             tw_base_id[0] <= tw_base_id[0]+1;
+        else                                          tw_base_id[0] <= '0;
+
+    if(opt_run)
+        for(int i=1; i<5; i+=1) begin or_base_id[i] <= or_base_id[i-1]; tw_base_id[i] <= tw_base_id[i-1]; end
+end
+
+always_ff @(posedge clk) begin
+    if(reset)                             begin or_dd_base_id <= 0;                 tw_dd_base_id <= 0;
+                                                or_ex_base_id <= 0;                 tw_ex_base_id <= 0;
+    end else if(running) begin
+        if(opt_fin)                       begin or_dd_base_id <= or_base_id[1];     tw_dd_base_id <= tw_base_id[1];
+                                                or_ex_base_id <= or_base_id[4];     tw_ex_base_id <= tw_base_id[4]; end
+    end else if(change_base_id || cycle_finish) begin
+        if(or_base_id[0] != base_num - 1) begin or_ex_base_id <= or_base_id[0] + 1; tw_ex_base_id <= tw_base_id[0] + 1; end
+        else                              begin or_ex_base_id <= '0;                tw_ex_base_id <= '0; end
+    end else                              begin or_ex_base_id <= or_base_id[0];     tw_ex_base_id <= tw_base_id[0]; end
+end
+
+always_ff @(posedge clk) begin
     case(stage_count)
         0:        or_distance_com <= {KN , ZERO};
         1:        or_distance_com <= {KM , MNS};
