@@ -53,10 +53,17 @@ always_ff @(posedge clk) begin
 end
 assign ordering_data = out_data_r2[ordering_sel];
 
+logic [base_log-1:0]     ex_base_id_w1, ex_base_id_w2, ex_base_id_w3;
+always_ff @(posedge clk) begin
+    ex_base_id_w1 <= ex_base_id_w;
+    ex_base_id_w2 <= ex_base_id_w1;
+    ex_base_id_w3 <= ex_base_id_w2;
+end
+
 logic [replica_data_bit-1:0] ram [0:2**(city_div_log+base_log) -1];
 always_ff @(posedge clk) begin
     if (write_valid) begin
-        ram[{ex_base_id_w, wcount}] <= write_data;
+        ram[{ex_base_id_w3, wcount}] <= write_data;
     end
     out_data_r <= ram[{ex_base_id_r, rcount}];
     out_data_r2 <= ram[{dd_base_id, raddr_i}];  // TEMP for delta distance

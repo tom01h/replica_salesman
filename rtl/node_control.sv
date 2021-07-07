@@ -33,7 +33,6 @@ module node_control
 );
 
 logic  [4:0] cycle_cnt;
-logic        cycle_finish;
 
 assign opt_fin  = (cycle_cnt == 19);
 assign exp_fin  = (cycle_cnt == 18);
@@ -55,7 +54,6 @@ always_ff @(posedge clk) begin
         running <= 'b1;
     end else if(~or_opt_en && ~tw_opt_en && tw_ex_base_id == 0) begin
         running <= 'b0;
-        cycle_finish <= running;
     end
 end
 
@@ -101,10 +99,10 @@ always_ff @(posedge clk) begin
     end else if(running) begin
         if(opt_fin)                       begin or_dd_base_id <= or_base_id[1];     tw_dd_base_id <= tw_base_id[1];
                                                 or_ex_base_id <= or_base_id[4];     tw_ex_base_id <= tw_base_id[4]; end
-    end else if(change_base_id || cycle_finish) begin
+    end else if(change_base_id) begin
         if(or_base_id[0] != base_num - 1) begin or_ex_base_id <= or_base_id[0] + 1; tw_ex_base_id <= tw_base_id[0] + 1; end
         else                              begin or_ex_base_id <= '0;                tw_ex_base_id <= '0; end
-    end else                              begin or_ex_base_id <= or_base_id[0];     tw_ex_base_id <= tw_base_id[0]; end
+    end
 end
 
 
