@@ -9,6 +9,7 @@ module sub_node
     input  logic                      reset,
     
     input  logic [base_log-1:0]       dd_base_id,
+    input  logic [base_log-1:0]       rp_base_id,
     input  logic [base_log-1:0]       ex_base_id_r,
     input  logic [base_log-1:0]       ex_base_id_w,
     
@@ -87,7 +88,7 @@ metropolis #(.id(id)) metropolis
     .clk             ( clk             ),
     .reset           ( reset           ),
 
-    .ex_base_id_r    ( ex_base_id_r    ),
+    .ex_base_id_r    ( rp_base_id      ),
     .ex_base_id_w    ( ex_base_id_w    ),
     .distance_shift  ( distance_shift  ),
 
@@ -110,7 +111,7 @@ metropolis #(.id(id)) metropolis
 
 generate
 if(id[0] == 0)
-replica #(.id(id)) replica (
+replica #(.id(id), .two_opt_node(two_opt_node)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
     
@@ -134,7 +135,7 @@ replica #(.id(id)) replica (
     .exp_recip       ( exp_recip       )
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
-replica_d #(.id(id)) replica (
+replica_d #(.id(id), .two_opt_node(two_opt_node)) replica ( // two_opt_node TEMP
     .clk             ( clk             ),
     .reset           ( reset           ),
 

@@ -11,6 +11,8 @@ module node
     input  logic [base_log-1:0]       tw_rn_base_id,
     input  logic [base_log-1:0]       or_dd_base_id,
     input  logic [base_log-1:0]       tw_dd_base_id,
+    input  logic [base_log-1:0]       or_rp_base_id,
+    input  logic [base_log-1:0]       tw_rp_base_id,
     input  logic [base_log-1:0]       or_ex_base_id,
     input  logic [base_log-1:0]       tw_ex_base_id,
     
@@ -111,6 +113,7 @@ sub_node #(.id(id), .two_opt_node(0)) or_node (
     .reset            ( reset               ),
     
     .dd_base_id       ( or_dd_base_id       ),
+    .rp_base_id       ( or_rp_base_id       ),
     .ex_base_id_r     ( or_ex_base_id       ),
     .ex_base_id_w     ( tw_ex_base_id       ),
 
@@ -160,6 +163,7 @@ sub_node #(.id(id), .two_opt_node(1)) two_node (
     .reset            ( reset               ),
     
     .dd_base_id       ( tw_dd_base_id       ),
+    .rp_base_id       ( tw_rp_base_id       ),
     .ex_base_id_r     ( tw_ex_base_id       ),
     .ex_base_id_w     ( or_ex_base_id       ),
 

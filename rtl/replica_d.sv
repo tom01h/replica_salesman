@@ -1,7 +1,8 @@
 module replica_d
     import replica_pkg::*;
 #(
-    parameter id = 0
+    parameter id = 0,
+    parameter two_opt_node = 0
 )
 (
     input  logic                    clk,
@@ -33,15 +34,28 @@ assign out_exchange = (exchange_l != SELF);
 assign exchange_ex  = (exchange_shift_d) ? PREV : exchange_l;
 assign exchange_mtr = (exchange_l != NOP);
 
+
+total_data_t             self_data_d;
+total_data_t             prev_data_d;
+total_data_t             folw_data_d;
+
+always_ff @(posedge clk) begin
+    if(opt_run) begin
+        self_data_d <= self_data;
+        prev_data_d <= prev_data;
+        folw_data_d <= folw_data;
+    end
+end
+
 always_ff @(posedge clk) begin
     if(opt_run) begin
         if(opt.com == OR1)
-            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data; end
-            else if(~folw_exchange)                 begin exchange_l <= SELF; out_data <= self_data; end
-            else                                    begin exchange_l <= FOLW; out_data <= folw_data; end
+            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data_d; end
+            else if(~folw_exchange)                 begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= FOLW; out_data <= folw_data_d; end
         else if(opt.com == TWO)
-            if(~prev_exchange)                      begin exchange_l <= SELF; out_data <= self_data; end
-            else                                    begin exchange_l <= PREV; out_data <= prev_data; end
+            if(~prev_exchange)                      begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= PREV; out_data <= prev_data_d; end
         else                                        exchange_l <= NOP;
     end else                                        exchange_l <= NOP;
 end

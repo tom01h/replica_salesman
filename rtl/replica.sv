@@ -1,7 +1,8 @@
 module replica
     import replica_pkg::*;
 #(
-    parameter id = 0
+    parameter id = 0,
+    parameter two_opt_node = 0
 )
 (
     input  logic                    clk,
@@ -57,21 +58,35 @@ always_comb begin
     end
 end
 
+total_data_t             self_data_d;
+total_data_t             prev_data_d;
+total_data_t             folw_data_d;
+
+always_ff @(posedge clk) begin
+    if(opt_run) begin
+        self_data_d <= self_data;
+        prev_data_d <= prev_data;
+        folw_data_d <= folw_data;
+    end
+end
+
 logic  replica_run;
 assign replica_run = exp_fin && (opt.com != THR);
 always_ff @(posedge clk) begin
     if(replica_run)
-        test <= '0;
-        //test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
+        if(two_opt_node)
+            test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
+        else
+            test <= '0;
         
     if(opt_run) begin
         if(opt.com == OR1)
-            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data; end
-            else if(~test)                          begin exchange_l <= SELF; out_data <= self_data; end
-            else                                    begin exchange_l <= PREV; out_data <= prev_data; end
+            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data_d; end
+            else if(~test)                          begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= PREV; out_data <= prev_data_d; end
         else if(opt.com == TWO)
-            if(~test)                               begin exchange_l <= SELF; out_data <= self_data; end
-            else                                    begin exchange_l <= FOLW; out_data <= folw_data; end
+            if(~test)                               begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= FOLW; out_data <= folw_data_d; end
         else                                        exchange_l <= NOP;
     end else                                        exchange_l <= NOP;
 end

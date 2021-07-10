@@ -128,12 +128,7 @@ end
 assign ordering_out_valid = (ord_rd_num[2]) ? tw_ordering_valid[node_num] : or_ordering_valid[node_num];
 assign ordering_out_data  = (ord_rd_num[2]) ? tw_ordering_data[node_num]  : or_ordering_data[node_num];
 
-logic dis_rd_num;
-always_ff @(posedge clk) begin
-    if(reset)               dis_rd_num <= 'b0;
-    else if(distance_shift) dis_rd_num <= ~dis_rd_num;
-end
-assign distance_rdata = (dis_rd_num) ? or_dis_data[node_num] : tw_dis_data[node_num];
+assign distance_rdata = or_dis_data[node_num];
 
 node_reg node_reg
 (
@@ -174,6 +169,8 @@ logic [base_log-1:0]     or_rn_base_id;
 logic [base_log-1:0]     tw_rn_base_id;
 logic [base_log-1:0]     or_dd_base_id;
 logic [base_log-1:0]     tw_dd_base_id;
+logic [base_log-1:0]     or_rp_base_id;
+logic [base_log-1:0]     tw_rp_base_id;
 logic [base_log-1:0]     or_ex_base_id;
 logic [base_log-1:0]     tw_ex_base_id;
 
@@ -190,6 +187,8 @@ node_control node_control
     .tw_rn_base_id     ( tw_rn_base_id     ),
     .or_dd_base_id     ( or_dd_base_id     ),
     .tw_dd_base_id     ( tw_dd_base_id     ),
+    .or_rp_base_id     ( or_rp_base_id     ),
+    .tw_rp_base_id     ( tw_rp_base_id     ),
     .or_ex_base_id     ( or_ex_base_id     ),
     .tw_ex_base_id     ( tw_ex_base_id     ),
 
@@ -226,6 +225,8 @@ for (genvar g = 0; g < node_num; g += 1) begin
         .tw_rn_base_id     ( tw_rn_base_id         ),
         .or_dd_base_id     ( or_dd_base_id         ),
         .tw_dd_base_id     ( tw_dd_base_id         ),
+        .or_rp_base_id     ( or_rp_base_id         ),
+        .tw_rp_base_id     ( tw_rp_base_id         ),
         .or_ex_base_id     ( or_ex_base_id         ),
         .tw_ex_base_id     ( tw_ex_base_id         ),
         

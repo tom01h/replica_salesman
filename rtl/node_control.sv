@@ -16,6 +16,8 @@ module node_control
     output logic [base_log-1:0]     tw_rn_base_id,
     output logic [base_log-1:0]     or_dd_base_id,
     output logic [base_log-1:0]     tw_dd_base_id,
+    output logic [base_log-1:0]     or_rp_base_id,
+    output logic [base_log-1:0]     tw_rp_base_id,
     output logic [base_log-1:0]     or_ex_base_id,
     output logic [base_log-1:0]     tw_ex_base_id,
 
@@ -95,13 +97,17 @@ end
 
 always_ff @(posedge clk) begin
     if(reset)                             begin or_dd_base_id <= 0;                 tw_dd_base_id <= 0;
+                                                or_rp_base_id <= 0;                 tw_rp_base_id <= 0;
                                                 or_ex_base_id <= 0;                 tw_ex_base_id <= 0;
     end else if(running) begin
         if(opt_fin)                       begin or_dd_base_id <= or_base_id[1];     tw_dd_base_id <= tw_base_id[1];
+                                                or_rp_base_id <= or_base_id[3];     tw_rp_base_id <= tw_base_id[3];
                                                 or_ex_base_id <= or_base_id[4];     tw_ex_base_id <= tw_base_id[4]; end
     end else if(change_base_id) begin
-        if(or_base_id[0] != base_num - 1) begin or_ex_base_id <= or_base_id[0] + 1; tw_ex_base_id <= tw_base_id[0] + 1; end
-        else                              begin or_ex_base_id <= '0;                tw_ex_base_id <= '0; end
+        if(or_base_id[0] != base_num - 1) begin or_rp_base_id <= or_base_id[0] + 1; tw_rp_base_id <= tw_base_id[0] + 1;
+                                                or_ex_base_id <= or_base_id[0] + 1; tw_ex_base_id <= tw_base_id[0] + 1; end
+        else                              begin or_rp_base_id <= '0;                tw_rp_base_id <= '0; 
+                                                or_ex_base_id <= '0;                tw_ex_base_id <= '0; end
     end
 end
 
