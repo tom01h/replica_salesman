@@ -65,19 +65,31 @@ assign or_rn_base_id = or_base_id[0];
 assign tw_rn_base_id = tw_base_id[0];
 
 logic [23:0] opt_cnt;
+logic or_opt_next, tw_opt_next;/////////////
 
 always_ff @(posedge clk) begin
     if(reset)                                                                          or_opt_en <= 'b0;
     else if (run_write)                                                                or_opt_en <= 'b1;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==7) && (opt_cnt + 1 == run_times)) or_opt_en <= 'b0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==7)/* && (opt_cnt + 1 == run_times)*/) or_opt_en <= 'b0;
+    else if (opt_fin && or_opt_next && (opt_cnt + 1 != run_times))                     or_opt_en <= 'b1;////
 
     if(reset)                                                                          tw_opt_en <= 'b0;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==3))                               tw_opt_en <= 'b1;
-    else if (opt_fin && tw_opt_en && (tw_base_id[0]==7) && (opt_cnt + 1 == run_times)) tw_opt_en <= 'b0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                               tw_opt_en <= 'b1;
+    else if (opt_fin && tw_opt_next && (opt_cnt + 1 != run_times))                     tw_opt_en <= 'b1;////
+    else if (opt_fin && tw_opt_en && (tw_base_id[0]==7)/* && (opt_cnt + 1 == run_times)*/) tw_opt_en <= 'b0;
 
     if(reset)                                                                          opt_cnt <= 0;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==3))                               opt_cnt <= opt_cnt + 1;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                               opt_cnt <= opt_cnt + 1;
     else if (opt_fin && or_opt_en && (or_base_id[0]==7) && (opt_cnt + 1 != run_times)) opt_cnt <= opt_cnt + 1;
+
+    if(reset)                                                                          or_opt_next <= 'b0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==7))                               or_opt_next <= 'b1;
+    else if (opt_fin)                                                                  or_opt_next <= 'b0;
+
+    if(reset)                                                                          tw_opt_next <= 'b0;
+    else if (opt_fin && tw_opt_en && (tw_base_id[0]==7))                               tw_opt_next <= 'b1;
+    else if (opt_fin)                                                                  tw_opt_next <= 'b0;
+
 end
 
 always_ff @(posedge clk) begin
