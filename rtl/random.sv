@@ -1,5 +1,8 @@
 module random
     import replica_pkg::*;
+#(
+    parameter id = 0
+)
 (
     input  logic                    clk,
     input  logic                    reset,
@@ -30,6 +33,15 @@ end
 logic or_ready, tw_ready;
 assign ready = or_ready & tw_ready;
 
+opt_t                    or_opt_w;
+
+generate
+if(id == node_num-1)
+    always_ff @(posedge clk) begin if(run) or_opt <= or_opt_w; end
+else
+    always_comb              begin or_opt  = or_opt_w; end
+endgenerate
+
 or_rand or_rand (
     .clk      ( clk              ),
     .reset    ( reset            ),
@@ -39,7 +51,7 @@ or_rand or_rand (
     .run_i    ( run              ),
     .run_o    ( or_run           ),
     .opt_en   ( or_opt_en        ),
-    .opt      ( or_opt           ),
+    .opt      ( or_opt_w         ),
     .ready    ( or_ready         )
 );
 

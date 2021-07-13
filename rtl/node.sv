@@ -92,7 +92,7 @@ logic                      exchange_mtr_tw;
 opt_t                      or_opt;
 opt_t                      tw_opt;
 
-random random
+random #(.id(id)) random
 (
     .clk             ( clk             ),
     .reset           ( reset           ),
