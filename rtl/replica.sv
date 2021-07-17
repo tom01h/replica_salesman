@@ -51,7 +51,7 @@ exp #(
 );
 
 always_comb begin
-    if(opt.com == OR1) begin
+    if(two_opt_node == 0) begin
         action = $signed(self_data - prev_data);
     end else begin
         action = $signed(folw_data - self_data);
@@ -74,20 +74,18 @@ logic  replica_run;
 assign replica_run = exp_fin && (opt.com != THR);
 always_ff @(posedge clk) begin
     if(replica_run)
-        if(two_opt_node)
-            test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
-        else
-            test <= '0;
+        test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
         
     if(opt_run) begin
-        if(opt.com == OR1)
-            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data_d; end
-            else if(~test)                          begin exchange_l <= SELF; out_data <= self_data_d; end
-            else                                    begin exchange_l <= PREV; out_data <= prev_data_d; end
-        else if(opt.com == TWO)
+        if(opt.com == THR)                                exchange_l <= NOP;
+        else if(two_opt_node)
             if(~test)                               begin exchange_l <= SELF; out_data <= self_data_d; end
             else                                    begin exchange_l <= FOLW; out_data <= folw_data_d; end
-        else                                        exchange_l <= NOP;
+        else
+            if((id == 0) && (opt.base_id == 0) || (id == node_num-1) && (opt.base_id == base_num-1))
+                                                    begin exchange_l <= SELF; out_data <= self_data_d; end
+            else if(~test)                          begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= PREV; out_data <= prev_data_d; end
     end else                                        exchange_l <= NOP;
 end
     

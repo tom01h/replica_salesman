@@ -135,7 +135,7 @@ replica #(.id(id), .two_opt_node(two_opt_node)) replica (
     .exp_recip       ( exp_recip       )
 );
 else    // replica test は 2ノードに1個で良いので test 結果を隣から受け取る
-replica_d #(.id(id), .two_opt_node(two_opt_node)) replica ( // two_opt_node TEMP
+replica_d #(.id(id), .two_opt_node(two_opt_node)) replica (
     .clk             ( clk             ),
     .reset           ( reset           ),
 

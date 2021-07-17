@@ -49,14 +49,15 @@ end
 
 always_ff @(posedge clk) begin
     if(opt_run) begin
-        if(opt.com == OR1)
-            if((id == 0) || (id == replica_num-1))  begin exchange_l <= SELF; out_data <= self_data_d; end
-            else if(~folw_exchange)                 begin exchange_l <= SELF; out_data <= self_data_d; end
-            else                                    begin exchange_l <= FOLW; out_data <= folw_data_d; end
-        else if(opt.com == TWO)
+        if(opt.com == THR)                                exchange_l <= NOP;
+        else if(two_opt_node)
             if(~prev_exchange)                      begin exchange_l <= SELF; out_data <= self_data_d; end
             else                                    begin exchange_l <= PREV; out_data <= prev_data_d; end
-        else                                        exchange_l <= NOP;
+        else
+            if((id == 0) && (opt.base_id == 0) || (id == node_num-1) && (opt.base_id == base_num-1))
+                                                    begin exchange_l <= SELF; out_data <= self_data_d; end
+            else if(~folw_exchange)                 begin exchange_l <= SELF; out_data <= self_data_d; end
+            else                                    begin exchange_l <= FOLW; out_data <= folw_data_d; end
     end else                                        exchange_l <= NOP;
 end
 

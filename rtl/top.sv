@@ -112,12 +112,15 @@ replica_data_t                    ordering_reg_data;
 total_data_t      [node_num+1:0]  or_dis_data;
 total_data_t      [node_num+1:0]  tw_dis_data;
 
-assign or_ordering_valid[0]  = ordering_reg_valid;
-assign or_ordering_data[0]   = ordering_reg_data;
+assign or_ordering_valid[0]  = (running) ? or_ordering_valid[node_num] : ordering_reg_valid;
+assign or_ordering_data[0]   = (running) ? or_ordering_data[node_num ] : ordering_reg_data;
+assign or_ordering_valid[node_num+1]  = or_ordering_valid[1];
+assign or_ordering_data[node_num+1]   = or_ordering_data[1];
 assign tw_ordering_valid[0]  = ordering_reg_valid;
 assign tw_ordering_data[0]   = ordering_reg_data;
 
-assign or_dis_data[0] = distance_wdata;
+assign or_dis_data[0]          = (running) ? or_dis_data[node_num] : distance_wdata;
+assign or_dis_data[node_num+1] = (running) ? or_dis_data[1]        : 'b0;
 assign tw_dis_data[0] = distance_wdata;
 
 logic [2:0] ord_rd_num;
@@ -207,8 +210,8 @@ node_control node_control
 
 logic             [node_num+1:0]  or_exchange;
 
-assign or_exchange[0] = 'b0;
-assign or_exchange[node_num+1] = 'b0;
+assign or_exchange[0]          = (running) ? or_exchange[node_num] : 'b0;
+assign or_exchange[node_num+1] = (running) ? or_exchange[1]        : 'b0;
 
 logic             [node_num+1:0]  tw_exchange;
 
