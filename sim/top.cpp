@@ -232,7 +232,7 @@ PyMODINIT_FUNC PyInit_top (void) {
   // initial begin /////////////////////////////
   verilator_top->S_AXI_BREADY = 1;
   verilator_top->S_AXI_AWVALID = 0;
-  verilator_top->S_AXI_WSTRB = 1;
+  verilator_top->S_AXI_WSTRB = 0xff;
   verilator_top->S_AXI_WVALID = 0;
   verilator_top->S_AXI_ARVALID = 0;
   verilator_top->S_AXI_RREADY = 1;
