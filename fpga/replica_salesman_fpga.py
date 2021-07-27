@@ -14,6 +14,7 @@ ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
 from pynq import Overlay
 from pynq import MMIO
 
+import time
 import numpy as np
 import random
 import math
@@ -128,10 +129,15 @@ def py_tb():
     data = niter
     mm_mem.write(address, data.to_bytes(8, byteorder='little'))
 
+    start = time.perf_counter()
+
     while data != 0:
         data = mm_mem.read(address, 8, 'little')
         #top.vwait(100)
 
+    elapsed_time = time.perf_counter() - start
+    print ("FPGA_time:{0}".format(elapsed_time) + "[sec]")
+    
     rtl_ordering = np.zeros_like(ordering)
 
     address = 0x08000  # ordering
@@ -154,6 +160,8 @@ def py_tb():
         address += 8
 
 ########### RTL Sim ###########
+
+    start = time.perf_counter()
 
     # Main loop #
     for iter in range(1, niter+1):
@@ -214,7 +222,7 @@ def py_tb():
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
         # data output #
-        if iter % 50 == 0 or iter == niter:
+        if iter % 50 == 0 or iter == niter: # if 0: 時間計測時
             distance_f = distance_i[nbeta-1]/(2**17)
             if distance_f < minimum_distance:
                 minimum_distance = distance_f
@@ -222,6 +230,9 @@ def py_tb():
             distance_list = np.append(distance_list, minimum_distance)
             print(iter, distance_f, minimum_distance)
 
+    elapsed_time = time.perf_counter() - start
+    print ("model_time:{0}".format(elapsed_time) + "[sec]")
+    
     np.set_printoptions(linewidth = 100)
     # compare ordiering #
     if(np.array_equal(ordering, rtl_ordering)):
