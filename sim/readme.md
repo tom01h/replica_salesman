@@ -53,3 +53,11 @@ replica_salesman/sim$ ./run.sh
 - tb.sv
 - tb.cpp
 - replica_salesman_sim.py
+
+こんな文字列 `from . import ft2font` 含むエラー出たら、matplotlib のバージョンを下げるとよいらしいです
+
+```
+pip3.exe uninstall matplotlib
+pip3.exe install matplotlib==3.0.3
+```
+
