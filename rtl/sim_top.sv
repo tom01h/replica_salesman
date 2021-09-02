@@ -100,7 +100,7 @@ always_ff @(posedge clk) begin
 end    
 
 logic                      distance_write;
-logic [city_num_log*2-1:0] distance_w_addr;
+logic [city_num_log*2-2:0] distance_w_addr;
 distance_data_t            distance_w_data;
 
 always_ff @(posedge clk) begin

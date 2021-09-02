@@ -35,7 +35,7 @@ module bus_if
     output logic [63:0]               random_seed,
 
     output logic                      tp_dis_write,
-    output logic [city_num_log*2-1:0] tp_dis_waddr,
+    output logic [city_num_log*2-2:0] tp_dis_waddr,
     output distance_data_t            tp_dis_wdata,
 
     output logic                      ordering_write,

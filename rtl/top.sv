@@ -28,7 +28,7 @@ logic [node_num-1:0]       random_init;
 logic [63:0]               random_seed;
 
 logic                      tp_dis_write;
-logic [city_num_log*2-1:0] tp_dis_waddr;
+logic [city_num_log*2-2:0] tp_dis_waddr;
 distance_data_t            tp_dis_wdata;
 
 logic                      ordering_write;
@@ -123,13 +123,17 @@ assign or_dis_data[0]          = (running) ? or_dis_data[node_num] : distance_wd
 assign or_dis_data[node_num+1] = (running) ? or_dis_data[1]        : 'b0;
 assign tw_dis_data[0] = distance_wdata;
 
-logic [2:0] ord_rd_num;
+logic [city_div_log:0] ord_rd_num;
+logic                  ord_rd_bank;
 always_ff @(posedge clk) begin
-    if(reset)              ord_rd_num <= '0;
-    else if(ordering_read) ord_rd_num <= ord_rd_num + 1;
+    if(reset)                          begin ord_rd_bank <= 'b0;          ord_rd_num <= '0; end
+    else if(ordering_read) begin
+        if(ord_rd_num == city_div - 1) begin ord_rd_bank <= ~ord_rd_bank; ord_rd_num <= '0; end
+        else                                                              ord_rd_num <= ord_rd_num +1;
+    end
 end
-assign ordering_out_valid = (ord_rd_num[2]) ? tw_ordering_valid[node_num] : or_ordering_valid[node_num];
-assign ordering_out_data  = (ord_rd_num[2]) ? tw_ordering_data[node_num]  : or_ordering_data[node_num];
+assign ordering_out_valid = (ord_rd_bank) ? tw_ordering_valid[node_num] : or_ordering_valid[node_num];
+assign ordering_out_data  = (ord_rd_bank) ? tw_ordering_data[node_num]  : or_ordering_data[node_num];
 
 assign distance_rdata = or_dis_data[node_num];
 

@@ -38,6 +38,7 @@ def py_tb():
 
     ordering = np.arange(0, ncity+1, 1)
     ordering = np.tile(ordering, (nbeta, 1))
+    beta = np.arange(1, nbeta+1, 1, dtype = np.int32) * dbeta
     distance_list = []
     distance_i = np.zeros(nbeta, dtype = np.int32)
     distance_2 = np.zeros((ncity+1, ncity+1), dtype = np.int32)
@@ -188,8 +189,7 @@ def py_tb():
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-            #if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
-            if 0:
+            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
 
