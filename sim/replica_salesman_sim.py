@@ -5,10 +5,10 @@
 #    address = 0x10000  # two point distance
 
 nbeta=32
-#niter=3000
-niter=6
+#niter=100000
+niter=2
 dbeta=5
-ncity=30
+ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
 
 import time
@@ -38,7 +38,6 @@ def py_tb():
 
     ordering = np.arange(0, ncity+1, 1)
     ordering = np.tile(ordering, (nbeta, 1))
-    beta = np.arange(1, nbeta+1, 1, dtype = np.int32) * dbeta
     distance_list = []
     distance_i = np.zeros(nbeta, dtype = np.int32)
     distance_2 = np.zeros((ncity+1, ncity+1), dtype = np.int32)
@@ -189,7 +188,8 @@ def py_tb():
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
+            #if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
+            if 0:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
 
@@ -199,7 +199,8 @@ def py_tb():
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                #if action >=0 or top.c_exp(action, 15) > metropolis:
+                if 0:
                     ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                     distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
         else:
@@ -208,14 +209,15 @@ def py_tb():
                 action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                #if action >=0 or top.c_exp(action, 15) > metropolis:
+                if 0:
                     ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                     distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
         for ibeta in range(1, nbeta, 2):
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
         # data output #
-        if iter % 50 == 0 or iter == niter: # if 0: 時間計測時
+        if iter % 500 == 0 or iter == niter: # if 0: 時間計測時
             distance_f = distance_i[nbeta-1]/(2**17)
             if distance_f < minimum_distance:
                 minimum_distance = distance_f

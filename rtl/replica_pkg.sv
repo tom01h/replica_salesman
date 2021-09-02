@@ -6,7 +6,7 @@ parameter int node_log = $clog2(node_num);
 parameter int base_num = $ceil($itor(replica_num) / node_num);
 parameter int base_log = $clog2(base_num);
 
-parameter int city_num = 30;
+parameter int city_num = 100;
 parameter int city_num_log = $clog2(city_num);
 parameter int city_div = $ceil($itor(city_num) / 8);
 parameter int city_div_log = $clog2(city_div);

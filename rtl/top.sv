@@ -137,7 +137,8 @@ node_reg node_reg
 (
     .clk                ( clk                ),
     .reset              ( reset              ),
-    .ordering_num       ( 2'd3               ),
+    //.ordering_num       ( 2'd3               ),
+    .ordering_num       ( 4'd12              ),
     
     .ordering_read      ( ordering_read      ),
     .ordering_out_valid ( ordering_out_valid ),

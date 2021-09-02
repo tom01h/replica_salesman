@@ -74,7 +74,8 @@ logic  replica_run;
 assign replica_run = exp_fin && (opt.com != THR);
 always_ff @(posedge clk) begin
     if(replica_run)
-        test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
+        //test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
+        test <= 0;
         
     if(opt_run) begin
         if(opt.com == THR)                                exchange_l <= NOP;

@@ -54,7 +54,8 @@ exp #(
     .recip   ( exp_recip       )
 );
 
-wire test = (-delta_distance_d >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
+//wire test = (-delta_distance_d >= 0) || (n_metropolis > opt_metro.r_metropolis[22:0]);
+wire test = 0;
 
 wire signed [$bits(total_data_t):0] delta = $signed(delta_distance_d);
 
