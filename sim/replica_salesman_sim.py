@@ -36,6 +36,8 @@ def py_tb():
             delta -= distance_2[ordering[k-1]][ordering[k]] + distance_2[ordering[k]][ordering[k+1]] + distance_2[ordering[l]][ordering[l+1]]
         return delta
 
+    global distance_list
+
     ordering = np.arange(0, ncity+1, 1)
     ordering = np.tile(ordering, (nbeta, 1))
     beta = np.arange(1, nbeta+1, 1, dtype = np.int32) * dbeta
@@ -250,10 +252,16 @@ def py_tb():
     with open("salesman.pickle", "wb") as f:
         pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list, seeds), f)
 
-    """
+    global orderd
+    orderd = x[minimum_ordering].T
+
+    return
+
+if __name__ == '__main__':
+    py_tb()
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    orderd = x[minimum_ordering].T
     plt.plot(orderd[0], orderd[1], marker='+')
     plt.axis([0, 1, 0, 1])
     ax.set_aspect('equal', adjustable='box')
@@ -263,10 +271,5 @@ def py_tb():
     plt.plot(distance_list[::2], marker='+')
     plt.savefig("distance.png")
     plt.clf()
-    """
 
-    return
-
-if __name__ == '__main__':
-    py_tb()
     top.fin()
