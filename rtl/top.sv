@@ -123,8 +123,8 @@ assign or_dis_data[0]          = (running) ? or_dis_data[node_num] : distance_wd
 assign or_dis_data[node_num+1] = (running) ? or_dis_data[1]        : 'b0;
 assign tw_dis_data[0] = distance_wdata;
 
-logic [city_div_log:0] ord_rd_num;
-logic                  ord_rd_bank;
+logic [city_div_log - 1:0] ord_rd_num;
+logic                      ord_rd_bank;
 always_ff @(posedge clk) begin
     if(reset)                          begin ord_rd_bank <= 'b0;          ord_rd_num <= '0; end
     else if(ordering_read) begin
@@ -141,8 +141,7 @@ node_reg node_reg
 (
     .clk                ( clk                ),
     .reset              ( reset              ),
-    //.ordering_num       ( 2'd3               ),
-    .ordering_num       ( 4'd12              ),
+    .ordering_num       ( city_div - 1       ),
     
     .ordering_read      ( ordering_read      ),
     .ordering_out_valid ( ordering_out_valid ),
@@ -231,11 +230,11 @@ for (genvar g = 0; g < node_num; g += 1) begin
         
         .or_rn_base_id     ( or_rn_base_id         ),
         .tw_rn_base_id     ( tw_rn_base_id         ),
-        .or_dd_base_id     ( (g!=(node_num-1) | ~running) ? or_dd_base_id : or_dd_base_id-1 ),
+        .or_dd_base_id     ( (g!=(node_num-1) | ~running) ? or_dd_base_id : or_dd_base_id-1'b1 ), // TEMP or_dd_base_id_M
         .tw_dd_base_id     ( tw_dd_base_id         ),
-        .or_rp_base_id     ( (g!=(node_num-1) | ~running) ? or_rp_base_id : or_rp_base_id-1 ),
+        .or_rp_base_id     ( (g!=(node_num-1) | ~running) ? or_rp_base_id : or_rp_base_id-1'b1 ), // TEMP or_rp_base_id_M
         .tw_rp_base_id     ( tw_rp_base_id         ),
-        .or_ex_base_id     ( (g!=(node_num-1) | ~running) ? or_ex_base_id : or_ex_base_id-1 ),
+        .or_ex_base_id     ( (g!=(node_num-1) | ~running) ? or_ex_base_id : or_ex_base_id-1'b1 ), // TEMP or_ex_base_id_M
         .tw_ex_base_id     ( tw_ex_base_id         ),
         
         .random_init       ( random_init[g]        ), // set random seed

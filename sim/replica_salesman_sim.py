@@ -6,7 +6,7 @@
 
 nbeta=32
 #niter=100000
-niter=2
+niter=6
 dbeta=5
 ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
@@ -199,8 +199,7 @@ def py_tb():
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                #if action >=0 or top.c_exp(action, 15) > metropolis:
-                if 0:
+                if action >=0 or top.c_exp(action, 15) > metropolis:
                     ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                     distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
         else:
@@ -209,8 +208,7 @@ def py_tb():
                 action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
                 # Metropolis test #
                 metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                #if action >=0 or top.c_exp(action, 15) > metropolis:
-                if 0:
+                if action >=0 or top.c_exp(action, 15) > metropolis:
                     ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                     distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
         for ibeta in range(1, nbeta, 2):
