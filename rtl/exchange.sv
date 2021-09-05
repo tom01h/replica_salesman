@@ -41,7 +41,7 @@ logic              write_valid;
 replica_data_t     write_data;
 assign write_valid = (in_ex_com == PREV) ? prev_valid :
                      (in_ex_com == FOLW) ? folw_valid :
-                     (in_ex_com == SELF) ? self_valid  : '0;
+                     (in_ex_com == SELF) ? self_valid : '0;
 assign write_data  = (in_ex_com == PREV) ? prev_data :
                      (in_ex_com == FOLW) ? folw_data : self_data;
 

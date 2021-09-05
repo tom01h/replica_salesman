@@ -31,7 +31,9 @@ module node_control
     output logic                    exp_init,
     output logic                    exp_run,
     output logic                    exp_fin,
-    output logic [16:0]             exp_recip
+    output logic [16:0]             exp_recip,
+
+    output logic                    update_minimum_distance    
 );
 
 logic  [4:0] cycle_cnt;
@@ -58,6 +60,9 @@ always_ff @(posedge clk) begin
         running <= 'b0;
     end
 end
+
+always_ff @(posedge clk)
+    update_minimum_distance <= (tw_ex_base_id == base_num - 1) && opt_run;
 
 logic [4:0][base_log-1:0] or_base_id, tw_base_id;
 

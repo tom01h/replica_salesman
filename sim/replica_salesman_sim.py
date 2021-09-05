@@ -1,6 +1,7 @@
 #    address = 0x00000  # run
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
+#    address = 0x03000  # minimum ordering
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
@@ -133,8 +134,18 @@ def py_tb():
     elapsed_time = time.perf_counter() - start
     print ("simulation_time:{0}".format(elapsed_time) + "[sec]")
     
+    rtl_minimum_ordering = np.zeros_like(minimum_ordering)
     rtl_ordering = np.zeros_like(ordering)
     rtl_seeds    = np.zeros_like(seeds)
+
+    address = 0x03000  # minimum ordering
+    for icity in range(0, ncity+1):
+        if icity % 8 == 0:
+            data = top.read64(address)
+            address += 8
+
+        c = data // 256**(7-icity%8) % 256
+        rtl_minimum_ordering[icity] = c
 
     address = 0x08000  # ordering
     #for ibeta in reversed(range(0, nbeta)):
@@ -238,8 +249,16 @@ def py_tb():
     print ("model_time:{0}".format(elapsed_time) + "[sec]")
     
     seeds = top.c_save_random()
-    
+
     np.set_printoptions(linewidth = 100)
+    # compare minimum ordiering #
+    if(np.array_equal(minimum_ordering, rtl_minimum_ordering)):
+        print("OK: minimum ordering")
+    else:
+        print("NG: minimum ordering")
+        print(minimum_ordering)
+        print(rtl_minimum_ordering)
+
     # compare ordiering #
     if(np.array_equal(ordering, rtl_ordering)):
         print("OK: ordering")

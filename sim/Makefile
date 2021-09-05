@@ -30,6 +30,7 @@ DESIGN_SRCS = \
 ../rtl/replica_pkg.sv \
 ../rtl/top.sv \
 ../bus_if/bus_if.sv \
+../rtl/minimum.sv\
 ../rtl/exp.sv\
 ../rtl/node.sv \
 ../rtl/sub_node.sv \

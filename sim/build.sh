@@ -11,11 +11,11 @@ export BASE=".." # "U:\home\tom01h\work\replica_salesman"
 
 # cp ~/work/replica_salesman/sim/replica_salesman_sim.py .
 
-vlog.exe -sv -dpiheader   dpiheader.h            $BASE/rtl/replica_pkg.sv $BASE/sim/tb.sv\
-    $BASE/rtl/top.sv      $BASE/bus_if/bus_if.sv    $BASE/rtl/exp.sv      $BASE/rtl/node.sv \
-    $BASE/rtl/sub_node.sv $BASE/rtl/node_control.sv $BASE/rtl/node_reg.sv \
+vlog.exe -sv -dpiheader   dpiheader.h               $BASE/rtl/replica_pkg.sv  $BASE/sim/tb.sv\
+    $BASE/rtl/top.sv      $BASE/bus_if/bus_if.sv    $BASE/rtl/minimum.sv      $BASE/rtl/exp.sv \
+    $BASE/rtl/node.sv     $BASE/rtl/sub_node.sv     $BASE/rtl/node_control.sv $BASE/rtl/node_reg.sv \
     $BASE/rtl/random.sv   $BASE/rtl/or_rand.sv      $BASE/rtl/tw_rand.sv \
-    $BASE/rtl/distance.sv $BASE/rtl/metropolis.sv   $BASE/rtl/replica.sv  $BASE/rtl/replica_d.sv \
+    $BASE/rtl/distance.sv $BASE/rtl/metropolis.sv   $BASE/rtl/replica.sv      $BASE/rtl/replica_d.sv \
     $BASE/rtl/exchange.sv $BASE/rtl/opt_route_or.sv $BASE/rtl/opt_route_two.sv
 vsim.exe tb -dpiexportobj cexports -c
 

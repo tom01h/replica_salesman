@@ -51,7 +51,7 @@ always_ff @(posedge clk) begin
 end
 
 always_ff @(posedge clk)
-    for(int i=0; i<8; i++) ordering_rdata[i] = {1'b0, ordering_data[ordering_radder][7-i]};
+    for(int i=0; i<8; i++) ordering_rdata[i] <= {1'b0, ordering_data[ordering_radder][7-i]};
 
 always_ff @(posedge clk) begin
     exchange_shift_d <= exchange_shift;    

@@ -47,6 +47,10 @@ module bus_if
     input  logic [7:0][7:0]           ordering_rdata,
     input  logic                      ordering_ready,
 
+    output logic                      min_ord_read,
+    input  logic                      ordering_min_valid,
+    input  replica_data_t             ordering_min_data,
+
     output logic                      distance_shift,
     output logic                      distance_shift_n,
     output total_data_t               distance_wdata,
@@ -93,6 +97,8 @@ module bus_if
 
         ordering_read    = rd_command && ({S_AXI_ARADDR[19:15],3'b000} == 8'h08);
 
+        min_ord_read     = rd_command && (S_AXI_ARADDR[19:12] == 8'h03);
+
         distance_shift   = wb_command && (wb_adr_i[19:12] == 8'h02) ||
                            rd_command && (S_AXI_ARADDR[19:12] == 8'h02);
         distance_shift_n = wb_command && (wb_adr_i[19:12] == 8'h02) && (wb_adr_i[3 +:node_log] == node_num-1) ||
@@ -111,12 +117,19 @@ module bus_if
     always_ff @(posedge S_AXI_ACLK)
         if(distance_shift) distance_rdata_d <= distance_rdata;
 
+    replica_data_t             ordering_min_data_d;
+    always_ff @(posedge S_AXI_ACLK)
+        if(ordering_min_valid) ordering_min_data_d <= ordering_min_data;
+
     always_comb begin
         if({rd_adr_i[19:3],3'b000} == 'h0)
             S_AXI_RDATA = running;
         if({rd_adr_i[19:15],3'b000} == 8'h08)
             for(int j = 0; j < 8; j++)
                 S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
+        if(rd_adr_i[19:12] == 8'h03)
+            for(int j=0; j<8; j++)
+                S_AXI_RDATA[j*8 +:8] = {1'b0, ordering_min_data_d[7-j]};
         if(rd_adr_i[19:12] == 8'h02)
             S_AXI_RDATA = distance_rdata_d;
         if(rd_adr_i[19:12] == 8'h01)

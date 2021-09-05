@@ -59,6 +59,8 @@ module node
     input  replica_data_t             tw_folw_ord_data,
     output logic                      tw_out_ord_valid,
     output replica_data_t             tw_out_ord_data,
+    output total_data_t               minimum_distance,
+    output exchange_command_t         minimum_ex_com,
 
     input  logic                      exp_init,
     input  logic                      exp_run,
@@ -93,6 +95,9 @@ logic                      exchange_mtr_tw;
 
 opt_t                      or_opt;
 opt_t                      tw_opt;
+
+assign minimum_distance = tw_replica_data;
+assign minimum_ex_com   = tw_ex_com;
 
 random #(.id(id)) random
 (
