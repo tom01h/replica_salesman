@@ -12,7 +12,9 @@ module random
     input  logic                    or_opt_en,
     input  logic                    tw_opt_en,
     input  logic                    init,
-    input  logic [63:0]             i_seed,
+    input  logic                    read,
+    input  logic [63:0]             w_seed,
+    output logic [63:0]             r_seed,
     output opt_t                    or_opt,
     output opt_t                    tw_opt,
     output logic                    ready
@@ -25,10 +27,13 @@ logic                    or_run;
 logic                    tw_run;
 
 always_ff @(posedge clk) begin
-    if(init)        seed[or_base_id] <= i_seed;
+    if(init)        seed[or_base_id] <= w_seed;
     else if(or_run) seed[or_base_id] <= or_seed;
     if(tw_run)      seed[tw_base_id] <= tw_seed;
 end
+
+always_ff @(posedge clk)
+    if(read)        r_seed <= seed[or_base_id];
 
 logic or_ready, tw_ready;
 assign ready = or_ready & tw_ready;

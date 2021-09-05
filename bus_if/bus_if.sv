@@ -32,7 +32,9 @@ module bus_if
     input  logic                      S_AXI_RREADY,
 
     output logic [node_num-1:0]       random_init,
-    output logic [63:0]               random_seed,
+    output logic [node_num-1:0]       random_read,
+    output logic [63:0]               random_seed_w,
+    input  logic [node_num-1:0][63:0] random_seed_r,
 
     output logic                      tp_dis_write,
     output logic [city_num_log*2-2:0] tp_dis_waddr,
@@ -76,9 +78,10 @@ module bus_if
 
     always_comb begin
         for(int i = 0; i < node_num; i++) begin
-            random_init[i] = wb_command && (wb_adr_i[3 +: node_log] == i) && (wb_adr_i[19:12] == 8'h01);
+            random_init[i] = wb_command && (wb_adr_i[    3 +: node_log] == i) && (wb_adr_i[    19:12] == 8'h01);
+            random_read[i] = rd_command && (S_AXI_ARADDR[3 +: node_log] == i) && (S_AXI_ARADDR[19:12] == 8'h01);
         end
-        random_seed = wb_dat_i;
+        random_seed_w = wb_dat_i;
 
         tp_dis_write = wb_command && (wb_adr_i[19:16] == 4'h1);
         tp_dis_waddr = wb_adr_i[$bits(tp_dis_waddr)-1+3:3];
@@ -100,6 +103,10 @@ module bus_if
         run_times = wb_dat_i[$bits(run_times)-1  :0];
     end
 
+    logic [node_log-1:0]       random_read_d;
+    always_ff @(posedge S_AXI_ACLK)
+        random_read_d <= S_AXI_ARADDR[3 +: node_log];
+
     total_data_t               distance_rdata_d;
     always_ff @(posedge S_AXI_ACLK)
         if(distance_shift) distance_rdata_d <= distance_rdata;
@@ -112,6 +119,8 @@ module bus_if
                 S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
         if(rd_adr_i[19:12] == 8'h02)
             S_AXI_RDATA = distance_rdata_d;
+        if(rd_adr_i[19:12] == 8'h01)
+            S_AXI_RDATA = random_seed_r[random_read_d];
     end
         
     always_ff @(posedge S_AXI_ACLK)begin

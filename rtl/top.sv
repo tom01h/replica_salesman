@@ -25,7 +25,9 @@ module top
 );
 
 logic [node_num-1:0]       random_init;
-logic [63:0]               random_seed;
+logic [node_num-1:0]       random_read;
+logic [63:0]               random_seed_w;
+logic [node_num-1:0][63:0] random_seed_r;
 
 logic                      tp_dis_write;
 logic [city_num_log*2-2:0] tp_dis_waddr;
@@ -75,7 +77,9 @@ bus_if busif
     .S_AXI_RREADY     ( S_AXI_RREADY     ),
 
     .random_init      ( random_init      ),
-    .random_seed      ( random_seed      ),
+    .random_read      ( random_read      ),
+    .random_seed_w    ( random_seed_w    ),
+    .random_seed_r    ( random_seed_r    ),
 
     .tp_dis_write     ( tp_dis_write     ),
     .tp_dis_waddr     ( tp_dis_waddr     ),
@@ -171,7 +175,7 @@ logic                 opt_run;
 logic                 or_opt_en;
 logic                 tw_opt_en;
 
-wire change_base_id = random_init[node_num-1] || exchange_shift_n || distance_shift_n;
+wire change_base_id = random_init[node_num-1] || random_read[node_num-1] || exchange_shift_n || distance_shift_n;
 logic [base_log-1:0]     or_rn_base_id;
 logic [base_log-1:0]     tw_rn_base_id;
 logic [base_log-1:0]     or_dd_base_id;
@@ -238,7 +242,9 @@ for (genvar g = 0; g < node_num; g += 1) begin
         .tw_ex_base_id     ( tw_ex_base_id         ),
         
         .random_init       ( random_init[g]        ), // set random seed
-        .random_seed       ( random_seed           ),
+        .random_read       ( random_read[g]        ), // get random seed
+        .random_seed_w     ( random_seed_w         ),
+        .random_seed_r     ( random_seed_r[g]      ),
         .tp_dis_write      ( tp_dis_write          ), // set 2点間距離
         .tp_dis_waddr      ( tp_dis_waddr          ),
         .tp_dis_wdata      ( tp_dis_wdata          ),

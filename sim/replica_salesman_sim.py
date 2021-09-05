@@ -134,6 +134,7 @@ def py_tb():
     print ("simulation_time:{0}".format(elapsed_time) + "[sec]")
     
     rtl_ordering = np.zeros_like(ordering)
+    rtl_seeds    = np.zeros_like(seeds)
 
     address = 0x08000  # ordering
     #for ibeta in reversed(range(0, nbeta)):
@@ -152,6 +153,11 @@ def py_tb():
     #for ibeta in reversed(range(0, nbeta)):
     for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
         rtl_distance_i[ibeta] = top.read64(address)
+        address += 8
+
+    address = 0x01000  # random seeds
+    for i in range(nbeta):
+        rtl_seeds[i] = top.read64(address)
         address += 8
 
 ########### RTL Sim ###########
@@ -216,17 +222,22 @@ def py_tb():
         for ibeta in range(1, nbeta, 2):
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
-        # data output #
-        if iter % 500 == 0 or iter == niter: # if 0: 時間計測時
+        # update minimum #
+        if iter % 2 == 0: # 2-opt 結果だけを対象にする
             distance_f = distance_i[nbeta-1]/(2**17)
             if distance_f < minimum_distance:
                 minimum_distance = distance_f
                 minimum_ordering = ordering[nbeta-1].copy()
+
+        # data output #
+        if iter % 500 == 0 or iter == niter: # if 0: 時間計測時
             distance_list = np.append(distance_list, minimum_distance)
             print(iter, distance_f, minimum_distance)
 
     elapsed_time = time.perf_counter() - start
     print ("model_time:{0}".format(elapsed_time) + "[sec]")
+    
+    seeds = top.c_save_random()
     
     np.set_printoptions(linewidth = 100)
     # compare ordiering #
@@ -247,8 +258,15 @@ def py_tb():
         print(distance_i)
         print(rtl_distance_i)
 
+    # compare random seeds #
+    if(np.array_equal(seeds, rtl_seeds)):
+        print("OK: random seeds")
+    else:
+        print("NG: random seeds")
+        print(seeds)
+        print(rtl_seeds)
+
     # save point #
-    seeds = top.c_save_random()
     with open("salesman.pickle", "wb") as f:
         pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list, seeds), f)
 
@@ -269,6 +287,7 @@ if __name__ == '__main__':
     plt.clf()
 
     plt.plot(distance_list[::2], marker='+')
+    plt.ylim(0, 10)
     plt.savefig("distance.png")
     plt.clf()
 

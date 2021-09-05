@@ -25,7 +25,6 @@ g++.exe -shared -o cimports.dll tb.obj cexports.obj -L'C:/intelFPGA_pro/20.3/mod
 
 vsim.exe -c -sv_lib cimports tb -do " \
 add wave -noupdate /tb/* -recursive; \
-add wave -noupdate /tb/top/genblk1[0]/node/or_node/exchange/ram; \
 run 10us;quit -f"
 
 # rm replica_salesman_sim.py

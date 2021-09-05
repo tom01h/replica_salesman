@@ -1,7 +1,6 @@
-- [x] 8段+1バブルパイプライン化
-- [x]  FPGA で実行
 - [ ]  経過と最短経路の保存
-- [ ] 10段パイプ・20node・200レプリカ
+- [ ] 10段パイプ・10node
+- [ ] 1,2,4レプリカ/node
 - [x] 100都市
 
 ## RTL シミュレーションを実行する
@@ -35,6 +34,8 @@ Verilator のバージョンは Verilator 4.202 2021-04-24 rev v4.202
 DPI-C と Python-API を使って検証します。
 
 Windows 版の ModelSim と Windows 版の Python 32bit 版が必要です。
+
+Windows に [パス設定](https://github.com/tom01h/TIL/tree/master/dpi-python#%E6%BA%96%E5%82%99) が必要です。
 
 ビルド＆RUN
 

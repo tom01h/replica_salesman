@@ -17,7 +17,9 @@ module node
     input  logic [base_log-1:0]       tw_ex_base_id,
     
     input  logic                      random_init,       // set random seed
-    input  logic [63:0]               random_seed,
+    input  logic                      random_read,       // get random seed
+    input  logic [63:0]               random_seed_w,
+    output logic [63:0]               random_seed_r,
     input  logic                      tp_dis_write,      // set 2点間距離
     input  logic [city_num_log*2-2:0] tp_dis_waddr,
     input  distance_data_t            tp_dis_wdata,
@@ -102,7 +104,9 @@ random #(.id(id)) random
     .or_opt_en       ( or_opt_en       ),
     .tw_opt_en       ( tw_opt_en       ),
     .init            ( random_init     ),
-    .i_seed          ( random_seed     ),
+    .read            ( random_read     ),
+    .w_seed          ( random_seed_w   ),
+    .r_seed          ( random_seed_r   ),
     .or_opt          ( or_opt          ),
     .tw_opt          ( tw_opt          ),
     .ready           (                 )
