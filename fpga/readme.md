@@ -2,6 +2,8 @@
 
 ### ブロックデザインを作る
 
+`replica_salesman/syn/U96` にて合成します
+
 [NahiViva](https://github.com/tokuden/NahiViva) で再現できるようにしました。説明は [こっち](http://nahitafu.cocolog-nifty.com/nahitafu/2019/05/post-2cfa5c.html) を見た方が良いかも。  
 必要なファイルをダウンロードして、`open_project_gui.cmd` 実行でプロジェクトが再現されます。
 
