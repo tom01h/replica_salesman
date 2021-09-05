@@ -1,13 +1,17 @@
 #    address = 0x00000  # run
+#    address = 0x00010  # siter
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
 #    address = 0x03000  # minimum ordering
+#    address = 0x04000  # saved distance
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
 nbeta=32
+#siter=1000
 #niter=100000
-niter=6
+siter=4
+niter=8
 dbeta=5
 ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
@@ -121,6 +125,10 @@ def py_tb():
         top.write64(address, int(data))
         address += 8
 
+    address = 0x00010  # siter
+    data = siter
+    top.write64(address, data)
+
     address = 0x00000  # run
     data = niter
     top.write64(address, data)
@@ -137,6 +145,7 @@ def py_tb():
     rtl_minimum_ordering = np.zeros_like(minimum_ordering)
     rtl_ordering = np.zeros_like(ordering)
     rtl_seeds    = np.zeros_like(seeds)
+    rtl_distance_list = []
 
     address = 0x03000  # minimum ordering
     for icity in range(0, ncity+1):
@@ -171,7 +180,13 @@ def py_tb():
         rtl_seeds[i] = top.read64(address)
         address += 8
 
+    address = 0x04000  # saved distance
+    for i in range(niter//siter):
+        rtl_distance_list = np.append(rtl_distance_list, top.read64(address)/(2**17))
+        address += 8
+
 ########### RTL Sim ###########
+########### Golden Model ###########
 
     start = time.perf_counter()
 
@@ -241,7 +256,7 @@ def py_tb():
                 minimum_ordering = ordering[nbeta-1].copy()
 
         # data output #
-        if iter % 500 == 0 or iter == niter: # if 0: 時間計測時
+        if iter % siter == 0 or iter == niter: # if 0: 時間計測時
             distance_list = np.append(distance_list, minimum_distance)
             print(iter, distance_f, minimum_distance)
 
@@ -285,6 +300,23 @@ def py_tb():
         print(seeds)
         print(rtl_seeds)
 
+    # compare saved distance #
+    if(np.array_equal(distance_list, rtl_distance_list)):
+        print("OK: saved distance")
+    else:
+        print("NG: saved distance")
+        print(distance_list)
+        print(rtl_distance_list)
+
+########### Golden Model ###########
+    '''########### SKIP Golden Model ###########
+    minimum_ordering = rtl_minimum_ordering
+    ordering = rtl_ordering
+    distance_i = rtl_distance_i
+    seeds = rtl_seeds
+    distance_list = rtl_distance_list
+    '''########### SKIP Golden Model ###########
+
     # save point #
     with open("salesman.pickle", "wb") as f:
         pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list, seeds), f)
@@ -305,7 +337,7 @@ if __name__ == '__main__':
     plt.savefig("salesman.png")
     plt.clf()
 
-    plt.plot(distance_list[::2], marker='+')
+    plt.plot(distance_list[::1], marker='+')
     plt.ylim(0, 10)
     plt.savefig("distance.png")
     plt.clf()

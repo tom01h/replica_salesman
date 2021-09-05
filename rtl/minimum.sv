@@ -3,10 +3,17 @@ module minimun
 (
     input  logic                    clk,
     input  logic                    reset,
+
     input  logic                    min_ord_read,
     output logic                    ordering_min_valid,
     output replica_data_t           ordering_min_data,
-    input  logic                    read_minimum_distance,
+    
+    input  logic                    siter_write,
+    input  logic [19:0]             siter,
+    input  logic                    min_distance_read,
+    output logic                    distance_min_valid,
+    output total_data_t             distance_min_data,
+    
     input  logic                    update_minimum_distance,
     input  logic                    opt_run,
     input  total_data_t             minimum_distance,
@@ -18,16 +25,18 @@ module minimun
 
 );
 
-logic                       run_update;
-logic [city_div_log-1 : 0]  wcount;
-logic                       write_valid;
-replica_data_t              write_data;
-total_data_t                in_distance;
-total_data_t                min_distance;
-logic                       update_d;
+logic                      run_update;
+logic [city_div_log-1 : 0] wcount;
+logic                      write_valid;
+replica_data_t             write_data;
+total_data_t               in_distance;
+total_data_t               min_distance;
+logic                      update_d;
+logic                      update_w;
 
 always_ff @(posedge clk) begin
     update_d <= update_minimum_distance;
+    update_w <= update_d;
     if(reset) begin
         run_update   <= 1'b0;
         wcount       <= 'b0;
@@ -64,11 +73,50 @@ always_ff @(posedge clk) begin
     ordering_min_valid <= min_ord_read;
 end
                      
-logic [replica_data_bit-1:0] ram [0:2**(city_div_log) -1];
+logic [replica_data_bit-1:0] ord_ram [0:2**(city_div_log) -1];
 always_ff @(posedge clk) begin
     if (write_valid) begin
-        ram[wcount] <= write_data;
+        ord_ram[wcount] <= write_data;
     end
-    ordering_min_data <= ram[rcount];
+    ordering_min_data <= ord_ram[rcount];
 end
+
+logic [19:0]               siter_i;
+logic [19:0]               siter_cout;
+logic                      siter_last;
+logic [siter_log-1 : 0]    dist_save_ptr;
+logic [siter_log-1 : 0]    dist_read_ptr;
+
+assign siter_last = (siter_cout + 1) == siter_i;
+always_ff @(posedge clk)
+    if(siter_write) begin
+        siter_i      <= siter/2;
+        siter_cout   <= 'b0;
+        dist_save_ptr <= 'b0;
+    end else if(update_w) begin
+        if(siter_last)begin
+            siter_cout   <= 'b0;
+            dist_save_ptr <= dist_save_ptr + 1'b1;
+        end else begin
+            siter_cout   <= siter_cout + 1'b1;
+        end    
+    end    
+
+logic dist_write;
+assign dist_write = update_w && siter_last;
+
+always_ff @(posedge clk) begin
+    distance_min_valid <= min_distance_read;
+    if(siter_write)            dist_read_ptr <= 'b0;
+    else if(min_distance_read) dist_read_ptr <= dist_read_ptr + 1'b1;
+end
+
+logic [$bits(total_data_t)-1:0] dist_ram [0:2**(siter_log) -1];
+always_ff @(posedge clk) begin
+    if (dist_write) begin
+        dist_ram[dist_save_ptr] <= min_distance;
+    end
+    distance_min_data <= dist_ram[dist_read_ptr];
+end
+
 endmodule

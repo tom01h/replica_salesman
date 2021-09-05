@@ -56,8 +56,15 @@ module bus_if
     output total_data_t               distance_wdata,
     input  total_data_t               distance_rdata,
 
+    output logic                      min_distance_read,
+    input  logic                      distance_min_valid,
+    input  total_data_t               distance_min_data,
+
     output logic                      run_write,
     output logic [23:0]               run_times,
+
+    output logic                      siter_write,
+    output logic [19:0]               siter,
 
     input  logic                      running    
 );
@@ -99,14 +106,19 @@ module bus_if
 
         min_ord_read     = rd_command && (S_AXI_ARADDR[19:12] == 8'h03);
 
+        min_distance_read = rd_command && (S_AXI_ARADDR[19:12] == 8'h04);
+
         distance_shift   = wb_command && (wb_adr_i[19:12] == 8'h02) ||
                            rd_command && (S_AXI_ARADDR[19:12] == 8'h02);
         distance_shift_n = wb_command && (wb_adr_i[19:12] == 8'h02) && (wb_adr_i[3 +:node_log] == node_num-1) ||
                            rd_command && (S_AXI_ARADDR[19:12] == 8'h02) && (S_AXI_ARADDR[3 +:node_log] == node_num-1);
         distance_wdata   = wb_dat_i[$bits(distance_wdata)-1:0];
 
-        run_write = (wb_command && (wb_adr_i[19:3] == 'h0));
-        run_times = wb_dat_i[$bits(run_times)-1  :0];
+        run_write = (wb_command && ({wb_adr_i[19:3],3'b000} == 'h0));
+        run_times = wb_dat_i[$bits(run_times)-1 :0];
+
+        siter_write = (wb_command && ({wb_adr_i[19:3],3'b000} == 'h10));
+        siter = wb_dat_i[19:0];
     end
 
     logic [node_log-1:0]       random_read_d;
@@ -118,8 +130,11 @@ module bus_if
         if(distance_shift) distance_rdata_d <= distance_rdata;
 
     replica_data_t             ordering_min_data_d;
+    total_data_t               distance_min_data_d;
     always_ff @(posedge S_AXI_ACLK)
         if(ordering_min_valid) ordering_min_data_d <= ordering_min_data;
+    always_ff @(posedge S_AXI_ACLK)
+        if(distance_min_valid) distance_min_data_d <= distance_min_data;
 
     always_comb begin
         if({rd_adr_i[19:3],3'b000} == 'h0)
@@ -127,6 +142,8 @@ module bus_if
         if({rd_adr_i[19:15],3'b000} == 8'h08)
             for(int j = 0; j < 8; j++)
                 S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
+        if(rd_adr_i[19:12] == 8'h04)
+            S_AXI_RDATA = distance_min_data_d;
         if(rd_adr_i[19:12] == 8'h03)
             for(int j=0; j<8; j++)
                 S_AXI_RDATA[j*8 +:8] = {1'b0, ordering_min_data_d[7-j]};

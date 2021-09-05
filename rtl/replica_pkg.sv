@@ -10,7 +10,9 @@ parameter int city_num = 100;
 parameter int city_num_log = $clog2(city_num);
 parameter int city_div = $ceil($itor(city_num) / 8);
 parameter int city_div_log = $clog2(city_div);
+
 parameter int dbeta = 5;
+parameter int siter_log = 10;
 
 typedef enum logic [1:0] {
     NOP  = 2'b00,

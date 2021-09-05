@@ -49,8 +49,15 @@ logic                      distance_shift_n;
 total_data_t               distance_wdata;
 total_data_t               distance_rdata;
 
+logic                      min_distance_read;
+logic                      distance_min_valid;
+total_data_t               distance_min_data;
+
 logic                      run_write;
 logic [23:0]               run_times;
+logic                      siter_write;
+logic [19:0]               siter;
+
 logic                      running;
 
 logic                      exchange_shift_d;
@@ -105,8 +112,15 @@ bus_if busif
     .distance_wdata        ( distance_wdata        ),
     .distance_rdata        ( distance_rdata        ),
 
+    .min_distance_read     ( min_distance_read     ),
+    .distance_min_valid    ( distance_min_valid    ),
+    .distance_min_data     ( distance_min_data     ),
+
     .run_write             ( run_write             ),
     .run_times             ( run_times             ),
+
+    .siter_write           ( siter_write           ),
+    .siter                 ( siter                 ),
 
     .running               ( running               )
 );
@@ -314,10 +328,17 @@ minimun minimun
 (
     .clk                     ( clk                           ),
     .reset                   ( reset                         ),
+    
     .min_ord_read            ( min_ord_read                  ),
     .ordering_min_valid      ( ordering_min_valid            ),
     .ordering_min_data       ( ordering_min_data             ),
-    .read_minimum_distance   ( read_minimum_distance         ),
+
+    .siter_write             ( siter_write                   ),
+    .siter                   ( siter                         ),
+    .min_distance_read       ( min_distance_read             ),
+    .distance_min_valid      ( distance_min_valid            ),
+    .distance_min_data       ( distance_min_data             ),
+
     .update_minimum_distance ( update_minimum_distance       ),
     .opt_run                 ( opt_run                       ),
     .minimum_distance        ( minimum_distance[node_num-1]  ),
