@@ -106,7 +106,7 @@ module bus_if
 
         min_ord_read     = rd_command && (S_AXI_ARADDR[19:12] == 8'h03);
 
-        min_distance_read = rd_command && (S_AXI_ARADDR[19:12] == 8'h04);
+        min_distance_read = rd_command && ({S_AXI_ARADDR[19:14],2'b00} == 8'h04);
 
         distance_shift   = wb_command && (wb_adr_i[19:12] == 8'h02) ||
                            rd_command && (S_AXI_ARADDR[19:12] == 8'h02);
@@ -142,7 +142,7 @@ module bus_if
         if({rd_adr_i[19:15],3'b000} == 8'h08)
             for(int j = 0; j < 8; j++)
                 S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
-        if(rd_adr_i[19:12] == 8'h04)
+        if({rd_adr_i[19:14],2'b00} == 8'h04)
             S_AXI_RDATA = distance_min_data_d;
         if(rd_adr_i[19:12] == 8'h03)
             for(int j=0; j<8; j++)
