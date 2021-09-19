@@ -1,203 +1,88 @@
 #include "svdpi.h"
 #include "dpiheader.h"
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include <windows.h>
+#include <string>
 
-#define nbeta (32)
-
-unsigned long long x[nbeta];
-
-static PyObject *
-init (PyObject *self, PyObject *args) {
-  v_init();
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-write64(PyObject *self, PyObject *args) {
-  int  address;
-  unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "iK", &address, &data))
-    return NULL;
-
-  v_write64(address, data);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-read64(PyObject *self, PyObject *args) {
-  int  address;
-  unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &address))
-    return NULL;
-
-  v_read64(address, &data);
-
-  return Py_BuildValue("K", data);
-}
-
-static PyObject*
-vwait(PyObject *self, PyObject *args) {
-  int  times;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &times))
-    return NULL;
-
-  v_wait(times);
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-c_init_random(PyObject *self, PyObject *args){
-  PyObject *p_list, *p_value;
-  unsigned long long val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
-    return NULL;
-
-  for(int i = 0; i < nbeta; i++){
-    p_value = PyList_GetItem(p_list, i);
-    x[i] = PyLong_AsUnsignedLongLong(p_value);
-  }
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-c_run_random(PyObject *self, PyObject *args) {
-  unsigned int p, start, end, msk;
-  unsigned int val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
-    return NULL;
-
-  do{
-    x[p] = x[p] ^ (x[p] << 13);
-    x[p] = x[p] ^ (x[p] >> 7);
-    x[p] = x[p] ^ (x[p] << 17);
-    val = x[p] & msk;
-  }while(!((start <= val) && (val <= end)));
-
-  return Py_BuildValue("I", val);
-}
-
-static PyObject*
-c_save_random(PyObject *self, PyObject *args) {
-  PyObject *list;
-  unsigned long long val;
-
-  list = PyList_New(0);
-
-  for(int i = 0; i < nbeta; i++){
-    val = x[i];
-    PyList_Append(list, Py_BuildValue("K", val));
-  }
-  
-  return list;
-}
-
-static PyObject*
-c_exp(PyObject *self, PyObject *args) {
-  int32_t x, y, z;
-  int l;
-  int32_t recip;
-  
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "ii", &x, &l))
-    return NULL;
-  
-  recip = int32_t((1.0/l) * (1<<15));
-  y = 1<<23;
-  z = ((int64_t)x * recip) >> 18;
-
-  for(int i = l; i > 0; i--){
-    recip = int32_t(1.0 / (i-1) * (1<<15));
-    int64_t one = (int64_t)1<<(14+23);
-
-    y = (one + (int64_t)z * y) >> 14;
-    z = ((int64_t)x * recip) >> 18;
-
-    if(y < 0){
-      return Py_BuildValue("i", 0);
-    }
-  }
-
-  return Py_BuildValue("i", y);
-}
-
-// メソッドの定義
-static PyMethodDef TopMethods[] = {
-  {"init",            (PyCFunction)init,            METH_NOARGS,  "top1: init"},
-  {"write64",         (PyCFunction)write64,         METH_VARARGS, "top2: write64"},
-  {"read64",          (PyCFunction)read64,          METH_VARARGS, "top3: read64"},
-  {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top4: vwait"},
-  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top5: c_init_random"},
-  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top6: c_run_random"},
-  {"c_save_random",   (PyCFunction)c_save_random,   METH_VARARGS, "top7: c_save_random"},
-  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top8: c_exp"},
-  // 終了を示す
-  {NULL, NULL, 0, NULL}
+union ulong_char {
+    char c[8];
+    unsigned long long ul;
+    int i;
 };
 
-//モジュールの定義
-static struct PyModuleDef toptmodule = {
-  PyModuleDef_HEAD_INIT,  "top",  NULL,  -1,  TopMethods,
-  NULL, NULL, NULL, NULL
-};
-
-// メソッドの初期化
-PyMODINIT_FUNC PyInit_top (void) {
-  return PyModule_Create(&toptmodule);
-}
+/*
+"top1: init"
+"top2: write64"
+"top3: read64"
+"top4: vwait"
+"top5: finish"
+*/
 
 DPI_LINK_DECL
 int c_tb() {
-  PyObject *pName, *pModule, *pFunc;
-  PyObject *pArgs;
+  char *buf;
+  HANDLE map_handle;
+  HANDLE handle;
+  int size;
+  std::wstring fname;
 
-  PyImport_AppendInittab("top", &PyInit_top);
-
-  Py_Initialize();
-  pName = PyUnicode_DecodeFSDefault("replica_salesman_sim");
-  /* Error checking of pName left out */
-
-  pModule = PyImport_Import(pName);
-  Py_DECREF(pName);
-
-  if (pModule != NULL) {
-    pFunc = PyObject_GetAttrString(pModule, "py_tb");
-    /* pFunc is a new reference */
-
-    if (pFunc && PyCallable_Check(pFunc)) {
-      pArgs = PyTuple_New(0);
-      PyObject_CallObject(pFunc, pArgs);
-      Py_DECREF(pArgs);
-    }
-    else {
-      if (PyErr_Occurred())
-        PyErr_Print();
-      fprintf(stderr, "Cannot find function\n");
-    }
-    Py_XDECREF(pFunc);
-    Py_DECREF(pModule);
+  fname.append(L"tb.txt");
+  handle = CreateFileW(fname.c_str(), GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE, 0,
+                      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+  if(handle == INVALID_HANDLE_VALUE) {
+    //fprintf(stderr, "file open failed\n");
+    exit(1);
   }
-  else {
-    PyErr_Print();
-    fprintf(stderr, "Failed to load\n");
-    return 1;
+  size = GetFileSize(handle, 0);
+  map_handle = CreateFileMapping(handle, 0, PAGE_READWRITE, 0, 0, 0);
+  buf = (char*)MapViewOfFile(map_handle, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+  if(handle != INVALID_HANDLE_VALUE) {
+    CloseHandle(handle);
+    handle = INVALID_HANDLE_VALUE;
   }
-  if (Py_FinalizeEx() < 0) {
-    return 120;
+
+  while(1){
+    if(buf[0] != 0){
+      if(buf[0] == 1){
+        v_init();
+      }
+      else if(buf[0] == 2){
+        union ulong_char address, data;
+        for(int i=0; i<8; i++){
+          address.c[i] = buf[i+8];
+          data.c[i] = buf[i+16];
+        }
+        v_write64(address.i, data.ul);
+      }
+      else if(buf[0] == 3){
+        union ulong_char address, data;
+        for(int i=0; i<8; i++){
+          address.c[i] = buf[i+8];
+        }
+        v_read64(address.i, &data.ul);
+        for(int i=0; i<8; i++){
+          buf[i+16] = data.c[i];
+        }
+      }
+      else if(buf[0] == 4){
+        union ulong_char times;
+        for(int i=0; i<8; i++){
+          times.c[i] = buf[i+8];
+        }
+        v_wait(times.i);
+      }
+      else if(buf[0] == 5){
+        buf[0] = 0;
+        break;
+      }
+      buf[0] = 0;
+    }
+  }
+
+  UnmapViewOfFile(buf);
+    if(map_handle != INVALID_HANDLE_VALUE) {
+      CloseHandle(map_handle);
+      map_handle = INVALID_HANDLE_VALUE;
   }
 
   return 0;

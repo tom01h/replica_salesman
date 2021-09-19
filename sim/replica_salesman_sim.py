@@ -17,12 +17,12 @@ ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
 
 import time
-import sys
 import numpy as np
 import random
 import math
 import matplotlib.pyplot as plt
 import pickle
+import lib
 import top as top
 
 def py_tb():
@@ -66,7 +66,7 @@ def py_tb():
         with open("initial.pickle", "rb") as f:
             x, ordering, minimum_ordering, minimum_distance, distance_list, seeds = pickle.load(f)
 
-    top.c_init_random(seeds)
+    lib.c_init_random(seeds)
 
     for icity in range(0, ncity+1):
         r = x[icity] - x
@@ -198,16 +198,16 @@ def py_tb():
             while info_kl == 1:
                 if opt == 0:       # 2-opt
                     msk = ( 1<<(math.ceil(math.log2(ncity))) ) -1
-                    k = top.c_run_random(ibeta, 1, ncity, msk)
-                    l = top.c_run_random(ibeta, 1, ncity, msk)
+                    k = lib.c_run_random(ibeta, 1, ncity, msk)
+                    l = lib.c_run_random(ibeta, 1, ncity, msk)
                     if k != l:
                         if k > l:
                             k, l = l, k
                         info_kl = 0
                 else:              # or-opt (simple)
                     msk = ( 1<<(math.ceil(math.log2(ncity-1))) ) -1
-                    k = top.c_run_random(ibeta, 1, ncity-1, msk)
-                    l = top.c_run_random(ibeta, 0, ncity-1, msk)
+                    k = lib.c_run_random(ibeta, 1, ncity-1, msk)
+                    l = lib.c_run_random(ibeta, 0, ncity-1, msk)
                     if k != l and k != l + 1:
                         info_kl = 0
             # Metropolis for each replica #
@@ -222,8 +222,8 @@ def py_tb():
                     ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
-            metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
+            metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+            if delta_distance < 0 or lib.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
 
@@ -232,21 +232,21 @@ def py_tb():
             for ibeta in range(0, nbeta-1, 2):
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
-                metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+                if action >=0 or lib.c_exp(action, 15) > metropolis:
                     ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                     distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
         else:
-            metropolis = (top.c_run_random(0, 0, 2**23-1, 2**23-1))  # dummy
+            metropolis = (lib.c_run_random(0, 0, 2**23-1, 2**23-1))  # dummy
             for ibeta in range(2, nbeta-1, 2):
                 action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
                 # Metropolis test #
-                metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+                if action >=0 or lib.c_exp(action, 15) > metropolis:
                     ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                     distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
         for ibeta in range(1, nbeta, 2):
-            metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
+            metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
         # update minimum #
         if iter % 2 == 0: # 2-opt 結果だけを対象にする
@@ -263,7 +263,7 @@ def py_tb():
     elapsed_time = time.perf_counter() - start
     print ("model_time:{0}".format(elapsed_time) + "[sec]")
     
-    seeds = top.c_save_random()
+    seeds = lib.c_save_random()
 
     np.set_printoptions(linewidth = 100)
     # compare minimum ordiering #
@@ -342,4 +342,4 @@ if __name__ == '__main__':
     plt.savefig("distance.png")
     plt.clf()
 
-    top.fin()
+    top.finish()
