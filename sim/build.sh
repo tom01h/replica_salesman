@@ -26,7 +26,7 @@ python.exe $BASE/sim/setup_lib.py build_ext -i
 dd if=/dev/zero of=tb.txt bs=1K count=1
 
 #/mnt/c/intelFPGA_pro/20.3/modelsim_ase/gcc-4.2.1-mingw32vc12/bin/
-g++.exe -c -g -I'.' -I'C:/intelFPGA_pro/20.3/modelsim_ase/include/' $BASE/sim/tb.cpp -o tb.obj
+g++.exe -O2 -c -g -I'.' -I'C:/intelFPGA_pro/20.3/modelsim_ase/include/' $BASE/sim/tb.cpp -o tb.obj
 g++.exe -shared -o cimports.dll tb.obj cexports.obj -L'C:/intelFPGA_pro/20.3/modelsim_ase/win32aloem' -lmtipli
 
 vsim.exe -c -sv_lib cimports tb -do " \

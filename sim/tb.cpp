@@ -20,7 +20,7 @@ union ulong_char {
 
 DPI_LINK_DECL
 int c_tb() {
-  char *buf;
+  volatile char *buf;
   HANDLE map_handle;
   HANDLE handle;
   int size;
@@ -79,10 +79,10 @@ int c_tb() {
     }
   }
 
-  UnmapViewOfFile(buf);
-    if(map_handle != INVALID_HANDLE_VALUE) {
-      CloseHandle(map_handle);
-      map_handle = INVALID_HANDLE_VALUE;
+  UnmapViewOfFile((char*)buf);
+  if(map_handle != INVALID_HANDLE_VALUE) {
+    CloseHandle(map_handle);
+    map_handle = INVALID_HANDLE_VALUE;
   }
 
   return 0;
