@@ -19,12 +19,12 @@ VERILATOR_OPTS = \
 	--prefix $(PREFIX) \
 	--trace \
 	--trace-params \
-	--trace-structs \
 	--trace-underscore \
 	#--trace-depth 2 \
+	#--trace-structs \
 
 
-VERILATOR_MAKE_OPTS = OPT_FAST="-O2"
+VERILATOR_MAKE_OPTS = OPT_FAST="-O2 -DTRACE"
 
 DESIGN_SRCS = \
 ../rtl/replica_pkg.sv \
