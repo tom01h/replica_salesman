@@ -4,6 +4,7 @@ SIM_DIR = sim
 VERILATOR = verilator
 TOP       = top
 PREFIX    = V$(TOP)
+PY_LIB    = lib.cpython-38-x86_64-linux-gnu.so
 
 VERILATOR_OPTS = \
 	-Wall \
@@ -49,17 +50,16 @@ DESIGN_SRCS = \
 
 VERILATOR_CPP_TB = top.cpp
 
-default: $(SIM_DIR)/$(PREFIX)
+default: $(SIM_DIR)/$(PREFIX) $(PY_LIB)
 
-sim: $(SIM_DIR)/$(PREFIX)
+$(PY_LIB): lib.cpp
+	python3 setup_lib.py build_ext -i
 
 $(SIM_DIR)/$(PREFIX): $(DESIGN_SRCS) $(VERILATOR_CPP_TB)
-	python3 setup_lib.py build_ext -i
 	$(VERILATOR) $(VERILATOR_OPTS) $(DESIGN_SRCS) --exe ../$(VERILATOR_CPP_TB)
-	cd sim; make $(VERILATOR_MAKE_OPTS) -f $(PREFIX).mk $(PREFIX)__ALL.a
 	cd sim; make $(VERILATOR_MAKE_OPTS) -f $(PREFIX).mk $(PREFIX)
 
 clean:
-	rm -rf sim/ build/ __pycache__/ tmp.vcd lib.cpython-38-x86_64-linux-gnu.so
+	rm -rf sim/ build/ __pycache__/ tmp.vcd $(PY_LIB)
 
 .PHONY:
