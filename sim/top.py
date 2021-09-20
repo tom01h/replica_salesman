@@ -12,7 +12,7 @@ def init():
     f = open("tb.txt", "r+b")
     global mm
     mm = mmap.mmap(f.fileno(), 0)
-    mm[0:1] = b"\1"
+    mm[0:1] = b'\1'
     while mm[0:1] != b'\0':
         pass
     return
@@ -20,14 +20,14 @@ def init():
 def write64(address, data):
     mm[8:16] = address.to_bytes(8, byteorder='little')
     mm[16:24] = data.to_bytes(8, byteorder='little', signed=False)
-    mm[0:1] = b"\2"
+    mm[0:1] = b'\2'
     while mm[0:1] != b'\0':
         pass
     return
 
 def read64(address):
     mm[8:16] = address.to_bytes(8, byteorder='little')
-    mm[0:1] = b"\3"
+    mm[0:1] = b'\3'
     while mm[0:1] != b'\0':
         pass
     data = int.from_bytes(mm[16:24], byteorder='little', signed=False)
@@ -35,13 +35,13 @@ def read64(address):
 
 def vwait(num):
     mm[8:16] = num.to_bytes(8, byteorder='little')
-    mm[0:1] = b"\4"
+    mm[0:1] = b'\4'
     while mm[0:1] != b'\0':
         pass
     return
 
 def finish():
-    mm[0:1] = b"\5"
+    mm[0:1] = b'\5'
     while mm[0:1] != b'\0':
         pass
     return

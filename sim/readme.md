@@ -5,9 +5,9 @@
 
 ## RTL シミュレーションを実行する
 
-### Verilator(保留)
+### Verilator
 
-Verilator の出力した C++ のコードを使って Python の C++ モジュールを作成して検証します。
+mmap を使った Python と C のプロセス間通信で Verilator と Pythonで検証します。
 
 まずは、RTL から Python モジュールをコンパイルします。
 
@@ -20,14 +20,17 @@ replica_salesman/sim$ make
 シミュレーションを実行すると、波形ファイル `tmp.vcd` ができます。
 
 ```
-replica_salesman/sim$ python3 replica_salesman_sim.py
+replica_salesman/sim$ ./run_verilator.sh
 ```
 
 テストベンチを構成するファイル
 
 - top.cpp
+- top.py
+- lib.cpp
+- replica_salesman_sim.py
 
-Verilator のバージョンは Verilator 4.202 2021-04-24 rev v4.202
+Verilator のバージョンは Verilator 4.210 2021-07-07
 
 ### MidelSim (Windows 版)
 

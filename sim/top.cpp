@@ -1,10 +1,16 @@
 #include "sim/Vtop.h"
 #include "verilated.h"
-#include <Python.h>
 
-#define nbeta (32)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
-unsigned long long x[nbeta];
+union ulong_char {
+    char c[8];
+    unsigned long long ul;
+    int i;
+};
 
 vluint64_t vcdstart = 0;
 vluint64_t vcdend = vcdstart + 300000;
@@ -41,33 +47,11 @@ void eval()
   return;
 }
 
-static PyObject *
-fin (PyObject *self, PyObject *args) {
-
-  eval();eval();eval();eval();eval();
-  delete verilator_top;
-#if TRACE  
-  tfp->close();
-#endif  
-  Py_INCREF(Py_None);
-  return Py_None;
+void init () {
+  return;
 }
 
-static PyObject *
-init (PyObject *self, PyObject *args) {
-  
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-write64(PyObject *self, PyObject *args) {
-  int  address;
-  unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "iK", &address, &data))
-    return NULL;
-
+void write64(int address, unsigned long long data) {
   verilator_top->S_AXI_AWADDR = address;
   verilator_top->S_AXI_AWVALID = 1;
   verilator_top->S_AXI_WDATA = data;
@@ -77,18 +61,11 @@ write64(PyObject *self, PyObject *args) {
   verilator_top->S_AXI_WVALID = 0;
   eval();
 
-  Py_INCREF(Py_None);
-  return Py_None;
+  return;
 }
 
-static PyObject*
-read64(PyObject *self, PyObject *args) {
-  int  address;
+unsigned long long read64(int  address) {
   unsigned long long data;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &address))
-    return NULL;
-
   verilator_top->S_AXI_ARADDR = address;
   verilator_top->S_AXI_ARVALID = 1;
   while(verilator_top->S_AXI_ARREADY == 0){eval();}
@@ -97,128 +74,39 @@ read64(PyObject *self, PyObject *args) {
   do {eval();} while(verilator_top->S_AXI_RVALID == 0);
   data = verilator_top->S_AXI_RDATA;
 
-  return Py_BuildValue("K", data);
+  return data;
 }
 
-static PyObject*
-vwait(PyObject *self, PyObject *args) {
-  int  times;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "i", &times))
-    return NULL;
-
+void vwait(int times) {
   for(int i=0; i<times; i++){eval();}
 
-  Py_INCREF(Py_None);
-  return Py_None;
+  return;
 }
 
-static PyObject*
-c_init_random(PyObject *self, PyObject *args){
-  PyObject *p_list, *p_value;
-  unsigned long long val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
-    return NULL;
+/*
+"top1: init"
+"top2: write64"
+"top3: read64"
+"top4: vwait"
+"top5: finish"
+*/
 
-  for(int i = 0; i < nbeta; i++){
-    p_value = PyList_GetItem(p_list, i);
-    x[i] = PyLong_AsUnsignedLongLong(p_value);
+int main(int argc, char **argv, char **env) {
+  //////////////////// initialize mmap
+  int fd = open("./tb.txt", O_RDWR, S_IRUSR | S_IWUSR);
+  if(fd == -1){
+    printf("file open error\n");
+    exit(1);
   }
-
-  Py_INCREF(Py_None);
-  return Py_None;
-}
-
-static PyObject*
-c_run_random(PyObject *self, PyObject *args) {
-  unsigned int p, start, end, msk;
-  unsigned int val;
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
-    return NULL;
-
-  do{
-    x[p] = x[p] ^ (x[p] << 13);
-    x[p] = x[p] ^ (x[p] >> 7);
-    x[p] = x[p] ^ (x[p] << 17);
-    val = x[p] & msk;
-  }while(!((start <= val) && (val <= end)));
-
-  return Py_BuildValue("I", val);
-}
-
-static PyObject*
-c_save_random(PyObject *self, PyObject *args) {
-  PyObject *list;
-  unsigned long long val;
-
-  list = PyList_New(0);
-
-  for(int i = 0; i < nbeta; i++){
-    val = x[i];
-    PyList_Append(list, Py_BuildValue("K", val));
+  struct stat st;
+  if(fstat(fd, &st) < 0){
+    exit(1);
   }
-  
-  return list;
-}
+  volatile char *buf = (char *)mmap(NULL, st.st_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  close(fd);
 
-static PyObject*
-c_exp(PyObject *self, PyObject *args) {
-  int32_t x, y, z;
-  int l;
-  int32_t recip;
-  
-  // 送られてきた値をパース
-  if(!PyArg_ParseTuple(args, "ii", &x, &l))
-    return NULL;
-  
-  recip = int32_t((1.0/l) * (1<<15));
-  y = 1<<23;
-  z = ((int64_t)x * recip) >> 18;
-
-  for(int i = l; i > 0; i--){
-    recip = int32_t(1.0 / (i-1) * (1<<15));
-    int64_t one = (int64_t)1<<(14+23);
-
-    y = (one + (int64_t)z * y) >> 14;
-    z = ((int64_t)x * recip) >> 18;
-
-    if(y < 0){
-      return Py_BuildValue("i", 0);
-    }
-  }
-
-  return Py_BuildValue("i", y);
-}
-
-// メソッドの定義
-static PyMethodDef TopMethods[] = {
-  {"fin",             (PyCFunction)fin,             METH_NOARGS,  "top0: fin"},
-  {"init",            (PyCFunction)init,            METH_NOARGS,  "top1: init"},
-  {"write64",         (PyCFunction)write64,         METH_VARARGS, "top2: write64"},
-  {"read64",          (PyCFunction)read64,          METH_VARARGS, "top3: read64"},
-  {"vwait",           (PyCFunction)vwait,           METH_VARARGS, "top4: vwait"},
-  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top5: c_init_random"},
-  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top6: c_run_random"},
-  {"c_save_random",   (PyCFunction)c_save_random,   METH_VARARGS, "top7: c_save_random"},
-  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top8: c_exp"},
-  // 終了を示す
-  {NULL, NULL, 0, NULL}
-};
-
-//モジュールの定義
-static struct PyModuleDef toptmodule = {
-  PyModuleDef_HEAD_INIT,
-  "top",
-  NULL,
-  -1,
-  TopMethods
-};
-
-// メソッドの初期化
-PyMODINIT_FUNC PyInit_top (void) {
-  //  Verilated::commandArgs(argc,argv);
+//////////////////// initialize verilator
+  Verilated::commandArgs(argc,argv);
   Verilated::traceEverOn(true);
   main_time = 0;
   verilator_top = new Vtop;
@@ -247,5 +135,53 @@ PyMODINIT_FUNC PyInit_top (void) {
   verilator_top->reset = 0;
   eval();eval();
 
-  return PyModule_Create(&toptmodule);
+  // main loop /////////////////////////////
+  while(1){
+    if(buf[0] != 0){
+      if(buf[0] == 1){
+        init();
+      }
+      else if(buf[0] == 2){
+        union ulong_char address, data;
+        for(int i=0; i<8; i++){
+          address.c[i] = buf[i+8];
+          data.c[i] = buf[i+16];
+        }
+        write64(address.i, data.ul);
+      }
+      else if(buf[0] == 3){
+        union ulong_char address, data;
+        for(int i=0; i<8; i++){
+          address.c[i] = buf[i+8];
+        }
+        data.ul = read64(address.i);
+        for(int i=0; i<8; i++){
+          buf[i+16] = data.c[i];
+        }
+      }
+      else if(buf[0] == 4){
+        union ulong_char times;
+        for(int i=0; i<8; i++){
+          times.c[i] = buf[i+8];
+        }
+        vwait(times.i);
+      }
+      else if(buf[0] == 5){
+        buf[0] = 0;
+        break;
+      }
+      buf[0] = 0;
+    }
+  }
+
+  // post process /////////////////////////////
+  eval();eval();eval();eval();eval();
+  delete verilator_top;
+  #if TRACE  
+  tfp->close();
+  #endif  
+
+  munmap((void*)buf, st.st_size);
+  
+  exit(0);
 }
