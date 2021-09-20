@@ -4,7 +4,7 @@ SIM_DIR = sim
 VERILATOR = verilator
 TOP       = top
 PREFIX    = V$(TOP)
-PY_LIB    = lib.cpython-38-x86_64-linux-gnu.so
+PY_LIB    = $(or $(wildcard lib.cpython-*-x86_64-linux-gnu.so), "lib_dummy_name")
 
 VERILATOR_OPTS = \
 	-Wall \
