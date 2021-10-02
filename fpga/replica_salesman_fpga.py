@@ -1,5 +1,6 @@
 #    address = 0x00000  # run
 #    address = 0x00010  # siter
+#    address = 0x00f00  # reset
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
 #    address = 0x03000  # minimum ordering
@@ -97,6 +98,10 @@ def py_tb():
     mem_range = overlay.ip_dict['vtop_0/S_AXI']['addr_range']
     mm_mem = MMIO(mem_address, mem_range)
 
+    address = 0x00f00  # soft_reset
+    data = 0
+    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+
     address = 0x01000  # random seeds
     for data in seeds:
         mm_mem.write(address, data.to_bytes(8, byteorder='little'))
@@ -173,7 +178,7 @@ def py_tb():
 
             c = data // 256**(7-icity%8) % 256
             rtl_ordering[ibeta][icity] = c
-    
+
     rtl_distance_i = np.zeros_like(distance_i)
 
     address = 0x02000  # total distance
@@ -191,6 +196,10 @@ def py_tb():
     for i in range(niter//siter):
         rtl_distance_list = np.append(rtl_distance_list, mm_mem.read(address, 8, 'little')/(2**17))
         address += 8
+
+    address = 0x00f00  # soft_reset
+    data = 1
+    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
 
 ########### RTL Sim ###########
     '''########### Golden Model ###########

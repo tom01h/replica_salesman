@@ -1,15 +1,20 @@
 #    IP base address = 0x20000000
 #    address = 0x00000  # run
+#    address = 0x00010  # siter
+#    address = 0x00f00  # reset
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
+#    address = 0x03000  # minimum ordering
+#    address = 0x04000  # saved distance
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
 nbeta=32
-niter=3000
+siter=1000
+niter=100000
 #niter=6
 dbeta=5
-ncity=30
+ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
 
 import os
@@ -17,6 +22,8 @@ import time
 import numpy as np
 import random
 import math
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
 import top as top
@@ -36,6 +43,8 @@ def py_tb():
             delta  = distance_2[ordering[k]][ordering[l+1]] + distance_2[ordering[k]][ordering[l]]   + distance_2[ordering[k-1]][ordering[k+1]]
             delta -= distance_2[ordering[k-1]][ordering[k]] + distance_2[ordering[k]][ordering[k+1]] + distance_2[ordering[l]][ordering[l+1]]
         return delta
+
+    global distance_list
 
     ordering = np.arange(0, ncity+1, 1)
     ordering = np.tile(ordering, (nbeta, 1))
@@ -86,7 +95,11 @@ def py_tb():
     fd_h2c = os.open("/dev/xdma0_h2c_0", os.O_WRONLY)
     fd_c2h = os.open("/dev/xdma0_c2h_0", os.O_RDONLY)
 
-    address = 0x01000 + 0x20000000 # random seeds
+    address = 0x00f00 + 0x20000000  # soft_reset
+    data = 0
+    os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
+
+    address = 0x01000 + 0x20000000  # random seeds
     for data in seeds:
         os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
         address += 8
@@ -121,6 +134,10 @@ def py_tb():
         os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
         address += 8
 
+    address = 0x00010 + 0x20000000  # siter
+    data = siter
+    os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
+
     address = 0x00000 + 0x20000000  # run
     data = niter
     os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
@@ -134,14 +151,30 @@ def py_tb():
     elapsed_time = time.perf_counter() - start
     print ("FPGA_time:{0}".format(elapsed_time) + "[sec]")
     
+    rtl_minimum_ordering = np.zeros_like(minimum_ordering)
     rtl_ordering = np.zeros_like(ordering)
+    rtl_seeds    = np.zeros_like(seeds)
+    rtl_distance_list = []
+
+    address = 0x03000 + 0x20000000    # minimum ordering
+    for icity in range(0, ncity+1):
+        if icity % 8 == 0:
+            if icity % 16 == 0:
+                rdata = int.from_bytes(os.pread(fd_c2h, 16, address),'little', signed=False)
+
+            data = rdata % (2 ** 64)
+            rdata = rdata // (2 ** 64)
+            address += 8
+
+        c = data // 256**(7-icity%8) % 256
+        rtl_minimum_ordering[icity] = c
 
     address = 0x08000 + 0x20000000  # ordering
     #for ibeta in reversed(range(0, nbeta)):
     for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
         for icity in range(0, ncity+1):
             if icity % 8 == 0:
-                if icity % 16 == 0:
+                if address % 16 == 0:
                     rdata = int.from_bytes(os.pread(fd_c2h, 16, address),'little', signed=False)
 
                 data = rdata % (2 ** 64)
@@ -163,7 +196,30 @@ def py_tb():
         rdata = rdata // (2 ** 64)
         address += 8
 
+    address = 0x01000 + 0x20000000  # random seeds
+    for i in range(nbeta):
+        if i % 2 == 0:
+            rdata = int.from_bytes(os.pread(fd_c2h, 16, address),'little', signed=False)
+
+        rtl_seeds[i] = rdata % (2 ** 64)
+        rdata = rdata // (2 ** 64)
+        address += 8
+
+    address = 0x04000 + 0x20000000  # saved distance
+    for i in range(niter//siter):
+        if i % 2 == 0:
+            rdata = int.from_bytes(os.pread(fd_c2h, 16, address),'little', signed=False)
+
+        rtl_distance_list = np.append(rtl_distance_list, rdata % (2 ** 64)/(2**17))
+        rdata = rdata // (2 ** 64)
+        address += 8
+
+    address = 0x00f00 + 0x20000000  # soft_reset
+    data = 1
+    os.pwrite(fd_h2c, data.to_bytes(8, byteorder='little'), address)
+
 ########### RTL Sim ###########
+    '''########### Golden Model ###########
 
     start = time.perf_counter()
 
@@ -225,19 +281,32 @@ def py_tb():
         for ibeta in range(1, nbeta, 2):
             metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
-        # data output #
-        if iter % 50 == 0 or iter == niter: # if 0: 時間計測時
+        # update minimum #
+        if iter % 2 == 0: # 2-opt 結果だけを対象にする
             distance_f = distance_i[nbeta-1]/(2**17)
             if distance_f < minimum_distance:
                 minimum_distance = distance_f
                 minimum_ordering = ordering[nbeta-1].copy()
+
+        # data output #
+        if iter % siter == 0 or iter == niter: # if 0: 時間計測時
             distance_list = np.append(distance_list, minimum_distance)
             print(iter, distance_f, minimum_distance)
 
     elapsed_time = time.perf_counter() - start
     print ("model_time:{0}".format(elapsed_time) + "[sec]")
     
+    seeds = top.c_save_random()
+
     np.set_printoptions(linewidth = 100)
+    # compare minimum ordiering #
+    if(np.array_equal(minimum_ordering, rtl_minimum_ordering)):
+        print("OK: minimum ordering")
+    else:
+        print("NG: minimum ordering")
+        print(minimum_ordering)
+        print(rtl_minimum_ordering)
+
     # compare ordiering #
     if(np.array_equal(ordering, rtl_ordering)):
         print("OK: ordering")
@@ -256,28 +325,54 @@ def py_tb():
         print(distance_i)
         print(rtl_distance_i)
 
+    # compare random seeds #
+    if(np.array_equal(seeds, rtl_seeds)):
+        print("OK: random seeds")
+    else:
+        print("NG: random seeds")
+        print(seeds)
+        print(rtl_seeds)
+
+    # compare saved distance #
+    if(np.array_equal(distance_list, rtl_distance_list)):
+        print("OK: saved distance")
+    else:
+        print("NG: saved distance")
+        print(distance_list)
+        print(rtl_distance_list)
+
+    '''########### Golden Model ###########
+    ########### SKIP Golden Model ###########
+    minimum_ordering = rtl_minimum_ordering
+    ordering = rtl_ordering
+    distance_i = rtl_distance_i
+    seeds = rtl_seeds
+    distance_list = rtl_distance_list
+    ########### SKIP Golden Model ###########
+
     # save point #
-    seeds = top.c_save_random()
     with open("salesman.pickle", "wb") as f:
         pickle.dump((x, ordering, minimum_ordering, minimum_distance, distance_list, seeds), f)
 
-    """
+    global orderd
+    orderd = x[minimum_ordering].T
+
+    return
+
+if __name__ == '__main__':
+    py_tb()
+
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    orderd = x[minimum_ordering].T
     plt.plot(orderd[0], orderd[1], marker='+')
     plt.axis([0, 1, 0, 1])
     ax.set_aspect('equal', adjustable='box')
     plt.savefig("salesman.png")
     plt.clf()
 
-    plt.plot(distance_list[::2], marker='+')
+    plt.plot(distance_list[::1], marker='+')
+    plt.ylim(0, 10)
     plt.savefig("distance.png")
     plt.clf()
-    """
 
-    return
-
-if __name__ == '__main__':
-    py_tb()
     #top.fin()

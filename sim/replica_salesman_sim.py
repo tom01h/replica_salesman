@@ -1,5 +1,6 @@
 #    address = 0x00000  # run
 #    address = 0x00010  # siter
+#    address = 0x00f00  # reset
 #    address = 0x01000  # random seeds
 #    address = 0x02000  # total distance
 #    address = 0x03000  # minimum ordering
@@ -89,6 +90,10 @@ def py_tb():
 ########### RTL Sim ###########
 
     top.init()
+
+    address = 0x00f00  # soft_reset
+    data = 0
+    top.write64(address, data)
 
     address = 0x01000  # random seeds
     for data in seeds:
@@ -184,6 +189,10 @@ def py_tb():
     for i in range(niter//siter):
         rtl_distance_list = np.append(rtl_distance_list, top.read64(address)/(2**17))
         address += 8
+
+    address = 0x00f00  # soft_reset
+    data = 1
+    top.write64(address, data)
 
 ########### RTL Sim ###########
 ########### Golden Model ###########

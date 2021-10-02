@@ -63,6 +63,10 @@ logic                      running;
 logic                      exchange_shift_d;
 logic                      exchange_shift_n;
 
+logic                      reset_i;
+logic                      soft_reset;
+assign reset_i = reset | soft_reset;
+
 bus_if busif
 (
     .S_AXI_ACLK            ( clk                   ),
@@ -86,6 +90,8 @@ bus_if busif
     .S_AXI_RRESP           ( S_AXI_RRESP           ),
     .S_AXI_RVALID          ( S_AXI_RVALID          ),
     .S_AXI_RREADY          ( S_AXI_RREADY          ),
+
+    .soft_reset            ( soft_reset            ),
 
     .random_init           ( random_init           ),
     .random_read           ( random_read           ),
@@ -154,7 +160,7 @@ assign tw_dis_data[0] = distance_wdata;
 logic [city_div_log - 1:0] ord_rd_num;
 logic                      ord_rd_bank;
 always_ff @(posedge clk) begin
-    if(reset)                          begin ord_rd_bank <= 'b0;          ord_rd_num <= '0; end
+    if(reset_i)                        begin ord_rd_bank <= 'b0;          ord_rd_num <= '0; end
     else if(ordering_read) begin
         if(ord_rd_num == city_div - 1) begin ord_rd_bank <= ~ord_rd_bank; ord_rd_num <= '0; end
         else                                                              ord_rd_num <= ord_rd_num +1;
@@ -168,7 +174,7 @@ assign distance_rdata = or_dis_data[node_num];
 node_reg node_reg
 (
     .clk                ( clk                ),
-    .reset              ( reset              ),
+    .reset              ( reset_i            ),
     .ordering_num       ( city_div - 1       ),
     
     .ordering_read      ( ordering_read      ),
@@ -213,7 +219,7 @@ logic                    update_minimum_distance;
 node_control node_control
 (
     .clk                     ( clk                      ),
-    .reset                   ( reset                    ),
+    .reset                   ( reset_i                  ),
     .run_write               ( run_write                ),
     .run_times               ( run_times                ),
     .running                 ( running                  ),
@@ -257,7 +263,7 @@ for (genvar g = 0; g < node_num; g += 1) begin
     node #(.id(g)) node
     (
         .clk               ( clk                   ),
-        .reset             ( reset                 ),
+        .reset             ( reset_i               ),
         
         .or_rn_base_id     ( or_rn_base_id         ),
         .tw_rn_base_id     ( tw_rn_base_id         ),
@@ -327,7 +333,7 @@ end
 minimun minimun
 (
     .clk                     ( clk                           ),
-    .reset                   ( reset                         ),
+    .reset                   ( reset_i                       ),
     
     .min_ord_read            ( min_ord_read                  ),
     .ordering_min_valid      ( ordering_min_valid            ),

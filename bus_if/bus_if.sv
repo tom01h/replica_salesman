@@ -31,6 +31,8 @@ module bus_if
     output logic                      S_AXI_RVALID,
     input  logic                      S_AXI_RREADY,
 
+    output logic                      soft_reset,
+
     output logic [node_num-1:0]       random_init,
     output logic [node_num-1:0]       random_read,
     output logic [63:0]               random_seed_w,
@@ -87,6 +89,8 @@ module bus_if
     assign wb_command    = (axist == 4'b0011) && wb_en_i;
     assign rd_command    = S_AXI_ARVALID && S_AXI_ARREADY && (S_AXI_ARADDR[2] == 0);
 
+    logic               reset_write;
+
     always_comb begin
         for(int i = 0; i < node_num; i++) begin
             random_init[i] = wb_command && (wb_adr_i[    3 +: node_log] == i) && (wb_adr_i[    19:12] == 8'h01);
@@ -119,11 +123,17 @@ module bus_if
 
         siter_write = (wb_command && ({wb_adr_i[19:3],3'b000} == 'h10));
         siter = wb_dat_i[19:0];
+
+        reset_write = (wb_command && ({wb_adr_i[19:3],3'b000} == 'hf00));
     end
+
+    always_ff @(posedge S_AXI_ACLK)
+        if(~S_AXI_ARESETN)   soft_reset <= 1'b1;
+        else if(reset_write) soft_reset <= wb_dat_i[0];
 
     logic [node_log-1:0]       random_read_d;
     always_ff @(posedge S_AXI_ACLK)
-        random_read_d <= S_AXI_ARADDR[3 +: node_log];
+        if(rd_command) random_read_d <= S_AXI_ARADDR[3 +: node_log];
 
     total_data_t               distance_rdata_d;
     always_ff @(posedge S_AXI_ACLK)
