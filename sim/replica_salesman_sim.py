@@ -8,7 +8,7 @@
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
-nbeta=32
+nbeta=40
 #siter=1000
 #niter=100000
 siter=4
@@ -24,7 +24,7 @@ import math
 import matplotlib.pyplot as plt
 import pickle
 import lib
-import top as top
+import top
 
 def py_tb():
     def calc_distance_i(ordering):
@@ -100,8 +100,9 @@ def py_tb():
         top.write64(address, data)
         address += 8
         
+    ordering_list = [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28, 35,34,33,32, 39,38,37,36]
     address = 0x08000  # ordering
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         i = 0
         data = 0
         for c in ordering[ibeta]:
@@ -125,7 +126,7 @@ def py_tb():
             address += 8
 
     address = 0x02000  # total distance
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         data = distance_i[ibeta]
         top.write64(address, int(data))
         address += 8
@@ -163,7 +164,7 @@ def py_tb():
 
     address = 0x08000  # ordering
     #for ibeta in reversed(range(0, nbeta)):
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         for icity in range(0, ncity+1):
             if icity % 8 == 0:
                 data = top.read64(address)
@@ -176,7 +177,7 @@ def py_tb():
 
     address = 0x02000  # total distance
     #for ibeta in reversed(range(0, nbeta)):
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         rtl_distance_i[ibeta] = top.read64(address)
         address += 8
 
@@ -344,11 +345,13 @@ if __name__ == '__main__':
     plt.axis([0, 1, 0, 1])
     ax.set_aspect('equal', adjustable='box')
     plt.savefig("salesman.png")
+    #plt.show()
     plt.clf()
 
     plt.plot(distance_list[::1], marker='+')
     plt.ylim(0, 10)
     plt.savefig("distance.png")
+    #plt.show()
     plt.clf()
 
     top.finish()

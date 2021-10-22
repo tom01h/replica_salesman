@@ -267,11 +267,11 @@ for (genvar g = 0; g < node_num; g += 1) begin
         
         .or_rn_base_id     ( or_rn_base_id         ),
         .tw_rn_base_id     ( tw_rn_base_id         ),
-        .or_dd_base_id     ( (g!=(node_num-1) | ~running) ? or_dd_base_id : or_dd_base_id-1'b1 ), // TEMP or_dd_base_id_M
+        .or_dd_base_id     ( (g!=(node_num-1) | ~running) ? or_dd_base_id : (or_dd_base_id==0) ? 9 : or_dd_base_id-1'b1 ), // TEMP or_dd_base_id_M
         .tw_dd_base_id     ( tw_dd_base_id         ),
-        .or_rp_base_id     ( (g!=(node_num-1) | ~running) ? or_rp_base_id : or_rp_base_id-1'b1 ), // TEMP or_rp_base_id_M
+        .or_rp_base_id     ( (g!=(node_num-1) | ~running) ? or_rp_base_id : (or_rp_base_id==0) ? 9 : or_rp_base_id-1'b1 ), // TEMP or_rp_base_id_M
         .tw_rp_base_id     ( tw_rp_base_id         ),
-        .or_ex_base_id     ( (g!=(node_num-1) | ~running) ? or_ex_base_id : or_ex_base_id-1'b1 ), // TEMP or_ex_base_id_M
+        .or_ex_base_id     ( (g!=(node_num-1) | ~running) ? or_ex_base_id : (or_ex_base_id==0) ? 9 :or_ex_base_id-1'b1 ), // TEMP or_ex_base_id_M
         .tw_ex_base_id     ( tw_ex_base_id         ),
         
         .random_init       ( random_init[g]        ), // set random seed
