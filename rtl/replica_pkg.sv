@@ -1,6 +1,6 @@
 package replica_pkg;
 
-parameter int replica_num = 40;
+parameter int replica_num = 160;
 parameter int node_num = 4;
 parameter int node_log = $clog2(node_num);
 parameter int base_num = $ceil($itor(replica_num) / node_num);

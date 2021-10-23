@@ -175,7 +175,6 @@ node_reg node_reg
 (
     .clk                ( clk                ),
     .reset              ( reset_i            ),
-    .ordering_num       ( city_div - 1       ),
     
     .ordering_read      ( ordering_read      ),
     .ordering_out_valid ( ordering_out_valid ),
@@ -208,10 +207,13 @@ logic                 tw_opt_en;
 wire change_base_id = random_init[node_num-1] || random_read[node_num-1] || exchange_shift_n || distance_shift_n;
 logic [base_log-1:0]     or_rn_base_id;
 logic [base_log-1:0]     tw_rn_base_id;
+logic [base_log-1:0]     or_dd_base_id_P;
 logic [base_log-1:0]     or_dd_base_id;
 logic [base_log-1:0]     tw_dd_base_id;
+logic [base_log-1:0]     or_rp_base_id_P;
 logic [base_log-1:0]     or_rp_base_id;
 logic [base_log-1:0]     tw_rp_base_id;
+logic [base_log-1:0]     or_ex_base_id_P;
 logic [base_log-1:0]     or_ex_base_id;
 logic [base_log-1:0]     tw_ex_base_id;
 logic                    update_minimum_distance;
@@ -227,10 +229,13 @@ node_control node_control
     .change_base_id          ( change_base_id           ),
     .or_rn_base_id           ( or_rn_base_id            ),
     .tw_rn_base_id           ( tw_rn_base_id            ),
+    .or_dd_base_id_P         ( or_dd_base_id_P          ),
     .or_dd_base_id           ( or_dd_base_id            ),
     .tw_dd_base_id           ( tw_dd_base_id            ),
+    .or_rp_base_id_P         ( or_rp_base_id_P          ),
     .or_rp_base_id           ( or_rp_base_id            ),
     .tw_rp_base_id           ( tw_rp_base_id            ),
+    .or_ex_base_id_P         ( or_ex_base_id_P          ),
     .or_ex_base_id           ( or_ex_base_id            ),
     .tw_ex_base_id           ( tw_ex_base_id            ),
 
@@ -267,11 +272,11 @@ for (genvar g = 0; g < node_num; g += 1) begin
         
         .or_rn_base_id     ( or_rn_base_id         ),
         .tw_rn_base_id     ( tw_rn_base_id         ),
-        .or_dd_base_id     ( (g!=(node_num-1) | ~running) ? or_dd_base_id : (or_dd_base_id==0) ? 9 : or_dd_base_id-1'b1 ), // TEMP or_dd_base_id_M
+        .or_dd_base_id     ( (g!=(node_num-1)) ? or_dd_base_id : or_dd_base_id_P ),
         .tw_dd_base_id     ( tw_dd_base_id         ),
-        .or_rp_base_id     ( (g!=(node_num-1) | ~running) ? or_rp_base_id : (or_rp_base_id==0) ? 9 : or_rp_base_id-1'b1 ), // TEMP or_rp_base_id_M
+        .or_rp_base_id     ( (g!=(node_num-1)) ? or_rp_base_id : or_rp_base_id_P ),
         .tw_rp_base_id     ( tw_rp_base_id         ),
-        .or_ex_base_id     ( (g!=(node_num-1) | ~running) ? or_ex_base_id : (or_ex_base_id==0) ? 9 :or_ex_base_id-1'b1 ), // TEMP or_ex_base_id_M
+        .or_ex_base_id     ( (g!=(node_num-1)) ? or_ex_base_id : or_ex_base_id_P ),
         .tw_ex_base_id     ( tw_ex_base_id         ),
         
         .random_init       ( random_init[g]        ), // set random seed

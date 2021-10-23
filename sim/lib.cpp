@@ -1,7 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#define nbeta (40)
+#define nbeta (160)
 
 unsigned long long x[nbeta];
 

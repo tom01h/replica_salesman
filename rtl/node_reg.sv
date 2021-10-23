@@ -4,8 +4,6 @@ module node_reg
     input  logic                    clk,
     input  logic                    reset,
     
-    input  logic [city_div_log-1:0] ordering_num,
-    
     input  logic                    ordering_read,
     input  logic                    ordering_out_valid,
     input  replica_data_t           ordering_out_data,
@@ -36,7 +34,7 @@ assign ordering_read_en = ordering_wadder != ordering_radder;
 
 logic                    exchange_shift;
 assign exchange_shift   = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == 'b0);
-assign exchange_shift_n = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == ordering_num) && (ordering_node == node_num-1);
+assign exchange_shift_n = (ordering_write || ordering_read) && ordering_ready && (ordering_cnt == city_div-1) && (ordering_node == node_num-1);
 
 always_ff @(posedge clk) begin
     if(reset)                   ordering_rready <= 'b1;
@@ -62,7 +60,7 @@ always_ff @(posedge clk) begin
         ordering_radder <= '1;
     end else if(ordering_write) begin
         ordering_radder <= '1;
-        if(ordering_cnt == ordering_num) begin                     ordering_cnt <= 'b0;
+        if(ordering_cnt == city_div-1) begin                       ordering_cnt <= 'b0;
             if(ordering_node == node_num-1) ordering_node <= '0;
             else                            ordering_node <= ordering_node +1;
         end else if(ordering_ready) begin
@@ -70,7 +68,7 @@ always_ff @(posedge clk) begin
             else                                                   ordering_cnt <= ordering_cnt + 1;
         end
     end else if(ordering_read) begin
-        if(ordering_cnt == ordering_num) begin                     ordering_cnt <= 'b0;
+        if(ordering_cnt == city_div-1) begin                       ordering_cnt <= 'b0;
             if(ordering_node == node_num-1) ordering_node <= '0;
             else                            ordering_node <= ordering_node +1;
         end else if(ordering_read_en)                              ordering_cnt <= ordering_cnt + 1;

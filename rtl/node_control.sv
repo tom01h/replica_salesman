@@ -1,9 +1,5 @@
 module node_control
     import replica_pkg::*;
-#(
-    parameter id = 0,
-    parameter replica_num = 32
-)
 (
     input  logic                    clk,
     input  logic                    reset,
@@ -14,10 +10,13 @@ module node_control
     input  logic                    change_base_id,
     output logic [base_log-1:0]     or_rn_base_id,
     output logic [base_log-1:0]     tw_rn_base_id,
+    output logic [base_log-1:0]     or_dd_base_id_P,
     output logic [base_log-1:0]     or_dd_base_id,
     output logic [base_log-1:0]     tw_dd_base_id,
+    output logic [base_log-1:0]     or_rp_base_id_P,
     output logic [base_log-1:0]     or_rp_base_id,
     output logic [base_log-1:0]     tw_rp_base_id,
+    output logic [base_log-1:0]     or_ex_base_id_P,
     output logic [base_log-1:0]     or_ex_base_id,
     output logic [base_log-1:0]     tw_ex_base_id,
 
@@ -72,17 +71,17 @@ assign tw_rn_base_id = tw_base_id[0];
 logic [23:0] opt_cnt;
 
 always_ff @(posedge clk) begin
-    if(reset)                                                                          or_opt_en <= 'b0;
-    else if (run_write)                                                                or_opt_en <= 'b1;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==9) && (opt_cnt + 1 == run_times)) or_opt_en <= 'b0;
+    if(reset)                                                                                   or_opt_en <= 'b0;
+    else if (run_write)                                                                         or_opt_en <= 'b1;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==base_num-1) && (opt_cnt + 1 == run_times)) or_opt_en <= 'b0;
 
-    if(reset)                                                                          tw_opt_en <= 'b0;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                               tw_opt_en <= 'b1;
-    else if (opt_fin && tw_opt_en && (tw_base_id[0]==9) && (opt_cnt + 1 == run_times)) tw_opt_en <= 'b0;
+    if(reset)                                                                                   tw_opt_en <= 'b0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                                        tw_opt_en <= 'b1;
+    else if (opt_fin && tw_opt_en && (tw_base_id[0]==base_num-1) && (opt_cnt + 1 == run_times)) tw_opt_en <= 'b0;
 
-    if(reset)                                                                          opt_cnt <= 0;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                               opt_cnt <= opt_cnt + 1;
-    else if (opt_fin && or_opt_en && (or_base_id[0]==9) && (opt_cnt + 1 != run_times)) opt_cnt <= opt_cnt + 1;
+    if(reset)                                                                                   opt_cnt <= 0;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==4))                                        opt_cnt <= opt_cnt + 1;
+    else if (opt_fin && or_opt_en && (or_base_id[0]==base_num-1) && (opt_cnt + 1 != run_times)) opt_cnt <= opt_cnt + 1;
 
 end
 
@@ -102,18 +101,28 @@ always_ff @(posedge clk) begin
 end
 
 always_ff @(posedge clk) begin
-    if(reset)                             begin or_dd_base_id <= 0;                 tw_dd_base_id <= 0;
-                                                or_rp_base_id <= 0;                 tw_rp_base_id <= 0;
-                                                or_ex_base_id <= 0;                 tw_ex_base_id <= 0;
+    if(reset)                             begin or_dd_base_id_P <= 0;
+                                                or_dd_base_id   <= 0;                 tw_dd_base_id   <= 0;
+                                                or_rp_base_id_P <= 0;
+                                                or_rp_base_id   <= 0;                 tw_rp_base_id   <= 0;
+                                                or_ex_base_id_P <= 0;
+                                                or_ex_base_id   <= 0;                 tw_ex_base_id   <= 0;
     end else if(running) begin
-        if(opt_fin)                       begin or_dd_base_id <= or_base_id[1];     tw_dd_base_id <= tw_base_id[1];
-                                                or_rp_base_id <= or_base_id[3];     tw_rp_base_id <= tw_base_id[3];
-                                                or_ex_base_id <= or_base_id[4];     tw_ex_base_id <= tw_base_id[4]; end
+        if(opt_fin)                       begin or_dd_base_id_P <= or_dd_base_id;
+                                                or_dd_base_id   <= or_base_id[1];     tw_dd_base_id   <= tw_base_id[1];
+                                                or_rp_base_id_P <= or_rp_base_id;
+                                                or_rp_base_id   <= or_base_id[3];     tw_rp_base_id   <= tw_base_id[3];
+                                                or_ex_base_id_P <= or_ex_base_id;
+                                                or_ex_base_id   <= or_base_id[4];     tw_ex_base_id   <= tw_base_id[4]; end
     end else if(change_base_id) begin
-        if(or_base_id[0] != base_num - 1) begin or_rp_base_id <= or_base_id[0] + 1; tw_rp_base_id <= tw_base_id[0] + 1;
-                                                or_ex_base_id <= or_base_id[0] + 1; tw_ex_base_id <= tw_base_id[0] + 1; end
-        else                              begin or_rp_base_id <= '0;                tw_rp_base_id <= '0; 
-                                                or_ex_base_id <= '0;                tw_ex_base_id <= '0; end
+        if(or_base_id[0] != base_num - 1) begin or_rp_base_id_P <= or_base_id[0] + 1;
+                                                or_rp_base_id   <= or_base_id[0] + 1; tw_rp_base_id   <= tw_base_id[0] + 1;
+                                                or_ex_base_id_P <= or_base_id[0] + 1;
+                                                or_ex_base_id   <= or_base_id[0] + 1; tw_ex_base_id   <= tw_base_id[0] + 1; end
+        else                              begin or_rp_base_id_P <= '0;
+                                                or_rp_base_id   <= '0;                tw_rp_base_id   <= '0;
+                                                or_ex_base_id_P <= '0;
+                                                or_ex_base_id   <= '0;                tw_ex_base_id   <= '0; end
     end
 end
 

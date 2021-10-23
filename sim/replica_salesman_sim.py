@@ -8,7 +8,8 @@
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
-nbeta=40
+nbeta=160
+node_num = 4
 #siter=1000
 #niter=100000
 siter=4
@@ -100,7 +101,8 @@ def py_tb():
         top.write64(address, data)
         address += 8
         
-    ordering_list = [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28, 35,34,33,32, 39,38,37,36]
+    ordering_list = np.arange(nbeta).reshape((-1, node_num))
+    ordering_list = np.fliplr(ordering_list).reshape(-1)
     address = 0x08000  # ordering
     for ibeta in ordering_list:
         i = 0
