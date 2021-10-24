@@ -117,6 +117,25 @@ random #(.id(id)) random
     .ready           (                 )
 );
 
+logic [city_num_log*2-2:0] or_distance_addr_w;
+logic [city_num_log*2-2:0] or_distance_addr;
+distance_data_t            or_distance_data;
+logic [city_num_log*2-2:0] tw_distance_addr;
+distance_data_t            tw_distance_data;
+distance_data_t ram [0:(city_num+1)*city_num/2-1];
+
+assign or_distance_addr_w = (tp_dis_write) ? tp_dis_waddr : or_distance_addr;
+
+always_ff @(posedge clk) begin
+    if(tp_dis_write)
+        ram[or_distance_addr_w] <= tp_dis_wdata;
+    or_distance_data <= ram[or_distance_addr_w];
+end
+always_ff @(posedge clk) begin
+    tw_distance_data <= ram[tw_distance_addr];
+end
+
+
 sub_node #(.id(id), .two_opt_node(0)) or_node (
     .clk              ( clk                 ),
     .reset            ( reset               ),
@@ -126,9 +145,8 @@ sub_node #(.id(id), .two_opt_node(0)) or_node (
     .ex_base_id_r     ( or_ex_base_id       ),
     .ex_base_id_w     ( tw_ex_base_id       ),
 
-    .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
-    .tp_dis_waddr     ( tp_dis_waddr        ),
-    .tp_dis_wdata     ( tp_dis_wdata        ),
+    .distance_addr    ( or_distance_addr    ), // two point distance
+    .distance_data    ( or_distance_data    ),
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     
@@ -176,9 +194,8 @@ sub_node #(.id(id), .two_opt_node(1)) two_node (
     .ex_base_id_r     ( tw_ex_base_id       ),
     .ex_base_id_w     ( or_ex_base_id       ),
 
-    .tp_dis_write     ( tp_dis_write        ), // set 2点間距離
-    .tp_dis_waddr     ( tp_dis_waddr        ),
-    .tp_dis_wdata     ( tp_dis_wdata        ),
+    .distance_addr    ( tw_distance_addr    ), // two point distance
+    .distance_data    ( tw_distance_data    ),
     .distance_shift   ( distance_shift      ), // total distance read/write
     .exchange_shift_d ( exchange_shift_d    ), // ordering read/write
     

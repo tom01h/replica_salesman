@@ -13,9 +13,8 @@ module sub_node
     input  logic [base_log-1:0]       ex_base_id_r,
     input  logic [base_log-1:0]       ex_base_id_w,
     
-    input  logic                      tp_dis_write,      // set 2点間距離
-    input  logic [city_num_log*2-2:0] tp_dis_waddr,
-    input  distance_data_t            tp_dis_wdata,
+    output logic [city_num_log*2-2:0] distance_addr,     // two point distance
+    input  distance_data_t            distance_data,
     input  logic                      distance_shift,    // total distance read/write
     input  logic                      exchange_shift_d,  // ordering read/write
 
@@ -69,9 +68,8 @@ distance distance
     .clk             ( clk             ),
     .reset           ( reset           ),
 
-    .tp_dis_write    ( tp_dis_write    ),
-    .tp_dis_waddr    ( tp_dis_waddr    ),
-    .tp_dis_wdata    ( tp_dis_wdata    ),
+    .distance_addr   ( distance_addr   ),
+    .distance_data   ( distance_data   ),
 
     .opt_run         ( opt_run         ),
     .in_opt          ( opt             ),

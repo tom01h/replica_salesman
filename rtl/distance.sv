@@ -4,9 +4,8 @@ module distance
     input  logic                      clk,
     input  logic                      reset,
     
-    input  logic                      tp_dis_write,
-    input  logic [city_num_log*2-2:0] tp_dis_waddr,
-    input  distance_data_t            tp_dis_wdata,
+    output logic [city_num_log*2-2:0] distance_addr,
+    input  distance_data_t            distance_data,
 
     input  logic                      opt_run,
     input  opt_t                      in_opt,
@@ -75,15 +74,13 @@ always_ff @(posedge clk) begin
     command_op_d2 <= command_op_d;
 end
 
-logic [city_num_log*2-2:0] distance_r_addr;
 logic                      distance_read;
 assign distance_read = (command_op_d2 != DNOP) && (command_op_d2 != ZERO);
 always_ff @(posedge clk) begin
-    if(is_gt_d) distance_r_addr <= ordering_data2_d/2 + offset;
-    else        distance_r_addr <= ordering_data2_l/2 + offset;
+    if(is_gt_d) distance_addr <= ordering_data2_d/2 + offset;
+    else        distance_addr <= ordering_data2_l/2 + offset;
 end
 
-distance_data_t     distance_data;
 distance_op_t       command_op_d3;
 always_ff @(posedge clk) begin
     command_op_d3 <= command_op_d2;
@@ -102,17 +99,6 @@ always_ff @(posedge clk) begin
         PLS : delta_distance <= delta_distance + distance_data_l;
         MNS : delta_distance <= delta_distance - distance_data_l;
     endcase
-end
-
-distance_data_t ram [0:(city_num+1)*city_num/2-1];
-logic [city_num_log*2-2:0] distance_addr;
-assign distance_addr = (tp_dis_write) ? tp_dis_waddr : distance_r_addr;
-
-always_ff @(posedge clk) begin
-    if(tp_dis_write)
-        ram[distance_addr] <= tp_dis_wdata;
-    else
-        distance_data <= ram[distance_addr];
 end
 
 endmodule
