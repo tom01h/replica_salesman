@@ -21,19 +21,32 @@ module random
 );
 
 logic [63:0]             seed [0:base_num-1];
-logic [63:0]             or_seed;
-logic [63:0]             tw_seed;
+logic [63:0]             or_seed_wd_w;
+logic [63:0]             or_seed_wd;
+logic [63:0]             tw_seed_wd;
+logic [63:0]             or_seed_rd;
+logic [63:0]             tw_seed_rd;
+logic                    or_wen;
+logic                    tw_wen;
 logic                    or_run;
 logic                    tw_run;
 
+assign or_seed_wd_w = (init) ? w_seed : or_seed_wd;
+assign or_wen = or_run | init;
+assign tw_wen = tw_run;
+
 always_ff @(posedge clk) begin
-    if(init)        seed[or_base_id] <= w_seed;
-    else if(or_run) seed[or_base_id] <= or_seed;
-    if(tw_run)      seed[tw_base_id] <= tw_seed;
+    if(or_wen) seed[or_base_id] <= or_seed_wd_w;
+    or_seed_rd <= seed[or_base_id];
+end
+
+always_ff @(posedge clk) begin
+    if(tw_wen) seed[tw_base_id] <= tw_seed_wd;
+    tw_seed_rd <= seed[tw_base_id];
 end
 
 always_ff @(posedge clk)
-    if(read)        r_seed <= seed[or_base_id];
+    if(read) r_seed <= or_seed_rd;
 
 logic or_ready, tw_ready;
 assign ready = or_ready & tw_ready;
@@ -51,8 +64,8 @@ or_rand or_rand (
     .clk      ( clk              ),
     .reset    ( reset            ),
     .base_id  ( or_base_id       ),
-    .seed     ( seed[or_base_id] ),
-    .n_seed   ( or_seed          ),
+    .seed     ( or_seed_rd       ),
+    .n_seed   ( or_seed_wd       ),
     .run_i    ( run              ),
     .run_o    ( or_run           ),
     .opt_en   ( or_opt_en        ),
@@ -64,8 +77,8 @@ tw_rand tw_rand (
     .clk      ( clk              ),
     .reset    ( reset            ),
     .base_id  ( tw_base_id       ),
-    .seed     ( seed[tw_base_id] ),
-    .n_seed   ( tw_seed          ),
+    .seed     ( tw_seed_rd       ),
+    .n_seed   ( tw_seed_wd       ),
     .run_i    ( run              ),
     .run_o    ( tw_run           ),
     .opt_en   ( tw_opt_en        ),
