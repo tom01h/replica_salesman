@@ -108,29 +108,29 @@ def py_tb():
         i = 0
         data = 0
         for c in ordering[ibeta]:
-            data += c * 2 ** (i * 8)
+            data += int(c * 2 ** (i * 8))
             if i == 7:
-                top.write64(address, int(data))
+                top.write64(address, data)
                 address += 8
                 data = 0
                 i = 0
             else:
                 i += 1
         if i != 0:
-            top.write64(address, int(data))
+            top.write64(address, data)
             address += 8
 
     address = 0x10000  # two point distance
     for i in range(1, ncity+1):
         for j in range(0, i):
-            data = distance_2[i][j]
-            top.write64(address, int(data))
+            data = int(distance_2[i][j])
+            top.write64(address, data)
             address += 8
 
     address = 0x02000  # total distance
     for ibeta in ordering_list:
-        data = distance_i[ibeta]
-        top.write64(address, int(data))
+        data = int(distance_i[ibeta])
+        top.write64(address, data)
         address += 8
 
     address = 0x00010  # siter
@@ -174,7 +174,7 @@ def py_tb():
 
             c = data // 256**(7-icity%8) % 256
             rtl_ordering[ibeta][icity] = c
-    
+
     rtl_distance_i = np.zeros_like(distance_i)
 
     address = 0x02000  # total distance
@@ -198,7 +198,7 @@ def py_tb():
     top.write64(address, data)
 
 ########### RTL Sim ###########
-########### Golden Model ###########
+    ########### Golden Model ###########
 
     start = time.perf_counter()
 
@@ -320,7 +320,7 @@ def py_tb():
         print(distance_list)
         print(rtl_distance_list)
 
-########### Golden Model ###########
+    ########### Golden Model ###########
     '''########### SKIP Golden Model ###########
     minimum_ordering = rtl_minimum_ordering
     ordering = rtl_ordering

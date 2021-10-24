@@ -13,7 +13,8 @@ FPGA の Linux に以下のファイルをコピーする
 
 - replica_salesman_fpga.py
 - setup.py
-- top.cpp
+- lib.cpp
+- top.py
 
 FPGA の Linux に ~/bit ディレクトリを作成し、以下のファイルをリネームしてコピーする
 

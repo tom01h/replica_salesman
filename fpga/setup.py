@@ -1,7 +1,7 @@
 from setuptools import setup, Extension
 
-filelist  = ['top.cpp']
-setup(name='top',
+filelist  = ['lib.cpp']
+setup(name='lib',
         version='1.0',
-        ext_modules=[Extension('top', filelist)]
+        ext_modules=[Extension('lib', filelist)]
 )

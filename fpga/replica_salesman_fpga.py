@@ -8,15 +8,13 @@
 #    address = 0x08000  # ordering
 #    address = 0x10000  # two point distance
 
-nbeta=32
-siter=1000
-niter=100000
+nbeta=160
+node_num = 4
+siter=5000
+niter=500000
 dbeta=5
 ncity=100
 ninit=2      # 0 -> read cities; 1 -> continue; 2 -> random config; 3 -> re run.
-
-from pynq import Overlay
-from pynq import MMIO
 
 import time
 import numpy as np
@@ -26,7 +24,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
-import top as top
+import lib
+import top
 
 def py_tb():
     def calc_distance_i(ordering):
@@ -69,7 +68,7 @@ def py_tb():
         with open("initial.pickle", "rb") as f:
             x, ordering, minimum_ordering, minimum_distance, distance_list, seeds = pickle.load(f)
 
-    top.c_init_random(seeds)
+    lib.c_init_random(seeds)
 
     for icity in range(0, ncity+1):
         r = x[icity] - x
@@ -91,65 +90,62 @@ def py_tb():
 
 ########### RTL Sim ###########
 
-    #top.init()
-    overlay = Overlay("./bit/replica_salesman.bit")
-
-    mem_address = overlay.ip_dict['vtop_0/S_AXI']['phys_addr']
-    mem_range = overlay.ip_dict['vtop_0/S_AXI']['addr_range']
-    mm_mem = MMIO(mem_address, mem_range)
+    top.init()
 
     address = 0x00f00  # soft_reset
     data = 0
-    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+    top.write64(address, data)
 
     address = 0x01000  # random seeds
     for data in seeds:
-        mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+        top.write64(address, data)
         address += 8
         
+    ordering_list = np.arange(nbeta).reshape((-1, node_num))
+    ordering_list = np.fliplr(ordering_list).reshape(-1)
     address = 0x08000  # ordering
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         i = 0
         data = 0
         for c in ordering[ibeta]:
             data += int(c * 2 ** (i * 8))
             if i == 7:
-                mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+                top.write64(address, data)
                 address += 8
                 data = 0
                 i = 0
             else:
                 i += 1
         if i != 0:
-            mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+            top.write64(address, data)
             address += 8
 
     address = 0x10000  # two point distance
     for i in range(1, ncity+1):
         for j in range(0, i):
             data = int(distance_2[i][j])
-            mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+            top.write64(address, data)
             address += 8
 
     address = 0x02000  # total distance
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         data = int(distance_i[ibeta])
-        mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+        top.write64(address, data)
         address += 8
 
     address = 0x00010  # siter
     data = siter
-    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+    top.write64(address, data)
 
     address = 0x00000  # run
     data = niter
-    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+    top.write64(address, data)
 
     start = time.perf_counter()
 
     while data != 0:
-        data = mm_mem.read(address, 8, 'little')
-        #top.vwait(100)
+        data = top.read64(address)
+        top.vwait(100)
 
     elapsed_time = time.perf_counter() - start
     print ("FPGA_time:{0}".format(elapsed_time) + "[sec]")
@@ -162,7 +158,7 @@ def py_tb():
     address = 0x03000  # minimum ordering
     for icity in range(0, ncity+1):
         if icity % 8 == 0:
-            data = mm_mem.read(address, 8, 'little')
+            data = top.read64(address)
             address += 8
 
         c = data // 256**(7-icity%8) % 256
@@ -170,10 +166,10 @@ def py_tb():
 
     address = 0x08000  # ordering
     #for ibeta in reversed(range(0, nbeta)):
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
+    for ibeta in ordering_list:
         for icity in range(0, ncity+1):
             if icity % 8 == 0:
-                data = mm_mem.read(address, 8, 'little')
+                data = top.read64(address)
                 address += 8
 
             c = data // 256**(7-icity%8) % 256
@@ -183,23 +179,23 @@ def py_tb():
 
     address = 0x02000  # total distance
     #for ibeta in reversed(range(0, nbeta)):
-    for ibeta in [3,2,1,0, 7,6,5,4, 11,10,9,8, 15,14,13,12, 19,18,17,16, 23,22,21,20, 27,26,25,24, 31,30,29,28]:
-        rtl_distance_i[ibeta] = mm_mem.read(address, 8, 'little')
+    for ibeta in ordering_list:
+        rtl_distance_i[ibeta] = top.read64(address)
         address += 8
 
     address = 0x01000  # random seeds
     for i in range(nbeta):
-        rtl_seeds[i] = mm_mem.read(address, 8, 'little')
+        rtl_seeds[i] = top.read64(address)
         address += 8
 
     address = 0x04000  # saved distance
     for i in range(niter//siter):
-        rtl_distance_list = np.append(rtl_distance_list, mm_mem.read(address, 8, 'little')/(2**17))
+        rtl_distance_list = np.append(rtl_distance_list, top.read64(address)/(2**17))
         address += 8
 
     address = 0x00f00  # soft_reset
     data = 1
-    mm_mem.write(address, data.to_bytes(8, byteorder='little'))
+    top.write64(address, data)
 
 ########### RTL Sim ###########
     '''########### Golden Model ###########
@@ -214,16 +210,16 @@ def py_tb():
             while info_kl == 1:
                 if opt == 0:       # 2-opt
                     msk = ( 1<<(math.ceil(math.log2(ncity))) ) -1
-                    k = top.c_run_random(ibeta, 1, ncity, msk)
-                    l = top.c_run_random(ibeta, 1, ncity, msk)
+                    k = lib.c_run_random(ibeta, 1, ncity, msk)
+                    l = lib.c_run_random(ibeta, 1, ncity, msk)
                     if k != l:
                         if k > l:
                             k, l = l, k
                         info_kl = 0
                 else:              # or-opt (simple)
                     msk = ( 1<<(math.ceil(math.log2(ncity-1))) ) -1
-                    k = top.c_run_random(ibeta, 1, ncity-1, msk)
-                    l = top.c_run_random(ibeta, 0, ncity-1, msk)
+                    k = lib.c_run_random(ibeta, 1, ncity-1, msk)
+                    l = lib.c_run_random(ibeta, 0, ncity-1, msk)
                     if k != l and k != l + 1:
                         info_kl = 0
             # Metropolis for each replica #
@@ -238,8 +234,8 @@ def py_tb():
                     ordering_fin = np.hstack((ordering_fin[0:l+1], p, ordering_fin[l+1:]))
             delta_distance = delta_distance_i(ordering[ibeta], k, l, opt)
             # Metropolis test #
-            metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-            if delta_distance < 0 or top.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
+            metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+            if delta_distance < 0 or lib.c_exp(int(-delta_distance * beta[ibeta]), 15) > metropolis:
                 distance_i[ibeta] += delta_distance
                 ordering[ibeta] = ordering_fin.copy()
 
@@ -248,21 +244,21 @@ def py_tb():
             for ibeta in range(0, nbeta-1, 2):
                 action = (distance_i[ibeta+1] - distance_i[ibeta]) * dbeta
                 # Metropolis test #
-                metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+                if action >=0 or lib.c_exp(action, 15) > metropolis:
                     ordering[ibeta],   ordering[ibeta+1]   = ordering[ibeta+1].copy(), ordering[ibeta].copy()
                     distance_i[ibeta], distance_i[ibeta+1] = distance_i[ibeta+1],      distance_i[ibeta]
         else:
-            metropolis = (top.c_run_random(0, 0, 2**23-1, 2**23-1))  # dummy
+            metropolis = (lib.c_run_random(0, 0, 2**23-1, 2**23-1))  # dummy
             for ibeta in range(2, nbeta-1, 2):
                 action = (distance_i[ibeta] - distance_i[ibeta-1]) * dbeta
                 # Metropolis test #
-                metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
-                if action >=0 or top.c_exp(action, 15) > metropolis:
+                metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))
+                if action >=0 or lib.c_exp(action, 15) > metropolis:
                     ordering[ibeta-1],   ordering[ibeta]   = ordering[ibeta].copy(), ordering[ibeta-1].copy()
                     distance_i[ibeta-1], distance_i[ibeta] = distance_i[ibeta],      distance_i[ibeta-1]
         for ibeta in range(1, nbeta, 2):
-            metropolis = (top.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
+            metropolis = (lib.c_run_random(ibeta, 0, 2**23-1, 2**23-1))  # dummy
 
         # update minimum #
         if iter % 2 == 0: # 2-opt 結果だけを対象にする
@@ -279,7 +275,7 @@ def py_tb():
     elapsed_time = time.perf_counter() - start
     print ("model_time:{0}".format(elapsed_time) + "[sec]")
     
-    seeds = top.c_save_random()
+    seeds = lib.c_save_random()
 
     np.set_printoptions(linewidth = 100)
     # compare minimum ordiering #
@@ -358,4 +354,4 @@ if __name__ == '__main__':
     plt.savefig("distance.png")
     plt.clf()
 
-    #top.fin()
+    top.finish()

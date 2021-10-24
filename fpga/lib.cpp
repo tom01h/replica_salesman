@@ -1,14 +1,14 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#define nbeta (32)
+#define nbeta (160)
 
 unsigned long long x[nbeta];
 
 static PyObject*
 c_init_random(PyObject *self, PyObject *args){
   PyObject *p_list, *p_value;
-  unsigned long long val;
-  // 送られてきた値をパース
+
   if(!PyArg_ParseTuple(args, "O!", &PyList_Type, &p_list))
     return NULL;
 
@@ -25,7 +25,7 @@ static PyObject*
 c_run_random(PyObject *self, PyObject *args) {
   unsigned int p, start, end, msk;
   unsigned int val;
-  // 送られてきた値をパース
+
   if(!PyArg_ParseTuple(args, "IIII", &p, &start, &end, &msk))
     return NULL;
 
@@ -60,7 +60,6 @@ c_exp(PyObject *self, PyObject *args) {
   int l;
   int32_t recip;
   
-  // 送られてきた値をパース
   if(!PyArg_ParseTuple(args, "ii", &x, &l))
     return NULL;
   
@@ -83,26 +82,20 @@ c_exp(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", y);
 }
 
-// メソッドの定義
-static PyMethodDef TopMethods[] = {
-  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "top0: c_init_random"},
-  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "top1: c_run_random"},
-  {"c_save_random",   (PyCFunction)c_save_random,   METH_VARARGS, "top2: c_save_random"},
-  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "top3: c_exp"},
-  // 終了を示す
+static PyMethodDef LibMethods[] = {
+  {"c_init_random",   (PyCFunction)c_init_random,   METH_VARARGS, "lib1: c_init_random"},
+  {"c_run_random",    (PyCFunction)c_run_random,    METH_VARARGS, "lib2: c_run_random"},
+  {"c_save_random",   (PyCFunction)c_save_random,   METH_VARARGS, "lib3: c_save_random"},
+  {"c_exp",           (PyCFunction)c_exp,           METH_VARARGS, "lib4: c_exp"},
+
   {NULL, NULL, 0, NULL}
 };
 
-//モジュールの定義
-static struct PyModuleDef toptmodule = {
-  PyModuleDef_HEAD_INIT,
-  "top",
-  NULL,
-  -1,
-  TopMethods
+static struct PyModuleDef libtmodule = {
+  PyModuleDef_HEAD_INIT,  "lib",  NULL,  -1,  LibMethods,
+  NULL, NULL, NULL, NULL
 };
 
-// メソッドの初期化
-PyMODINIT_FUNC PyInit_top (void) {
-  return PyModule_Create(&toptmodule);
+PyMODINIT_FUNC PyInit_lib (void) {
+  return PyModule_Create(&libtmodule);
 }
