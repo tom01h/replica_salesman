@@ -33,7 +33,7 @@ assign out_ex_com = command_d3;
 
 logic                                   out_valid_x;
 replica_data_t                          out_data_r;
-replica_data_t                          out_data_r2;
+replica_data_t                          out_data_dis;
 replica_data_t                          out_data_d;
 replica_data_t                          out_data_x;
 
@@ -51,7 +51,7 @@ assign raddr_i = ordering_addr[city_num_log-1:3];
 always_ff @(posedge clk) begin
     ordering_sel <= ordering_addr[2:0];
 end
-assign ordering_data = out_data_r2[ordering_sel];
+assign ordering_data = out_data_dis[ordering_sel];
 
 logic [base_log-1:0]     ex_base_id_w1, ex_base_id_w2, ex_base_id_w3;
 always_ff @(posedge clk) begin
@@ -60,13 +60,33 @@ always_ff @(posedge clk) begin
     ex_base_id_w3 <= ex_base_id_w2;
 end
 
-logic [replica_data_bit-1:0] ram [0:2**(city_div_log+base_log) -1];
+logic [replica_data_bit-1:0]      ram0 [0:2**(city_div_log+base_log) -2];
+logic [replica_data_bit-1:0]      ram1 [0:2**(city_div_log+base_log) -2];
+replica_data_t                    out_data_0;
+replica_data_t                    out_data_1;
+logic [base_log+city_div_log-2:0] ram_addr_0;
+logic [base_log+city_div_log-2:0] ram_addr_1;
+logic                             write_valid0;
+logic                             write_valid1;
+logic                             ram_addr_sel;
+assign write_valid0 = write_valid & (ex_base_id_w3[0] == 1'b0);
+assign write_valid1 = write_valid & (ex_base_id_w3[0] == 1'b1);
+assign ram_addr_0 = (ex_base_id_r[0] == 1'b0) ? {ex_base_id_r[base_log-1:1], rcount} : {dd_base_id[base_log-1:1], raddr_i};
+assign ram_addr_1 = (ex_base_id_r[0] == 1'b1) ? {ex_base_id_r[base_log-1:1], rcount} : {dd_base_id[base_log-1:1], raddr_i};
+always_ff @(posedge clk)
+    ram_addr_sel <= ex_base_id_r[0];
+assign out_data_r   = (ram_addr_sel == 1'b0) ? out_data_0 : out_data_1;
+assign out_data_dis = (ram_addr_sel == 1'b1) ? out_data_0 : out_data_1;
+    
 always_ff @(posedge clk) begin
-    if (write_valid) begin
-        ram[{ex_base_id_w3, wcount}] <= write_data;
-    end
-    out_data_r <= ram[{ex_base_id_r, rcount}];
-    out_data_r2 <= ram[{dd_base_id, raddr_i}];  // TEMP for delta distance
+    if (write_valid0)
+        ram0[{ex_base_id_w3[base_log-1:1], wcount}] <= write_data;
+    out_data_0 <= ram0[ram_addr_0];
+end
+always_ff @(posedge clk) begin
+    if (write_valid1)
+        ram1[{ex_base_id_w3[base_log-1:1], wcount}] <= write_data;
+    out_data_1 <= ram1[ram_addr_1];
 end
 
 always_ff @(posedge clk) begin

@@ -87,16 +87,20 @@ end
 
 always_ff @(posedge clk) begin
     if(reset)                                         or_base_id <= '0;
+    else if(run_write)                                or_base_id <= '0;
     else if(change_base_id || opt_fin && or_opt_en)
         if(or_base_id[0] != base_num - 1)             or_base_id[0] <= or_base_id[0]+1;
         else                                          or_base_id[0] <= '0;
 
     if(reset)                                         tw_base_id <= '0;
-    else if(change_base_id || opt_fin && tw_opt_en)
+    else if(run_write)                                tw_base_id <= -5;
+    else if(change_base_id || opt_fin && (or_opt_en || tw_opt_en))
         if(tw_base_id[0] != base_num - 1)             tw_base_id[0] <= tw_base_id[0]+1;
         else                                          tw_base_id[0] <= '0;
 
-    if(opt_run)
+    if(run_write)
+        for(int i=1; i<5; i+=1) begin or_base_id[i] <= -i; tw_base_id[i] <= -i-5; end
+    else if(opt_run)
         for(int i=1; i<5; i+=1) begin or_base_id[i] <= or_base_id[i-1]; tw_base_id[i] <= tw_base_id[i-1]; end
 end
 
