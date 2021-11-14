@@ -9,9 +9,9 @@
 #    address = 0x10000  # two point distance
 
 nbeta=160
-node_num = 4
-#siter=1000
-#niter=100000
+node_num = 16
+#siter=200
+#niter=20000
 siter=4
 niter=8
 dbeta=5

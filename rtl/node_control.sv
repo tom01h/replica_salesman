@@ -60,8 +60,13 @@ always_ff @(posedge clk) begin
     end
 end
 
-always_ff @(posedge clk)
-    update_minimum_distance <= (tw_ex_base_id == base_num - 1) && opt_run;
+logic tw_ex_opt_en;
+always_ff @(posedge clk)begin
+    if(reset)          tw_ex_opt_en <= 1'b0;
+    else if(tw_opt_en) tw_ex_opt_en <= 1'b1;
+    else if(!running)  tw_ex_opt_en <= 1'b0;
+    update_minimum_distance <= (tw_ex_base_id == base_num - 1) && opt_run && tw_ex_opt_en;
+end
 
 logic [4:0][base_log-1:0] or_base_id, tw_base_id;
 

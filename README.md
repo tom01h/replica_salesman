@@ -36,6 +36,9 @@ python3 replica_salesman.py
 RTL シミュレーションは sim/ 下に説明があります。  
 Python の動作モデルの結果と比較しながら検証できます。
 
+FPGA で実行する説明は fpga/ 下にあります。  
+Ultra96 (初代) と LiteFury で試しています。
+
 ### アルゴリズムを簡単に説明
 
 #### 簡易 or-opt 法
