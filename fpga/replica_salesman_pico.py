@@ -9,7 +9,7 @@
 #    address = 0x10000  # two point distance
 
 nbeta=160
-node_num = 16
+node_num = 4
 siter=5000
 niter=2000000
 dbeta=5
@@ -25,7 +25,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pickle
 import lib
-import top
+import top_pico as top
 
 def py_tb():
     def calc_distance_i(ordering):
