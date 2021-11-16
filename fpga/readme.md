@@ -58,7 +58,7 @@ NahiViva を Linux で使う場合は [Vivadoを自動化するTclスクリプ�
 
 ### ファイルを転送する
 
-FPGA の Linux に以下のファイルをコピーする
+FPGA 用の Linux に以下のファイルをコピーする
 
 - replica_salesman_pcie.py
 - setup.py
@@ -80,12 +80,53 @@ xdma ドライバをロードする
 最初の1回だけ準備が必要
 
 ```
-xilinx@pynq:~$ python3 setup.py build_ext -i
+$ python3 setup.py build_ext -i
 ```
 
 その後は、
 
 ```
-xilinx@pynq:~$ sudo python3 replica_salesman_pcie.py
+$ sudo python3 replica_salesman_pcie.py
+```
+
+## Arty
+
+### ブロックデザインを作る
+
+`replica_salesman/syn/Arty` にて合成します
+
+`replica_pkg.sv` は `node_num = 4;` を設定します。
+
+### データ転送用の Raspberry Pi Pico を準備する
+
+[tom01h/pmod-pico (github.com)](https://github.com/tom01h/pmod-pico) の pico 用のファームウェアを使う
+
+### ファイルを転送する
+
+FPGA 用の Linux に以下のファイルをコピーする
+
+- replica_salesman_pico.py
+- setup.py
+- setup_pico.py
+- lib.cpp
+- top_pico.py
+
+### FPGA の準備をする
+
+Vivado から bit データを書き込む
+
+### 実行する
+
+最初の1回だけ準備が必要
+
+```
+$ python3 setup.py build_ext -i
+$ python3 setup_pico.py build_ext -i -I/usr/include/libusb-1.0/
+```
+
+その後は、
+
+```
+$ sudo python3 replica_salesman_pico.py
 ```
 
