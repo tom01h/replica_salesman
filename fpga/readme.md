@@ -89,13 +89,15 @@ $ python3 setup.py build_ext -i
 $ sudo python3 replica_salesman_pcie.py
 ```
 
-## Arty
+## Arty or CoreBoard
 
 ### ブロックデザインを作る
 
-`replica_salesman/syn/Arty` にて合成します
+`replica_salesman/syn/Arty or CoreBoard` にて合成します
 
-`replica_pkg.sv` は `node_num = 4;` を設定します。
+**Arty**`replica_pkg.sv` は `node_num = 4;` を設定します。
+
+**CoreBoard**`replica_pkg.sv` は `node_num = 16;` を設定します。
 
 ### データ転送用の Raspberry Pi Pico を準備する
 
@@ -130,3 +132,4 @@ $ python3 setup_pico.py build_ext -i -I/usr/include/libusb-1.0/
 $ sudo python3 replica_salesman_pico.py
 ```
 
+CoreBoard では `replica_salesman_pico.py` に `node_num = 16` を設定します

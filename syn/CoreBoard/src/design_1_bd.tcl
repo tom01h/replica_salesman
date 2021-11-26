@@ -50,8 +50,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xc7a35ticsg324-1L
-   set_property BOARD_PART digilentinc.com:arty:part0:1.1 [current_project]
+   create_project project_1 myproj -part xc7a100tfgg676-1
 }
 
 
@@ -229,23 +228,17 @@ proc create_root_design { parentCell } {
   set PWAIT [ create_bd_port -dir O PWAIT ]
   set PWD [ create_bd_port -dir I -from 1 -to 0 PWD ]
   set PWRITE [ create_bd_port -dir I PWRITE ]
-  set reset [ create_bd_port -dir I -type rst reset ]
+  set sys_clk [ create_bd_port -dir I -type clk -freq_hz 50000000 sys_clk ]
   set_property -dict [ list \
-   CONFIG.POLARITY {ACTIVE_LOW} \
- ] $reset
-  set sys_clock [ create_bd_port -dir I -type clk -freq_hz 100000000 sys_clock ]
-  set_property -dict [ list \
-   CONFIG.PHASE {0.000} \
- ] $sys_clock
+   CONFIG.ASSOCIATED_RESET {sys_rst_n} \
+ ] $sys_clk
+  set sys_rst_n [ create_bd_port -dir I -type rst sys_rst_n ]
 
   # Create instance: clk_wiz, and set properties
   set clk_wiz [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz ]
   set_property -dict [ list \
-   CONFIG.CLK_IN1_BOARD_INTERFACE {sys_clock} \
-   CONFIG.RESET_BOARD_INTERFACE {reset} \
    CONFIG.RESET_PORT {resetn} \
    CONFIG.RESET_TYPE {ACTIVE_LOW} \
-   CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz
 
   # Create instance: pmodIf_0, and set properties
@@ -267,10 +260,6 @@ proc create_root_design { parentCell } {
 
   # Create instance: rst_clk_wiz_100M, and set properties
   set rst_clk_wiz_100M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_clk_wiz_100M ]
-  set_property -dict [ list \
-   CONFIG.RESET_BOARD_INTERFACE {reset} \
-   CONFIG.USE_BOARD_FLOW {true} \
- ] $rst_clk_wiz_100M
 
   # Create instance: vtop_0, and set properties
   set block_name vtop
@@ -291,13 +280,13 @@ proc create_root_design { parentCell } {
   connect_bd_net -net PCK_1 [get_bd_ports PCK] [get_bd_pins pmodIf_0/pck]
   connect_bd_net -net PWD_1 [get_bd_ports PWD] [get_bd_pins pmodIf_0/pwd]
   connect_bd_net -net PWRITE_1 [get_bd_ports PWRITE] [get_bd_pins pmodIf_0/pwrite]
+  connect_bd_net -net clk_50MHz_1 [get_bd_ports sys_clk] [get_bd_pins clk_wiz/clk_in1]
   connect_bd_net -net clk_wiz_clk_out1 [get_bd_pins clk_wiz/clk_out1] [get_bd_pins pmodIf_0/M_AXI_ACLK] [get_bd_pins pmodIf_0_axi_periph/ACLK] [get_bd_pins pmodIf_0_axi_periph/M00_ACLK] [get_bd_pins pmodIf_0_axi_periph/S00_ACLK] [get_bd_pins rst_clk_wiz_100M/slowest_sync_clk] [get_bd_pins vtop_0/S_AXI_ACLK]
   connect_bd_net -net clk_wiz_locked [get_bd_pins clk_wiz/locked] [get_bd_pins rst_clk_wiz_100M/dcm_locked]
   connect_bd_net -net pmodIf_0_prd [get_bd_ports PRD] [get_bd_pins pmodIf_0/prd]
   connect_bd_net -net pmodIf_0_pwait [get_bd_ports PWAIT] [get_bd_pins pmodIf_0/pwait]
-  connect_bd_net -net reset_1 [get_bd_ports reset] [get_bd_pins clk_wiz/resetn] [get_bd_pins rst_clk_wiz_100M/ext_reset_in]
   connect_bd_net -net rst_clk_wiz_100M_peripheral_aresetn [get_bd_pins pmodIf_0/M_AXI_ARESETN] [get_bd_pins pmodIf_0_axi_periph/ARESETN] [get_bd_pins pmodIf_0_axi_periph/M00_ARESETN] [get_bd_pins pmodIf_0_axi_periph/S00_ARESETN] [get_bd_pins rst_clk_wiz_100M/peripheral_aresetn] [get_bd_pins vtop_0/S_AXI_ARESETN]
-  connect_bd_net -net sys_clock_1 [get_bd_ports sys_clock] [get_bd_pins clk_wiz/clk_in1]
+  connect_bd_net -net sys_rst_n_1 [get_bd_ports sys_rst_n] [get_bd_pins clk_wiz/resetn] [get_bd_pins rst_clk_wiz_100M/ext_reset_in]
 
   # Create address segments
   assign_bd_address -offset 0x00000000 -range 0x00100000 -target_address_space [get_bd_addr_spaces pmodIf_0/M_AXI] [get_bd_addr_segs vtop_0/S_AXI/reg0] -force

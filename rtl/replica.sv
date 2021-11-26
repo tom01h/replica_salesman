@@ -29,6 +29,7 @@ module replica
 );
 
 logic signed [31:0]      action;
+logic signed [31:0]      action_l;
 logic signed [26:0]      n_exchange;
 logic                    test;
 exchange_command_t       exchange_l;
@@ -73,8 +74,10 @@ end
 logic  replica_run;
 assign replica_run = exp_fin && (opt.com != THR);
 always_ff @(posedge clk) begin
+    if(exp_init)
+        action_l <= action;
     if(replica_run)
-        test <= (action * dbeta > -(8<<17)) && ((action >= 0) || (n_exchange > opt.r_exchange[22:0]));
+        test <= (action_l * dbeta > -(8<<17)) && ((action_l >= 0) || (n_exchange > opt.r_exchange[22:0]));
         
     if(opt_run) begin
         if(opt.com == THR)                                exchange_l <= NOP;
