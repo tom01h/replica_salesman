@@ -121,19 +121,43 @@ random #(.id(id)) random
 logic [city_num_log*2-2:0] or_distance_addr_w;
 logic [city_num_log*2-2:0] or_distance_addr;
 distance_data_t            or_distance_data;
+distance_data_t [1:0]      or_distance_data_w;
 logic [city_num_log*2-2:0] tw_distance_addr;
 distance_data_t            tw_distance_data;
-distance_data_t ram [0:(city_num+1)*city_num/2-1];
+distance_data_t [1:0]      tw_distance_data_w;
+
+//distance_data_t ram [0:(city_num+1)*city_num/2-1];
+logic                      or_distance_sel;
+logic                      tw_distance_sel;
+
+distance_data_t ram0 [0:4096-1];
+distance_data_t ram1 [0:(city_num+1)*city_num/2-4096-1];
+
+assign or_distance_data = or_distance_data_w[or_distance_sel];
+assign tw_distance_data = tw_distance_data_w[tw_distance_sel];
 
 assign or_distance_addr_w = (tp_dis_write) ? tp_dis_waddr : or_distance_addr;
 
 always_ff @(posedge clk) begin
-    if(tp_dis_write)
-        ram[or_distance_addr_w] <= tp_dis_wdata;
-    or_distance_data <= ram[or_distance_addr_w];
+    or_distance_sel <= or_distance_addr_w[city_num_log*2-2];
+    tw_distance_sel <= tw_distance_addr[city_num_log*2-2];
+end
+
+always_ff @(posedge clk) begin
+    if(tp_dis_write & ~or_distance_addr_w[city_num_log*2-2])
+        ram0[or_distance_addr_w[city_num_log*2-3:0]] <= tp_dis_wdata;
+    or_distance_data_w[0] <= ram0[or_distance_addr_w[city_num_log*2-3:0]];
 end
 always_ff @(posedge clk) begin
-    tw_distance_data <= ram[tw_distance_addr];
+    if(tp_dis_write &  or_distance_addr_w[city_num_log*2-2])
+        ram1[or_distance_addr_w[city_num_log*2-4:0]] <= tp_dis_wdata;
+    or_distance_data_w[1] <= ram1[or_distance_addr_w[city_num_log*2-4:0]];
+end
+always_ff @(posedge clk) begin
+    tw_distance_data_w[0] <= ram0[tw_distance_addr[city_num_log*2-3:0]];
+end
+always_ff @(posedge clk) begin
+    tw_distance_data_w[1] <= ram1[tw_distance_addr[city_num_log*2-4:0]];
 end
 
 
