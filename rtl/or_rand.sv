@@ -27,7 +27,8 @@ always_ff @(posedge clk)begin
 end
 
 typedef enum logic [2:0] {
-    s_NOP        = 3'b100,
+    s_NOP        = 3'b111,
+    s_start      = 3'b100,
     s_K          = 3'b000,
     s_L          = 3'b001,
     s_metropolis = 3'b010,
@@ -40,8 +41,8 @@ logic [63:0]             seed_l;
 logic                    run_l;
 
 always_ff @(posedge clk) begin
-    if(state==s_NOP) seed_l <= seed;
-    else if(run_l)   seed_l <= n_seed;
+    if(state==s_start) seed_l <= seed;
+    else if(run_l)     seed_l <= n_seed;
 end
 
 logic [63:0]             x0, x1, x2, x3;
@@ -62,10 +63,11 @@ always_ff @(posedge clk) begin
         run_o <= 'b0;
         run_l <= 'b0;
         ready <= 'b1;
-    end else if(run_i && opt_en) begin
         state <= s_NOP;
+    end else if(run_i && opt_en) begin
+        state <= s_start;
         msk <= {($clog2(city_num-1)){1'b1}};
-    end else if(state == s_NOP) begin
+    end else if(state == s_start) begin
         run_l <= 'b1;
         state <= s_K;
         ready <= 'b0;
@@ -83,7 +85,7 @@ always_ff @(posedge clk) begin
                     else                                     state <= s_K;
                 end
             s_metropolis : begin opt.r_metropolis <= val; run_o <= 'b1; state <= s_exchange; end
-            s_exchange :   begin opt.r_exchange   <= val; run_o <= 'b0; run_l <= 'b0; ready <= 'b1; end
+            s_exchange :   begin opt.r_exchange   <= val; run_o <= 'b0; state <= s_NOP; run_l <= 'b0; ready <= 'b1; end
             default : ;
         endcase
     end    
