@@ -18,6 +18,7 @@ module node
     
     input  logic                      random_init,       // set random seed
     input  logic                      random_read,       // get random seed
+    output logic                      random_ready,
     input  logic [63:0]               random_seed_w,
     output logic [63:0]               random_seed_r,
     input  logic                      tp_dis_write,      // set 2点間距離
@@ -114,7 +115,7 @@ random #(.id(id)) random
     .r_seed          ( random_seed_r   ),
     .or_opt          ( or_opt          ),
     .tw_opt          ( tw_opt          ),
-    .ready           (                 )
+    .ready           ( random_ready    )
 );
 
 logic [city_num_log*2-2:0] or_distance_addr_w;

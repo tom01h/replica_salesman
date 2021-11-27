@@ -6,6 +6,7 @@ module node_control
     input  logic                    run_write,
     input  logic [23:0]             run_times,
     output logic                    running,
+    input  logic                    random_ready,
 
     input  logic                    change_base_id,
     output logic [base_log-1:0]     or_rn_base_id,
@@ -37,16 +38,16 @@ module node_control
 
 logic  [4:0] cycle_cnt;
 
-assign opt_fin  = (cycle_cnt == 19);
+assign opt_fin  = (cycle_cnt == 19) && running && random_ready;
 assign exp_fin  = (cycle_cnt == 18);
-assign exp_init = (cycle_cnt ==  0) && running;
-assign opt_run  = (cycle_cnt ==  0) && running;
+assign exp_init = (cycle_cnt ==  0) && running && random_ready;
+assign opt_run  = (cycle_cnt ==  0) && running && random_ready;
 
 always_ff @(posedge clk) begin
     if(reset)         cycle_cnt <= 'b0;
     else if(opt_run)  cycle_cnt <= 'b1;
     else if(opt_fin)  cycle_cnt <= 'b0;
-    else if(running)  cycle_cnt <= cycle_cnt + 1;
+    else if(running)  begin if(cycle_cnt != 19) cycle_cnt <= cycle_cnt + 1; end
     else              cycle_cnt <= 'b0;
 end
 

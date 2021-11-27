@@ -26,6 +26,7 @@ module top
 
 logic [node_num-1:0]       random_init;
 logic [node_num-1:0]       random_read;
+logic [node_num-1:0]       random_ready;
 logic [63:0]               random_seed_w;
 logic [node_num-1:0][63:0] random_seed_r;
 
@@ -225,6 +226,7 @@ node_control node_control
     .run_write               ( run_write                ),
     .run_times               ( run_times                ),
     .running                 ( running                  ),
+    .random_ready            ( &random_ready[node_num-1:0]),
 
     .change_base_id          ( change_base_id           ),
     .or_rn_base_id           ( or_rn_base_id            ),
@@ -281,6 +283,7 @@ for (genvar g = 0; g < node_num; g += 1) begin
         
         .random_init       ( random_init[g]        ), // set random seed
         .random_read       ( random_read[g]        ), // get random seed
+        .random_ready      ( random_ready[g]       ),
         .random_seed_w     ( random_seed_w         ),
         .random_seed_r     ( random_seed_r[g]      ),
         .tp_dis_write      ( tp_dis_write          ), // set 2点間距離

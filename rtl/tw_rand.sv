@@ -61,6 +61,7 @@ always_ff @(posedge clk) begin
     if(reset) begin
         run_o <= 'b0;
         run_l <= 'b0;
+        ready <= 'b1;
     end else if(run_i && opt_en) begin
         state <= s_NOP;
         msk <= {($clog2(city_num  )){1'b1}};
