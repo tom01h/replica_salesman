@@ -149,18 +149,19 @@ module bus_if
     always_comb begin
         if({rd_adr_i[19:3],3'b000} == 'h0)
             S_AXI_RDATA = running;
-        if({rd_adr_i[19:15],3'b000} == 8'h08)
+        else if({rd_adr_i[19:15],3'b000} == 8'h08)
             for(int j = 0; j < 8; j++)
                 S_AXI_RDATA[j*8 +:8] = ordering_rdata[j];
-        if({rd_adr_i[19:14],2'b00} == 8'h04)
+        else if({rd_adr_i[19:14],2'b00} == 8'h04)
             S_AXI_RDATA = distance_min_data_d;
-        if(rd_adr_i[19:12] == 8'h03)
+        else if(rd_adr_i[19:12] == 8'h03)
             for(int j=0; j<8; j++)
                 S_AXI_RDATA[j*8 +:8] = {1'b0, ordering_min_data_d[7-j]};
-        if(rd_adr_i[19:12] == 8'h02)
+        else if(rd_adr_i[19:12] == 8'h02)
             S_AXI_RDATA = distance_rdata_d;
-        if(rd_adr_i[19:12] == 8'h01)
+        else if(rd_adr_i[19:12] == 8'h01)
             S_AXI_RDATA = random_seed_r[random_read_d];
+        else S_AXI_RDATA = {64{1'bx}};
     end
         
     always_ff @(posedge S_AXI_ACLK)begin
