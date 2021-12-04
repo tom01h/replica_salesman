@@ -101,7 +101,7 @@ $ sudo python3 replica_salesman_pcie.py
 
 ### データ転送用の Raspberry Pi Pico を準備する
 
-[tom01h/pmod-pico (github.com)](https://github.com/tom01h/pmod-pico) の pico 用のファームウェアを使う
+[tom01h/xvc-pico (github.com)](https://github.com/tom01h/xvc-pico) の pico 用のファームウェアを使う
 
 ### ファイルを転送する
 
