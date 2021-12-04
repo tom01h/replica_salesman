@@ -60,7 +60,7 @@ always_ff @(posedge clk) begin
     ex_base_id_w3 <= ex_base_id_w2;
 end
 
-(* ram_style = "distributed" *) logic [replica_data_bit-1:0]      ram0 [0:2**(city_div_log+base_log) -2];
+logic [replica_data_bit-1:0]      ram0 [0:2**(city_div_log+base_log) -2];
 logic [replica_data_bit-1:0]      ram1 [0:2**(city_div_log+base_log) -2];
 replica_data_t                    out_data_0;
 replica_data_t                    out_data_1;

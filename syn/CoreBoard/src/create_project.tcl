@@ -651,3 +651,5 @@ set_property location {4 1020 170} [get_bd_cells /pmodIf_0_axi_periph]
 set_property location {2 380 280} [get_bd_cells /rst_clk_wiz_100M]
 set_property location {5 1280 190} [get_bd_cells /vtop_0]
 
+# NahiSave で生成後に追加した
+set_property synth_checkpoint_mode Singular [get_files "${origin_dir}/project_1/project_1.srcs/sources_1/bd/design_1/design_1.bd"]
