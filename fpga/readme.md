@@ -1,6 +1,6 @@
 # FPGA で実行する
 
-## Ultra96
+## Ultra96 or Kria (PYNQ2.7)
 
 ### ブロックデザインを作る
 
@@ -22,28 +22,36 @@ FPGA の Linux に以下のファイルをコピーする
 
 FPGA の Linux に ~/bit ディレクトリを作成し、以下のファイルをリネームしてコピーする
 
-`replica_salesman/syn/U96/sensors96b/sensors96b.srcs/sources_1/bd/sensors96b/hw_handoff/` から
+`project_1\project_1.gen\sources_1\bd\design_1\hw_handoff` から
 
-- sensors96b.hwh を replica_salesman.hwh にリネームしてコピー
+- design_1.hwh を replica_salesman.hwh にリネームしてコピー
 
-- sensors96b_bd.tcl を replica_salesman.tcl にリネームしてコピー
+- design_1_bd.tcl を replica_salesman.tcl にリネームしてコピー
 
-`replica_salesman/syn/U96/sensors96b/sensors96b.runs/impl_1/` から
+`project_1\project_1.runs\impl_1` から
 
-- sensors96b_wrapper.bit を replica_salesman.bit にリネームしてコピー
+- design_1_wrapper.bit を replica_salesman.bit にリネームしてコピー
 
 ### 実行する
 
 最初の1回だけ準備が必要
 
 ```
-xilinx@pynq:~$ python3 setup.py build_ext -i
+$ python3 setup.py build_ext -i
 ```
 
 その後は、
 
+Ultra96は
+
 ```
-xilinx@pynq:~$ sudo python3 replica_salesman_fpga.py
+$ sudo -E python3 replica_salesman_fpga.py
+```
+
+Kria は
+
+```
+$ sudo PATH=$PATH python3 replica_salesman_fpga.py
 ```
 
 ## LITEFURY
