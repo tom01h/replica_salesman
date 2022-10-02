@@ -105,7 +105,9 @@ $ sudo python3 replica_salesman_pcie.py
 
 **Arty**`replica_pkg.sv` は `node_num = 4;` を設定します。
 
-**CoreBoard**`replica_pkg.sv` は `node_num = 16;` を設定します。
+**CoreBoard**`replica_pkg.sv` は `node_num = 16;` を設定します。  
+CoreBoardで合成はBRAM不足をLUTRAMで補うため、ブロックデザインを右クリックで出てくる`Generating Output Products`ダイアログから`Out of context per Block Design`を選ぶ  
+![](GeneratingOutputProducts.png)
 
 ### データ転送用の Raspberry Pi Pico を準備する
 
